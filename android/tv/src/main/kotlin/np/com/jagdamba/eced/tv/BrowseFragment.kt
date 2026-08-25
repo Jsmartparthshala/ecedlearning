@@ -176,6 +176,7 @@ class BrowseFragment : BrowseSupportFragment() {
             Intent(requireContext(), UnitActivity::class.java)
                 .putExtra(UnitActivity.EXTRA_UNIT_ID, unit.id)
                 .putExtra(UnitActivity.EXTRA_UNIT_TITLE, unit.titleEn)
+                .putExtra(UnitActivity.EXTRA_SUBJECT_ID, unitStyle[unit.id]?.id)
                 .putExtra(UnitActivity.EXTRA_COLOR_1, unitStyle[unit.id]?.color1)
                 .putExtra(UnitActivity.EXTRA_COLOR_2, unitStyle[unit.id]?.color2)
                 .putExtra(UnitActivity.EXTRA_SUBJECT, unitStyle[unit.id]?.nameEn)

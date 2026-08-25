@@ -32,6 +32,7 @@ appcompat       = "1.7.0"
 leanback        = "1.2.0"      # 1.3.0 is alpha-only; stay on stable
 media3          = "1.9.0"      # 1.11.0 exists but pairs better with newer AGP
 lifecycle       = "2.8.7"
+recyclerview    = "1.3.2"
 securityCrypto  = "1.1.0-alpha06"   # no stable release exists; this is the norm
 supabase        = "3.7.0"
 ktor            = "3.0.3"
@@ -43,6 +44,7 @@ activityCompose = "1.9.3"
 [libraries]
 androidx-core-ktx     = { module = "androidx.core:core-ktx",           version.ref = "coreKtx" }
 androidx-appcompat    = { module = "androidx.appcompat:appcompat",     version.ref = "appcompat" }
+androidx-recyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "recyclerview" }
 androidx-leanback     = { module = "androidx.leanback:leanback",       version.ref = "leanback" }
 androidx-lifecycle-rt = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycle" }
 androidx-lifecycle-vm = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycle" }

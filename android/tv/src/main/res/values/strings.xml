@@ -48,4 +48,9 @@
     <string name="set_updates_note">Updates install in the background. A teacher confirms once with the remote; there is no app store involved.</string>
     <string name="downloads_empty_title">Nothing saved yet</string>
     <string name="downloads_empty_body">Lessons saved to this television will appear here and play without an internet connection.</string>
+    <string name="pane_units">UNITS</string>
+    <string name="unit_progress">%1$d%% complete</string>
+    <string name="storage_free">%1$s free</string>
+    <string name="lesson_stream">Stream</string>
+    <string name="lesson_no_video">No video yet</string>
 </resources>

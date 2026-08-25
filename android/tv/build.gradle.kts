@@ -47,6 +47,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.leanback)
+    implementation(libs.androidx.recyclerview)
     implementation(libs.androidx.lifecycle.rt)
     implementation(libs.androidx.lifecycle.vm)
     implementation(libs.kotlinx.coroutines)

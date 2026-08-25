@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Unit detail: units on the left, that unit's lessons on the right.
+
+     A two-pane layout rather than Leanback's DetailsFragment, because
+     DetailsFragment is built around one hero item plus related rows and this
+     screen is a picker: 24 units, each holding 6 to 12 lessons. Two lists side by
+     side is both the right shape and a shorter D-pad path - left/right switches
+     pane, up/down moves within it, which is what a remote is good at. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/tv_bg">
+
+    <!-- top bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="@dimen/overscan_horizontal"
+        android:paddingEnd="@dimen/overscan_horizontal"
+        android:paddingTop="18dp"
+        android:paddingBottom="14dp">
+
+        <TextView
+            android:id="@+id/unit_crumb"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textColor="@color/tv_ink"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/unit_progress_chip"
+            style="@style/StatusChip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/unit_storage_chip"
+            style="@style/StatusChip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:baselineAligned="false"
+        android:paddingStart="@dimen/overscan_horizontal"
+        android:paddingEnd="@dimen/overscan_horizontal"
+        android:paddingBottom="@dimen/overscan_vertical">
+
+        <!-- left: units -->
+        <LinearLayout
+            android:layout_width="360dp"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:layout_marginEnd="22dp">
+
+            <TextView
+                style="@style/PaneHeading"
+                android:text="@string/pane_units" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/unit_list"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:clipToPadding="false"
+                android:paddingBottom="24dp" />
+        </LinearLayout>
+
+        <!-- right: lessons in the selected unit -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/lesson_kicker"
+                style="@style/PaneHeading"
+                android:textColor="@color/focus_gold" />
+
+            <TextView
+                android:id="@+id/lesson_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:textColor="@color/tv_ink"
+                android:textSize="32sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/lesson_meta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="14dp"
+                android:textColor="@color/tv_muted"
+                android:textSize="16sp" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/lesson_list"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:clipToPadding="false"
+                android:paddingBottom="24dp" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>
