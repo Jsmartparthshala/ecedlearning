@@ -1,0 +1,9 @@
+{
+  "name": "jsp-eced-ops-console",
+  "private": true,
+  "type": "module",
+  "description": "Reverse provisioning console for JSP ECED televisions.",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  }
+}

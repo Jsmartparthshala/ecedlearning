@@ -1,0 +1,30 @@
+# Netlify build for the ops console.
+#
+# The site is a single static page plus one function. The service_role key is set
+# as an environment variable in the Netlify UI and is read only by the function,
+# so it is never part of the published bundle.
+
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+# The page posts every action to /api. One redirect keeps the frontend free of
+# Netlify specific paths, so `netlify dev` and production behave identically.
+[[redirects]]
+  from = "/api"
+  to = "/.netlify/functions/api"
+  status = 200
+  force = true
+
+[functions]
+  node_bundler = "esbuild"
+
+# The console is an admin surface. Keep it out of search results and out of
+# frames, and stop the browser from leaking the URL to anything it links to.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"

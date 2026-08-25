@@ -3,189 +3,359 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
 <title>JSP ECED — Ops Console</title>
 <style>
   :root{
-    --bg:#0e1116; --panel:#161b23; --line:#252c37; --ink:#e6edf3;
-    --muted:#8b98a8; --gold:#e8b64c; --ok:#3fb950; --warn:#d29922;
+    --bg:#0e1116; --panel:#161b23; --raise:#1c222c; --line:#252c37; --ink:#e6edf3;
+    --muted:#8b98a8; --gold:#e8b64c; --ok:#3fb950; --warn:#d29922; --bad:#f85149;
+    --blue:#1f6feb;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);
        font:15px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-  header{padding:20px 28px;border-bottom:1px solid var(--line);
+
+  header{padding:18px 28px;border-bottom:1px solid var(--line);
          display:flex;align-items:center;gap:14px;flex-wrap:wrap}
   h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.2px}
   .tag{font-size:11px;color:var(--muted);border:1px solid var(--line);
        padding:2px 8px;border-radius:99px}
-  main{padding:24px 28px;max-width:1100px}
-  .warn{background:#2a1f0d;border:1px solid #5c4415;color:#f0d9a0;
-        padding:12px 14px;border-radius:8px;font-size:13px;margin-bottom:20px}
-  .cfg{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px}
-  input,select,button{font:inherit;border-radius:7px;border:1px solid var(--line);
-       background:var(--panel);color:var(--ink);padding:9px 12px}
-  input{min-width:290px}
-  button{cursor:pointer;background:#1f6feb;border-color:#1f6feb;font-weight:600}
+  #status{font-size:13px;color:var(--muted);margin-left:auto}
+  #status.err{color:var(--bad)}
+  #status.ok{color:var(--ok)}
+
+  main{padding:26px 28px 60px;max-width:1080px}
+  section{margin-bottom:34px}
+  h2{font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);
+     margin:0 0 12px;font-weight:600}
+
+  input,select,button{font:inherit;border-radius:8px;border:1px solid var(--line);
+       background:var(--panel);color:var(--ink);padding:10px 13px}
+  input:focus,select:focus{outline:2px solid var(--blue);outline-offset:1px}
+  button{cursor:pointer;background:var(--blue);border-color:var(--blue);font-weight:600}
   button.ghost{background:var(--panel);border-color:var(--line);font-weight:500}
   button:disabled{opacity:.45;cursor:not-allowed}
-  table{width:100%;border-collapse:collapse;margin-top:8px}
+
+  /* Activation: the one thing this console exists to do, so it gets the top of
+     the page, the largest control, and keyboard focus on load. */
+  .activate{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 24px}
+  .activate .row{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field label{font-size:12px;color:var(--muted);font-weight:550}
+  #code{font:600 30px/1.1 ui-monospace,SFMono-Regular,Consolas,monospace;
+        letter-spacing:.18em;text-transform:uppercase;width:270px;padding:12px 14px;
+        background:var(--raise)}
+  #school{min-width:270px;padding:13px}
+  #go{padding:14px 26px;font-size:15px}
+  .hint{font-size:12.5px;color:var(--muted);margin-top:12px}
+  .found{margin-top:14px;font-size:13.5px;padding:11px 14px;border-radius:9px;
+         border:1px solid var(--line);background:var(--raise);display:none}
+  .found.show{display:block}
+  .found.bad{border-color:#5c2018;background:#2a1210;color:#f8b3ad}
+  .found.good{border-color:#1c4a26;background:#0f2415;color:#8fe0a4}
+
+  table{width:100%;border-collapse:collapse;margin-top:4px}
   th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);font-size:14px}
-  th{color:var(--muted);font-weight:550;font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+  th{color:var(--muted);font-weight:550;font-size:11.5px;text-transform:uppercase;letter-spacing:.5px}
   code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12.5px;color:var(--gold)}
-  .pill{font-size:11px;padding:2px 9px;border-radius:99px;border:1px solid}
+  .pill{font-size:11px;padding:2px 9px;border-radius:99px;border:1px solid;white-space:nowrap}
   .pill.unclaimed{color:var(--warn);border-color:#5c4415;background:#2a1f0d}
   .pill.claimed{color:var(--ok);border-color:#1c4a26;background:#0f2415}
   .muted{color:var(--muted)}
-  h2{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);
-     margin:32px 0 4px;font-weight:600}
-  #status{font-size:13px;color:var(--muted);margin-left:auto}
+  .right{text-align:right}
+
+  /* Passcode gate. Covers the page until the operator is through it. */
+  #gate{position:fixed;inset:0;background:var(--bg);display:grid;place-items:center;z-index:20}
+  #gate .box{width:340px;text-align:center}
+  #gate h2{margin-bottom:18px}
+  #gate input{width:100%;text-align:center;margin-bottom:12px}
+  #gate button{width:100%}
+  #gate .err{color:var(--bad);font-size:13px;min-height:20px;margin-top:10px}
+  [hidden]{display:none !important}
 </style>
 </head>
 <body>
 
+<div id="gate">
+  <div class="box">
+    <h2>JSP ECED — Ops Console</h2>
+    <input id="pass" type="password" placeholder="Passcode" autocomplete="current-password">
+    <button id="unlock">Unlock</button>
+    <div class="err" id="gate-err"></div>
+    <p class="hint">Entered once on this computer. No Supabase keys are ever typed here.</p>
+  </div>
+</div>
+
 <header>
   <h1>JSP ECED — Ops Console</h1>
   <span class="tag">reverse provisioning</span>
-  <span id="status">not connected</span>
+  <span id="status">idle</span>
 </header>
 
-<main>
-  <div class="warn">
-    <strong>Run this locally only.</strong> It uses the <code>service_role</code> key, which
-    bypasses every RLS policy. Never deploy this page to Netlify or commit the key.
-    The key is held in <code>sessionStorage</code> and dies with the tab.
-    Before this ever goes public, move token issuing into an Edge Function.
-  </div>
+<main hidden id="app">
 
-  <div class="cfg">
-    <input id="url" placeholder="https://xxxx.supabase.co" autocomplete="off">
-    <input id="key" placeholder="service_role key" type="password" autocomplete="off">
-    <button id="connect">Connect</button>
-    <button id="refresh" class="ghost" disabled>Refresh</button>
-  </div>
+  <section>
+    <h2>Add a device</h2>
+    <div class="activate">
+      <div class="row">
+        <div class="field">
+          <label for="school">1 &middot; School</label>
+          <select id="school"><option value="">Select school…</option></select>
+        </div>
+        <button class="ghost" id="add-school" type="button">Add school…</button>
+        <div class="field">
+          <label for="code">2 &middot; Code shown on the device</label>
+          <input id="code" maxlength="11" placeholder="A1B2C3D4" autocomplete="off" spellcheck="false">
+        </div>
+        <button id="go" disabled>Add &amp; activate</button>
+      </div>
+      <div class="found" id="found"></div>
+      <p class="hint">
+        Pick the school, then type the 8-character code the television or phone is
+        showing on its activation screen. The device is saved against that school and
+        wakes up by itself within a couple of seconds. Nobody at the school types
+        anything, and no code is ever issued from here — it always comes off the
+        device.
+      </p>
+    </div>
+  </section>
 
-  <h2>Devices</h2>
-  <table>
-    <thead>
-      <tr><th>Hardware UUID</th><th>School</th><th>Status</th><th>Last seen</th><th></th></tr>
-    </thead>
-    <tbody id="devices">
-      <tr><td colspan="5" class="muted">Connect to load devices.</td></tr>
-    </tbody>
-  </table>
+  <section>
+    <h2>Televisions <span class="muted" id="live"></span></h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Code</th><th>School</th><th>Status</th>
+          <th>Last seen</th><th>App</th><th class="right"></th>
+        </tr>
+      </thead>
+      <tbody id="devices">
+        <tr><td colspan="6" class="muted">Loading…</td></tr>
+      </tbody>
+    </table>
+  </section>
+
 </main>
 
 <script type="module">
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+const $ = s => document.querySelector(s)
 
-const $ = s => document.querySelector(s);
-let sb = null;
+/* The passcode is the only credential this page holds, and it is not a Supabase
+   key: it authenticates to our own function, which holds the service_role key
+   server side. Persisting it in localStorage is what makes the console usable
+   without retyping anything on every visit. */
+const PASS_KEY = 'jsp_ops_pass'
+let passcode = localStorage.getItem(PASS_KEY) || ''
 
-// restore from sessionStorage so a refresh doesn't mean retyping
-$('#url').value = sessionStorage.getItem('sb_url') || '';
-$('#key').value = sessionStorage.getItem('sb_key') || '';
+let schools = []
+let pollTimer = null
 
-$('#connect').onclick = async () => {
-  const url = $('#url').value.trim();
-  const key = $('#key').value.trim();
-  if (!url || !key) return setStatus('enter URL and service_role key');
-
-  sessionStorage.setItem('sb_url', url);
-  sessionStorage.setItem('sb_key', key);
-
-  sb = createClient(url, key, { auth: { persistSession: false } });
-  $('#refresh').disabled = false;
-  setStatus('connected');
-  await load();
-
-  // live-update the table as TVs boot and register themselves
-  sb.channel('ops-devices')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'devices' }, load)
-    .subscribe();
-};
-
-$('#refresh').onclick = () => load();
-
-function setStatus(t){ $('#status').textContent = t; }
-
-async function load(){
-  const { data, error } = await sb
-    .from('devices')
-    .select('id, hardware_uuid, claimed_at, last_seen, app_version, school_id, schools(name)')
-    .order('claimed_at', { ascending: true, nullsFirst: true })
-    .order('created_at', { ascending: false });
-
-  if (error) return setStatus('error: ' + error.message);
-
-  const { data: schools } = await sb.from('schools').select('id, name').order('name');
-  render(data || [], schools || []);
-  setStatus(`${(data||[]).length} device(s)`);
+async function api(action, payload = {}) {
+  const res = await fetch('/api', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-ops-passcode': passcode },
+    body: JSON.stringify({ action, ...payload }),
+  })
+  const body = await res.json().catch(() => ({ error: `HTTP ${res.status}` }))
+  if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`)
+  return body
 }
 
-function render(devices, schools){
-  const tb = $('#devices');
-  if (!devices.length){
-    tb.innerHTML = '<tr><td colspan="5" class="muted">No devices yet. Boot the TV app.</td></tr>';
-    return;
+function setStatus(text, kind = '') {
+  const el = $('#status')
+  el.textContent = text
+  el.className = kind
+}
+
+// ---------------------------------------------------------------- gate
+
+$('#unlock').onclick = unlock
+$('#pass').onkeydown = e => { if (e.key === 'Enter') unlock() }
+
+async function unlock() {
+  const typed = $('#pass').value.trim()
+  if (!typed) return
+  passcode = typed
+  $('#gate-err').textContent = ''
+  try {
+    await api('list')
+    localStorage.setItem(PASS_KEY, passcode)
+    openApp()
+  } catch (e) {
+    passcode = ''
+    $('#gate-err').textContent = e.message
+  }
+}
+
+function openApp() {
+  $('#gate').hidden = true
+  $('#app').hidden = false
+  // School first, matching the order of the form and of the job: an operator on
+  // an install visit picks the school once and then works through a stack of
+  // televisions, so the school is the field that should already be waiting.
+  $('#school').focus()
+  refresh()
+  // Polling rather than Realtime: Realtime from the browser would need a Supabase
+  // key in the page, which is the whole thing this rewrite removes. A five second
+  // poll is indistinguishable at demo speed.
+  clearInterval(pollTimer)
+  pollTimer = setInterval(refresh, 5000)
+}
+
+// Skip the gate when the passcode is already known and still valid.
+if (passcode) {
+  api('list').then(openApp).catch(() => { localStorage.removeItem(PASS_KEY); passcode = '' })
+}
+
+// ---------------------------------------------------------------- activate
+
+const codeEl = $('#code')
+let lookupTimer = null
+
+codeEl.oninput = () => {
+  const clean = codeEl.value.replace(/[^0-9a-fA-F]/g, '').toUpperCase().slice(0, 8)
+  codeEl.value = clean
+  $('#found').className = 'found'
+  syncGo()
+
+  clearTimeout(lookupTimer)
+  if (clean.length === 8) lookupTimer = setTimeout(() => preview(clean), 250)
+}
+
+codeEl.onkeydown = e => { if (e.key === 'Enter') $('#go').click() }
+$('#school').onchange = syncGo
+
+function syncGo() {
+  $('#go').disabled = codeEl.value.length !== 8 || !$('#school').value
+}
+
+/* Look the code up before committing. Typing one wrong character otherwise
+   activates nothing and says nothing, which during a live demo reads as the
+   product being broken. */
+async function preview(code) {
+  const box = $('#found')
+  try {
+    const { device } = await api('lookup', { code })
+    if (device.claimed_at) {
+      box.className = 'found show bad'
+      box.textContent = `Already activated for ${device.schools?.name || 'a school'}. Revoke it below to move it.`
+    } else {
+      box.className = 'found show good'
+      const seen = device.last_seen ? new Date(device.last_seen).toLocaleString() : 'not yet'
+      box.textContent = `Found a television waiting to be activated. Last seen: ${seen}.`
+    }
+  } catch (e) {
+    box.className = 'found show bad'
+    box.textContent = e.message
+  }
+}
+
+$('#go').onclick = async () => {
+  const code = codeEl.value
+  const schoolId = $('#school').value
+  $('#go').disabled = true
+  setStatus('activating…')
+  try {
+    await api('activate', { code, schoolId })
+    setStatus(`${code} activated`, 'ok')
+    codeEl.value = ''
+    $('#found').className = 'found'
+    await refresh()
+    codeEl.focus()
+  } catch (e) {
+    setStatus(e.message, 'err')
+    $('#found').className = 'found show bad'
+    $('#found').textContent = e.message
+  }
+  syncGo()
+}
+
+$('#add-school').onclick = async () => {
+  const name = prompt('School name')
+  if (!name || !name.trim()) return
+  const municipality = prompt('Municipality (optional)') || ''
+  try {
+    const { school } = await api('create-school', { name, municipality })
+    setStatus(`added ${school.name}`, 'ok')
+    await refresh()
+    $('#school').value = school.id
+    syncGo()
+  } catch (e) {
+    setStatus(e.message, 'err')
+  }
+}
+
+// ---------------------------------------------------------------- devices
+
+async function refresh() {
+  try {
+    const data = await api('list')
+    schools = data.schools
+    renderSchools()
+    renderDevices(data.devices)
+    const waiting = data.devices.filter(d => !d.claimed_at).length
+    setStatus(`${data.devices.length} television(s), ${waiting} waiting`)
+    $('#live').textContent = `· updated ${new Date().toLocaleTimeString()}`
+  } catch (e) {
+    setStatus(e.message, 'err')
+  }
+}
+
+function renderSchools() {
+  const sel = $('#school')
+  const keep = sel.value
+  sel.innerHTML = '<option value="">Select school…</option>' + schools.map(s =>
+    `<option value="${esc(s.id)}">${esc(s.name)}${s.municipality ? ' — ' + esc(s.municipality) : ''}</option>`
+  ).join('')
+  if (keep) sel.value = keep
+}
+
+/** The code the TV displays is the first UUID segment, uppercased. */
+const codeOf = uuid => String(uuid || '').split('-')[0].toUpperCase()
+
+function renderDevices(devices) {
+  const tb = $('#devices')
+  if (!devices.length) {
+    tb.innerHTML = '<tr><td colspan="6" class="muted">No televisions yet. Boot the TV app.</td></tr>'
+    return
   }
 
   tb.innerHTML = devices.map(d => {
-    const claimed = !!d.claimed_at;
-    const opts = schools.map(s =>
-      `<option value="${s.id}" ${s.id === d.school_id ? 'selected' : ''}>${esc(s.name)}</option>`
-    ).join('');
-
+    const claimed = !!d.claimed_at
     return `<tr>
-      <td><code>${esc(d.hardware_uuid)}</code></td>
-      <td>${claimed
-            ? esc(d.schools?.name || '—')
-            : `<select data-sel="${d.id}"><option value="">Select school…</option>${opts}</select>`}</td>
-      <td><span class="pill ${claimed?'claimed':'unclaimed'}">${claimed?'claimed':'unclaimed'}</span></td>
+      <td><code>${esc(codeOf(d.hardware_uuid))}</code></td>
+      <td>${claimed ? esc(d.schools?.name || '—') : '<span class="muted">—</span>'}</td>
+      <td><span class="pill ${claimed ? 'claimed' : 'unclaimed'}">${claimed ? 'activated' : 'waiting'}</span></td>
       <td class="muted">${d.last_seen ? new Date(d.last_seen).toLocaleString() : '—'}</td>
-      <td>${claimed
-            ? `<button class="ghost" data-revoke="${d.id}">Revoke</button>`
-            : `<button data-push="${d.id}">Push token →</button>`}</td>
-    </tr>`;
-  }).join('');
+      <td class="muted">${esc(d.app_version || '—')}</td>
+      <td class="right">${claimed
+          ? `<button class="ghost" data-revoke="${esc(d.id)}">Revoke</button>`
+          : `<button class="ghost" data-use="${esc(codeOf(d.hardware_uuid))}">Use this code</button>`}</td>
+    </tr>`
+  }).join('')
 
-  tb.querySelectorAll('[data-push]').forEach(b => b.onclick = () => pushToken(b.dataset.push));
-  tb.querySelectorAll('[data-revoke]').forEach(b => b.onclick = () => revoke(b.dataset.revoke));
+  tb.querySelectorAll('[data-revoke]').forEach(b => b.onclick = () => revoke(b.dataset.revoke))
+  // Saves reading a code off a television when it is already on screen here.
+  tb.querySelectorAll('[data-use]').forEach(b => b.onclick = () => {
+    codeEl.value = b.dataset.use
+    codeEl.dispatchEvent(new Event('input'))
+    codeEl.focus()
+  })
 }
 
-// This is the demo's opening beat: one click here wakes up the TV.
-async function pushToken(deviceId){
-  const sel = document.querySelector(`[data-sel="${deviceId}"]`);
-  const schoolId = sel?.value;
-  if (!schoolId) return setStatus('pick a school first');
-
-  const token   = crypto.randomUUID() + '.' + crypto.randomUUID();
-  const expires = new Date();
-  expires.setFullYear(expires.getFullYear() + 10);   // 10-year "eternal session"
-
-  setStatus('issuing token…');
-
-  const { error: e1 } = await sb.from('devices')
-    .update({ school_id: schoolId, claimed_at: new Date().toISOString() })
-    .eq('id', deviceId);
-  if (e1) return setStatus('error: ' + e1.message);
-
-  // insert last — this is the row the TV is listening for on Realtime
-  const { error: e2 } = await sb.from('sessions')
-    .insert({ device_id: deviceId, token, expires_at: expires.toISOString() });
-  if (e2) return setStatus('error: ' + e2.message);
-
-  setStatus('token pushed');
-  load();
-}
-
-async function revoke(deviceId){
-  await sb.from('sessions').update({ revoked: true }).eq('device_id', deviceId);
-  await sb.from('devices').update({ claimed_at: null, school_id: null }).eq('id', deviceId);
-  setStatus('revoked');
-  load();
+async function revoke(deviceId) {
+  if (!confirm('Revoke this television? It returns to the pairing screen.')) return
+  try {
+    await api('revoke', { deviceId })
+    setStatus('revoked', 'ok')
+    refresh()
+  } catch (e) {
+    setStatus(e.message, 'err')
+  }
 }
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
-  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
 </script>
 </body>
 </html>
