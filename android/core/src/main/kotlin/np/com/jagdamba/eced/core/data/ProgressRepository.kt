@@ -53,6 +53,18 @@ class ProgressRepository(
         } ?: emptyMap()
     }
 
+    /**
+     * Lesson id -> fraction watched, for progress bars and the continue row.
+     * Duration lives on `lessons`, not `progress`, so the caller supplies it.
+     */
+    fun fractions(progress: Map<String, Progress>, durationSec: Map<String, Int>): Map<String, Float> =
+        progress.mapNotNull { (lessonId, p) ->
+            val total = durationSec[lessonId] ?: return@mapNotNull null
+            if (total <= 0) return@mapNotNull null
+            val f = if (p.completed) 1f else (p.positionSec.toFloat() / total)
+            lessonId to f.coerceIn(0f, 1f)
+        }.toMap()
+
     suspend fun resumePosition(lessonId: String, deviceId: String): Int = withContext(Dispatchers.IO) {
         quietly("progress.resume") {
             client.from("progress")

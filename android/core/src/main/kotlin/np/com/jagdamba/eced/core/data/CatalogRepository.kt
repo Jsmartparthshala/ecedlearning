@@ -39,6 +39,21 @@ class CatalogRepository(private val client: io.github.jan.supabase.SupabaseClien
     }
 
     /**
+     * Fetch specific lessons by id, for the "Continue watching" row.
+     *
+     * One `in` query rather than N round trips — on a rural connection the number
+     * of requests matters more than the size of any one of them.
+     */
+    suspend fun lessonsByIds(ids: List<String>): List<Lesson> = withContext(Dispatchers.IO) {
+        if (ids.isEmpty()) return@withContext emptyList()
+        quietly("catalog.lessonsByIds") {
+            client.from("lessons")
+                .select { filter { isIn("id", ids) } }
+                .decodeList<Lesson>()
+        } ?: emptyList()
+    }
+
+    /**
      * The handful of lessons that actually have a video attached — used to build a
      * "Playable now" row so the demo never lands on a dead placeholder.
      *

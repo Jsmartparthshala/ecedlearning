@@ -9,6 +9,7 @@ import androidx.leanback.widget.HeaderItem
 import androidx.leanback.widget.ListRow
 import androidx.leanback.widget.ListRowPresenter
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import np.com.jagdamba.eced.core.model.Lesson
 import np.com.jagdamba.eced.core.model.Unit as CatalogUnit
@@ -28,6 +29,13 @@ class BrowseFragment : BrowseSupportFragment() {
     /** unit id -> owning subject's colour, so the unit screen keeps the same accent. */
     private val unitAccent = mutableMapOf<String, String?>()
 
+    /**
+     * The in-flight catalogue load. Must be cancelled before starting another:
+     * clearing the adapter does not stop a coroutine that is midway through
+     * adding rows, and the result is every row appearing twice.
+     */
+    private var loadJob: Job? = null
+
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
 
@@ -38,7 +46,8 @@ class BrowseFragment : BrowseSupportFragment() {
         searchAffordanceColor = Color.parseColor("#E8B64C")
 
         adapter = rowsAdapter
-        loadCatalog()
+        // Loading happens in onResume, which fires straight after this. Doing it
+        // here as well would start two loads racing each other.
 
         setOnItemViewClickedListener { _, item, _, _ ->
             when (item) {
@@ -48,29 +57,67 @@ class BrowseFragment : BrowseSupportFragment() {
         }
     }
 
-    private fun loadCatalog() {
-        val repo = EcedApp.instance.catalog
+    /**
+     * Reload on every resume: coming back from the player means progress changed,
+     * so the bars and the continue row are stale.
+     */
+    override fun onResume() {
+        super.onResume()
+        loadCatalog()
+    }
 
-        lifecycleScope.launch {
+    private fun loadCatalog() {
+        loadJob?.cancel()
+        rowsAdapter.clear()
+        unitAccent.clear()
+
+        val repo = EcedApp.instance.catalog
+        val progressRepo = EcedApp.instance.progress
+        val deviceId = EcedApp.instance.devices.cachedDeviceId()
+
+        loadJob = lifecycleScope.launch {
             runCatching {
-                // "Playable now" first — 963 of 968 lessons have no video yet, so
-                // without this row a demo can wander for a while before finding one.
+                // Progress first: every row below needs it, and one fetch beats
+                // one-per-row on a rural connection.
+                val saved = deviceId?.let { progressRepo.forDevice(it) }.orEmpty()
+                val watchedLessons = repo.lessonsByIds(saved.keys.toList())
+                val durations = watchedLessons.associate { it.id to (it.durationSec ?: 0) }
+                val fractions = progressRepo.fractions(saved, durations)
+
+                // Continue watching — anything started but not finished, newest first.
+                val continueRow = watchedLessons
+                    .filter { (fractions[it.id] ?: 0f) in 0.01f..0.97f }
+                    .sortedByDescending { fractions[it.id] ?: 0f }
+                    .take(10)
+
+                if (continueRow.isNotEmpty()) {
+                    val a = ArrayObjectAdapter(CardPresenter(CardPresenter.DEFAULT_ACCENT, fractions))
+                    continueRow.forEach { a.add(it) }
+                    rowsAdapter.add(
+                        ListRow(HeaderItem(0, getString(R.string.row_continue)), a)
+                    )
+                }
+
+                // "Playable now" — 963 of 968 lessons have no video yet, so without
+                // this row a demo can wander for a while before finding one.
                 val playable = repo.playableSample()
                 if (playable.isNotEmpty()) {
-                    val a = ArrayObjectAdapter(CardPresenter())
+                    val a = ArrayObjectAdapter(CardPresenter(CardPresenter.DEFAULT_ACCENT, fractions))
                     playable.forEach { a.add(it) }
-                    rowsAdapter.add(ListRow(HeaderItem(0, getString(R.string.row_playable)), a))
+                    rowsAdapter.add(ListRow(HeaderItem(1, getString(R.string.row_playable)), a))
                 }
 
                 repo.subjects().forEachIndexed { i, subject ->
                     val units = repo.units(subject.id)
-                    val a = ArrayObjectAdapter(CardPresenter(CardPresenter.parse(subject.color1)))
+                    val a = ArrayObjectAdapter(
+                        CardPresenter(CardPresenter.parse(subject.color1), fractions)
+                    )
                     units.forEach {
                         unitAccent[it.id] = subject.color1
                         a.add(it)
                     }
                     rowsAdapter.add(
-                        ListRow(HeaderItem((i + 1).toLong(), subject.nameEn), a)
+                        ListRow(HeaderItem((i + 2).toLong(), subject.nameEn), a)
                     )
                 }
             }.onFailure {

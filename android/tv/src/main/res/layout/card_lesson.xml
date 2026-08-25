@@ -39,4 +39,22 @@
         android:maxLines="1"
         android:textColor="@color/tv_muted"
         android:textSize="15sp" />
+
+    <!-- Watch progress. A plain two-View bar rather than ProgressBar: no tinting,
+         no indeterminate animation, no extra draw pass. Hidden entirely at 0 so
+         an untouched card stays clean. -->
+    <FrameLayout
+        android:id="@+id/card_progress_track"
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:layout_marginTop="10dp"
+        android:background="#2A323E"
+        android:visibility="gone">
+
+        <View
+            android:id="@+id/card_progress_fill"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:background="@color/focus_gold" />
+    </FrameLayout>
 </LinearLayout>

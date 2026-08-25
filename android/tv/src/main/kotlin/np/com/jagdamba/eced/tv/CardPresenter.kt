@@ -4,6 +4,7 @@ import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.leanback.widget.Presenter
 import np.com.jagdamba.eced.core.model.Lesson
@@ -26,13 +27,21 @@ import np.com.jagdamba.eced.core.model.Unit as CatalogUnit
  *
  * @param accentColor the owning subject's colour, so a row is identifiable at a
  *        glance from ten feet away.
+ * @param progress lesson id -> 0..1 watched. Read at bind time rather than copied,
+ *        so the player writing progress is reflected on the next bind without
+ *        rebuilding any adapters.
  */
-class CardPresenter(private val accentColor: Int = DEFAULT_ACCENT) : Presenter() {
+class CardPresenter(
+    private val accentColor: Int = DEFAULT_ACCENT,
+    private val progress: Map<String, Float> = emptyMap(),
+) : Presenter() {
 
     class Holder(view: View) : Presenter.ViewHolder(view) {
-        val accent: View   = view.findViewById(R.id.card_accent)
+        val accent: View    = view.findViewById(R.id.card_accent)
         val title: TextView = view.findViewById(R.id.card_title)
         val meta: TextView  = view.findViewById(R.id.card_meta)
+        val track: FrameLayout = view.findViewById(R.id.card_progress_track)
+        val fill: View      = view.findViewById(R.id.card_progress_fill)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup): Presenter.ViewHolder {
@@ -50,10 +59,12 @@ class CardPresenter(private val accentColor: Int = DEFAULT_ACCENT) : Presenter()
                 h.title.text = item.titleEn.clean()
                 val n = item.estDays ?: 0
                 h.meta.text = if (n > 0) "$n lessons" else ""
+                showProgress(h, 0f)
             }
 
             is Lesson -> {
                 h.title.text = item.titleEn.clean()
+                showProgress(h, progress[item.id] ?: 0f)
                 // 963 of 968 lessons have no video yet. Saying so on the card is
                 // worth two lines: landing on a dead card mid-demo looks like a crash.
                 h.meta.text = if (item.isPlayable) {
@@ -66,7 +77,26 @@ class CardPresenter(private val accentColor: Int = DEFAULT_ACCENT) : Presenter()
             else -> {
                 h.title.text = item?.toString().orEmpty()
                 h.meta.text = ""
+                showProgress(h, 0f)
             }
+        }
+    }
+
+    /**
+     * Width is set with a layout weight-free approach: the track is a fixed-height
+     * FrameLayout and the fill is measured against it after layout. Doing it in
+     * post() avoids reading a width of 0 during the first bind.
+     */
+    private fun showProgress(h: Holder, fraction: Float) {
+        if (fraction <= 0.01f) {
+            h.track.visibility = View.GONE
+            return
+        }
+        h.track.visibility = View.VISIBLE
+        h.track.post {
+            val w = (h.track.width * fraction.coerceIn(0f, 1f)).toInt()
+            h.fill.layoutParams = h.fill.layoutParams.apply { width = w }
+            h.fill.requestLayout()
         }
     }
 
@@ -74,6 +104,7 @@ class CardPresenter(private val accentColor: Int = DEFAULT_ACCENT) : Presenter()
         val h = viewHolder as Holder
         h.title.text = null
         h.meta.text = null
+        h.track.visibility = View.GONE
     }
 
     private fun String.clean() = removePrefix("[PLACEHOLDER] ")
