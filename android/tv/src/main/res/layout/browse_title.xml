@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Custom Leanback title bar. Leanback's default gives you a title and a search
+     orb; the prototype's header carries a brand mark on the left and live device
+     status on the right, which is most of what makes the screen feel like a
+     product rather than a list. -->
+<np.com.jagdamba.eced.tv.BrowseTitleView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingStart="@dimen/overscan_horizontal"
+    android:paddingEnd="@dimen/overscan_horizontal"
+    android:paddingTop="20dp"
+    android:paddingBottom="12dp">
+
+    <TextView
+        android:id="@+id/title_mark"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/brand_mark"
+        android:textColor="@color/focus_gold"
+        android:textSize="20sp" />
+
+    <TextView
+        android:id="@+id/title_brand"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:text="@string/app_name"
+        android:textColor="@color/tv_ink"
+        android:textSize="21sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.01" />
+
+    <!-- Pushes the status chips to the right edge. -->
+    <Space
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:layout_weight="1" />
+
+    <TextView
+        android:id="@+id/chip_school"
+        style="@style/StatusChip"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:id="@+id/chip_net"
+        style="@style/StatusChip"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:id="@+id/chip_clock"
+        style="@style/StatusChip"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+</np.com.jagdamba.eced.tv.BrowseTitleView>

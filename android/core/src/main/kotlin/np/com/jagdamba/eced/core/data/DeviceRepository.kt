@@ -6,12 +6,14 @@ import android.provider.Settings
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import np.com.jagdamba.eced.core.model.DeviceRow
+import np.com.jagdamba.eced.core.model.DeviceWithSchool
 import np.com.jagdamba.eced.core.model.SessionRow
 import java.util.UUID
 
@@ -101,12 +103,32 @@ class DeviceRepository(
 
     // ------------------------------------------------------------ local cache
 
-    fun cacheSession(token: String, expiresAt: String, deviceId: String) {
+    fun cacheSession(token: String, expiresAt: String, deviceId: String, schoolName: String? = null) {
         prefs.edit()
             .putString(KEY_TOKEN, token)
             .putString(KEY_EXPIRES, expiresAt)
             .putString(KEY_DEVICE_ID, deviceId)
             .apply()
+        if (schoolName != null) prefs.edit().putString(KEY_SCHOOL, schoolName).apply()
+    }
+
+    fun cachedSchoolName(): String? = prefs.getString(KEY_SCHOOL, null)
+    fun cachedExpiry(): String?     = prefs.getString(KEY_EXPIRES, null)
+
+    /** Resolve and cache the school this device belongs to, for the header chip. */
+    suspend fun refreshSchoolName(): String? = withContext(Dispatchers.IO) {
+        val deviceId = cachedDeviceId() ?: return@withContext null
+        val name = quietly("devices.school") {
+            client.from("devices")
+                .select(Columns.raw("school_id, schools(name)")) {
+                    filter { eq("id", deviceId) }
+                    limit(1)
+                }
+                .decodeSingleOrNull<DeviceWithSchool>()
+                ?.schools?.name
+        }
+        if (name != null) prefs.edit().putString(KEY_SCHOOL, name).apply()
+        name
     }
 
     fun cachedToken(): String?    = prefs.getString(KEY_TOKEN, null)
@@ -115,7 +137,10 @@ class DeviceRepository(
 
     /** Presenter shortcut 'R' in the HTML prototype — back to unpaired. */
     fun factoryReset() {
-        prefs.edit().remove(KEY_TOKEN).remove(KEY_EXPIRES).remove(KEY_DEVICE_ID).apply()
+        prefs.edit()
+            .remove(KEY_TOKEN).remove(KEY_EXPIRES)
+            .remove(KEY_DEVICE_ID).remove(KEY_SCHOOL)
+            .apply()
     }
 
     private companion object {
@@ -123,5 +148,6 @@ class DeviceRepository(
         const val KEY_TOKEN     = "session_token"
         const val KEY_EXPIRES   = "session_expires"
         const val KEY_DEVICE_ID = "device_id"
+        const val KEY_SCHOOL    = "school_name"
     }
 }

@@ -3,6 +3,7 @@ package np.com.jagdamba.eced.core.data
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import np.com.jagdamba.eced.core.model.AppRelease
 import np.com.jagdamba.eced.core.model.Lesson
 import np.com.jagdamba.eced.core.model.Subject
 import np.com.jagdamba.eced.core.model.Unit as CatalogUnit
@@ -36,6 +37,15 @@ class CatalogRepository(private val client: io.github.jan.supabase.SupabaseClien
                 order("sort_order", io.github.jan.supabase.postgrest.query.Order.ASCENDING)
             }
             .decodeList<Lesson>() } ?: emptyList()
+    }
+
+    /** Current published version, for the Settings screen and the OTA check. */
+    suspend fun latestRelease(): AppRelease? = withContext(Dispatchers.IO) {
+        quietly("catalog.release") {
+            client.from("app_release")
+                .select { limit(1) }
+                .decodeSingleOrNull<AppRelease>()
+        }
     }
 
     /**

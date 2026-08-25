@@ -28,7 +28,9 @@ class UnitActivity : FragmentActivity() {
                 arguments = Bundle().apply {
                     putString(EXTRA_UNIT_ID, intent.getStringExtra(EXTRA_UNIT_ID))
                     putString(EXTRA_UNIT_TITLE, intent.getStringExtra(EXTRA_UNIT_TITLE))
-                    putString(EXTRA_ACCENT, intent.getStringExtra(EXTRA_ACCENT))
+                    putString(EXTRA_COLOR_1, intent.getStringExtra(EXTRA_COLOR_1))
+                    putString(EXTRA_COLOR_2, intent.getStringExtra(EXTRA_COLOR_2))
+                    putString(EXTRA_SUBJECT, intent.getStringExtra(EXTRA_SUBJECT))
                 }
             }
             supportFragmentManager.beginTransaction()
@@ -40,7 +42,9 @@ class UnitActivity : FragmentActivity() {
     companion object {
         const val EXTRA_UNIT_ID    = "unit_id"
         const val EXTRA_UNIT_TITLE = "unit_title"
-        const val EXTRA_ACCENT     = "accent"
+        const val EXTRA_COLOR_1    = "color_1"
+        const val EXTRA_COLOR_2    = "color_2"
+        const val EXTRA_SUBJECT    = "subject"
     }
 }
 
@@ -48,7 +52,13 @@ class UnitGridFragment : VerticalGridSupportFragment() {
 
     private val gridAdapter by lazy {
         ArrayObjectAdapter(
-            CardPresenter(CardPresenter.parse(arguments?.getString(UnitActivity.EXTRA_ACCENT)))
+            CardPresenter(
+                CardPresenter.SubjectStyle.of(
+                    arguments?.getString(UnitActivity.EXTRA_COLOR_1),
+                    arguments?.getString(UnitActivity.EXTRA_COLOR_2),
+                    arguments?.getString(UnitActivity.EXTRA_SUBJECT),
+                )
+            )
         )
     }
 

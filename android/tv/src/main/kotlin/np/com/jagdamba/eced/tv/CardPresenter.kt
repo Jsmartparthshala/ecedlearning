@@ -11,70 +11,110 @@ import np.com.jagdamba.eced.core.model.Lesson
 import np.com.jagdamba.eced.core.model.Unit as CatalogUnit
 
 /**
- * Flat card presenter, built for the hardware this actually ships to: Amlogic /
+ * Card presenter, built for the hardware this actually ships to: Amlogic /
  * Allwinner / Rockchip boxes with a Mali-450-class GPU and often 1 GB of RAM.
  *
- * Deliberately NOT using Leanback's ImageCardView:
- *  - it renders nothing useful without a bitmap, and we have no artwork yet
- *  - a bitmap per card is the single biggest memory cost on a 1 GB device
- *    (one 1920x1080 ARGB_8888 decode is 8.3 MB)
+ * Deliberately NOT using Leanback's ImageCardView: it renders nothing useful
+ * without a bitmap, and a bitmap per card is the single biggest memory cost on a
+ * 1 GB device — one 1920x1080 ARGB_8888 decode is 8.3 MB.
  *
- * A flat coloured card is cheaper to draw, needs no thumbnail pipeline, and for
- * children's content it reads better than a frozen video frame. Overdraw stays at
- * 1x: one opaque background, one accent bar, two text views. Focus is a stroke
- * rather than a glow or elevation, because strokes are effectively free here and
- * blurs are not.
+ * What this does instead is cheap on purpose:
+ *  - artwork is a flat solid colour, not an image and not a gradient. No decode,
+ *    no allocation, no shader, no thumbnail pipeline.
+ *  - the large glyph is text, so it costs a font lookup rather than memory
+ *  - focus is a stroke, not elevation or a glow
+ *  - the artwork panel and info strip do not overlap, so overdraw stays at 1x
  *
- * @param accentColor the owning subject's colour, so a row is identifiable at a
- *        glance from ten feet away.
- * @param progress lesson id -> 0..1 watched. Read at bind time rather than copied,
- *        so the player writing progress is reflected on the next bind without
- *        rebuilding any adapters.
+ * @param subject colours and identity for the owning subject, so a row is
+ *        recognisable at a glance from ten feet away.
+ * @param progress lesson id -> 0..1 watched, read at bind time.
  */
 class CardPresenter(
-    private val accentColor: Int = DEFAULT_ACCENT,
+    private val subject: SubjectStyle = SubjectStyle.DEFAULT,
     private val progress: Map<String, Float> = emptyMap(),
 ) : Presenter() {
 
-    class Holder(view: View) : Presenter.ViewHolder(view) {
-        val accent: View    = view.findViewById(R.id.card_accent)
-        val title: TextView = view.findViewById(R.id.card_title)
-        val meta: TextView  = view.findViewById(R.id.card_meta)
-        val track: FrameLayout = view.findViewById(R.id.card_progress_track)
-        val fill: View      = view.findViewById(R.id.card_progress_fill)
+    /**
+     * Everything the card needs to know about a subject, resolved once per row.
+     * `colorEnd` is kept for the darker surfaces elsewhere (unit header, hero),
+     * not for blending — cards are a single flat fill.
+     */
+    data class SubjectStyle(
+        val colorStart: Int,
+        val colorEnd: Int,
+        val label: String,
+    ) {
+        companion object {
+            val DEFAULT = SubjectStyle(
+                Color.parseColor("#3A4453"),
+                Color.parseColor("#1E2530"),
+                "",
+            )
+
+            fun of(color1: String?, color2: String?, label: String?) = SubjectStyle(
+                colorStart = parseColor(color1, DEFAULT.colorStart),
+                colorEnd   = parseColor(color2, DEFAULT.colorEnd),
+                label      = label.orEmpty(),
+            )
+
+            private fun parseColor(hex: String?, fallback: Int) =
+                runCatching { Color.parseColor(hex ?: "") }.getOrDefault(fallback)
+        }
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup): Presenter.ViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.card_lesson, parent, false)
-        return Holder(view)
+    class Holder(view: View) : Presenter.ViewHolder(view) {
+        val art: FrameLayout   = view.findViewById(R.id.card_art)
+        val glyph: TextView    = view.findViewById(R.id.card_glyph)
+        val kicker: TextView   = view.findViewById(R.id.card_kicker)
+        val count: TextView    = view.findViewById(R.id.card_count)
+        val title: TextView    = view.findViewById(R.id.card_title)
+        val meta: TextView     = view.findViewById(R.id.card_meta)
+        val track: FrameLayout = view.findViewById(R.id.card_progress_track)
+        val fill: View         = view.findViewById(R.id.card_progress_fill)
     }
+
+    override fun onCreateViewHolder(parent: ViewGroup): Presenter.ViewHolder =
+        Holder(
+            LayoutInflater.from(parent.context)
+                .inflate(R.layout.card_lesson, parent, false)
+        )
 
     override fun onBindViewHolder(viewHolder: Presenter.ViewHolder, item: Any?) {
         val h = viewHolder as Holder
-        h.accent.setBackgroundColor(accentColor)
+        // Flat fill, not a gradient: one solid colour is the cheapest thing a GPU
+        // can draw, and it keeps the subject identity unambiguous at ten feet.
+        h.art.setBackgroundColor(subject.colorStart)
 
         when (item) {
             is CatalogUnit -> {
-                h.title.text = item.titleEn.clean()
+                h.glyph.text  = item.sortOrder.toString()
+                h.kicker.text = h.kicker.context.getString(R.string.card_unit_kicker)
                 val n = item.estDays ?: 0
-                h.meta.text = if (n > 0) "$n lessons" else ""
+                h.count.text  = if (n > 0) "$n videos" else ""
+                h.title.text  = item.titleEn.clean()
+                h.meta.text   = subject.label
                 showProgress(h, 0f)
             }
 
             is Lesson -> {
-                h.title.text = item.titleEn.clean()
-                showProgress(h, progress[item.id] ?: 0f)
+                h.glyph.text  = item.sortOrder.toString()
+                h.kicker.text = h.kicker.context.getString(R.string.card_lesson_kicker)
+                h.count.text  = "${(item.durationSec ?: 0) / 60} min"
+                h.title.text  = item.titleEn.clean()
                 // 963 of 968 lessons have no video yet. Saying so on the card is
-                // worth two lines: landing on a dead card mid-demo looks like a crash.
+                // worth the space: landing on a dead card mid-demo looks like a crash.
                 h.meta.text = if (item.isPlayable) {
-                    "${(item.durationSec ?: 0) / 60} min"
+                    subject.label
                 } else {
                     h.meta.context.getString(R.string.no_video_short)
                 }
+                showProgress(h, progress[item.id] ?: 0f)
             }
 
             else -> {
+                h.glyph.text = ""
+                h.kicker.text = ""
+                h.count.text = ""
                 h.title.text = item?.toString().orEmpty()
                 h.meta.text = ""
                 showProgress(h, 0f)
@@ -82,20 +122,17 @@ class CardPresenter(
         }
     }
 
-    /**
-     * Width is set with a layout weight-free approach: the track is a fixed-height
-     * FrameLayout and the fill is measured against it after layout. Doing it in
-     * post() avoids reading a width of 0 during the first bind.
-     */
     private fun showProgress(h: Holder, fraction: Float) {
         if (fraction <= 0.01f) {
             h.track.visibility = View.GONE
             return
         }
         h.track.visibility = View.VISIBLE
+        // post() because width is 0 until the card has been laid out once.
         h.track.post {
-            val w = (h.track.width * fraction.coerceIn(0f, 1f)).toInt()
-            h.fill.layoutParams = h.fill.layoutParams.apply { width = w }
+            h.fill.layoutParams = h.fill.layoutParams.apply {
+                width = (h.track.width * fraction.coerceIn(0f, 1f)).toInt()
+            }
             h.fill.requestLayout()
         }
     }
@@ -104,17 +141,9 @@ class CardPresenter(
         val h = viewHolder as Holder
         h.title.text = null
         h.meta.text = null
+        h.glyph.text = null
         h.track.visibility = View.GONE
     }
 
     private fun String.clean() = removePrefix("[PLACEHOLDER] ")
-
-    companion object {
-        val DEFAULT_ACCENT: Int = Color.parseColor("#E8B64C")
-
-        /** Subject colours come from the database, so a new subject needs no code. */
-        fun parse(hex: String?): Int = runCatching {
-            Color.parseColor(hex ?: "")
-        }.getOrDefault(DEFAULT_ACCENT)
-    }
 }

@@ -86,3 +86,13 @@ data class AppRelease(
     @SerialName("apk_url") val apkUrl: String? = null,
     val mandatory: Boolean = false,
 )
+
+/** Shape of the joined `devices -> schools(name)` select used for the header chip. */
+@Serializable
+data class SchoolName(val name: String? = null)
+
+@Serializable
+data class DeviceWithSchool(
+    @SerialName("school_id") val schoolId: String? = null,
+    val schools: SchoolName? = null,
+)

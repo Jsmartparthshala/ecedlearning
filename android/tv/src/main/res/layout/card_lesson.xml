@@ -1,53 +1,69 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Flat card. Deliberately cheap to draw for low-end Amlogic/Allwinner boxes:
-     one opaque background, one accent bar, two text views. No elevation, no
-     shadow, no gradient, no image decode. Overdraw stays at 1x across the card. -->
+<!-- Card anatomy follows the prototype: coloured artwork panel on top, dark
+     information strip below.
+
+     Cost notes for Mali-450-class hardware — a small linear gradient over a
+     280x158 card is cheap (it is the full-screen backdrop crossfade that is not),
+     and the big glyph is font rendering rather than a bitmap decode, so nothing
+     here allocates memory per card. Overdraw stays at 1x: the artwork panel and
+     the info strip do not overlap. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/card_root"
     android:layout_width="280dp"
-    android:layout_height="158dp"
+    android:layout_height="188dp"
     android:orientation="vertical"
     android:background="@drawable/card_bg"
-    android:padding="16dp"
     android:focusable="true"
     android:focusableInTouchMode="true">
 
-    <!-- Subject colour bar: the only colour on the card, so it reads instantly
-         from across a classroom without costing any fill rate. -->
-    <View
-        android:id="@+id/card_accent"
-        android:layout_width="56dp"
-        android:layout_height="6dp"
-        android:background="#2AA9D8" />
-
-    <TextView
-        android:id="@+id/card_title"
+    <!-- Artwork. Background is set at runtime from the subject's two colours. -->
+    <FrameLayout
+        android:id="@+id/card_art"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_marginTop="14dp"
-        android:maxLines="3"
-        android:ellipsize="end"
-        android:textColor="@color/tv_ink"
-        android:textSize="20sp"
-        android:lineSpacingMultiplier="1.1" />
+        android:layout_height="104dp">
 
-    <TextView
-        android:id="@+id/card_meta"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:maxLines="1"
-        android:textColor="@color/tv_muted"
-        android:textSize="15sp" />
+        <TextView
+            android:id="@+id/card_glyph"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:textColor="#FFFFFF"
+            android:alpha="0.92"
+            android:textSize="44sp"
+            android:textStyle="bold" />
 
-    <!-- Watch progress. A plain two-View bar rather than ProgressBar: no tinting,
-         no indeterminate animation, no extra draw pass. Hidden entirely at 0 so
-         an untouched card stays clean. -->
+        <TextView
+            android:id="@+id/card_kicker"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|start"
+            android:layout_margin="10dp"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="3dp"
+            android:background="#66000000"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:letterSpacing="0.08"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/card_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="10dp"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="3dp"
+            android:background="#66000000"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp" />
+    </FrameLayout>
+
+    <!-- Watch progress sits directly under the artwork, like a video scrubber. -->
     <FrameLayout
         android:id="@+id/card_progress_track"
         android:layout_width="match_parent"
         android:layout_height="4dp"
-        android:layout_marginTop="10dp"
         android:background="#2A323E"
         android:visibility="gone">
 
@@ -57,4 +73,33 @@
             android:layout_height="match_parent"
             android:background="@color/focus_gold" />
     </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:paddingHorizontal="14dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="12dp">
+
+        <TextView
+            android:id="@+id/card_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:textColor="@color/tv_ink"
+            android:textSize="17sp" />
+
+        <TextView
+            android:id="@+id/card_meta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textColor="@color/tv_muted"
+            android:textSize="14sp" />
+    </LinearLayout>
 </LinearLayout>

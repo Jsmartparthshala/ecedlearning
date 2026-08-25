@@ -2,6 +2,10 @@
 <resources>
     <string name="app_name">JSP ECED Learning</string>
 
+    <string name="brand_mark">✦</string>
+    <string name="chip_online">Wi-Fi</string>
+    <string name="chip_offline">Offline</string>
+    <string name="chip_unclaimed">Not activated</string>
     <string name="pairing_title">Waiting to be activated</string>
     <string name="pairing_body">Give this code to the central office.</string>
     <string name="pairing_hint">This screen will change by itself once activated.\nNothing needs to be typed here.</string>
@@ -10,7 +14,38 @@
     <string name="row_continue">Continue watching</string>
     <string name="row_playable">Playable now</string>
 
+    <string name="card_unit_kicker">UNIT</string>
+    <string name="card_lesson_kicker">LESSON</string>
     <string name="no_video_short">— no video yet —</string>
     <string name="no_video">This lesson has no video yet.</string>
     <string name="offline">No internet connection.</string>
+
+    <!-- settings -->
+    <string name="nav_settings">Settings</string>
+    <string name="nav_downloads">Downloads</string>
+    <string name="set_head_device">DEVICE</string>
+    <string name="set_head_session">SESSION</string>
+    <string name="set_head_storage">STORAGE</string>
+    <string name="set_head_updates">UPDATES</string>
+    <string name="set_lbl_uuid">Hardware ID</string>
+    <string name="set_lbl_code">Activation code</string>
+    <string name="set_lbl_school">School</string>
+    <string name="set_lbl_version">Installed version</string>
+    <string name="set_lbl_state">Status</string>
+    <string name="set_lbl_expires">Valid until</string>
+    <string name="set_lbl_refresh">Renewal</string>
+    <string name="set_lbl_offline">Saved lessons</string>
+    <string name="set_lbl_codec">Video format</string>
+    <string name="set_lbl_channel">Update channel</string>
+    <string name="set_lbl_latest">Latest available</string>
+    <string name="set_authenticated">Activated</string>
+    <string name="set_waiting">Waiting for activation</string>
+    <string name="set_refresh_value">Automatic, no action needed</string>
+    <string name="set_storage_none">None yet</string>
+    <string name="set_codec_value">H.264 · 720p</string>
+    <string name="set_channel_value">Direct</string>
+    <string name="set_session_note">This television stays activated for ten years. Nobody at the school needs to sign in, and nothing needs to be typed on the remote.</string>
+    <string name="set_updates_note">Updates install in the background. A teacher confirms once with the remote; there is no app store involved.</string>
+    <string name="downloads_empty_title">Nothing saved yet</string>
+    <string name="downloads_empty_body">Lessons saved to this television will appear here and play without an internet connection.</string>
 </resources>

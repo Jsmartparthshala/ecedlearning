@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Four information cards in a 2x2 grid, following the prototype's settings
+     layout. Flat panels, no gradients, no elevation - the same cost rules as the
+     browse cards. -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingEnd="@dimen/overscan_horizontal"
+    android:paddingBottom="@dimen/overscan_vertical"
+    android:clipToPadding="false">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:baselineAligned="false">
+
+            <!--  device -->
+            <LinearLayout style="@style/SettingsCard">
+                <TextView style="@style/SettingsCardTitle" android:text="@string/set_head_device" />
+
+                <TextView style="@style/SettingsLabel" android:text="@string/set_lbl_uuid" />
+                <TextView android:id="@+id/set_uuid" style="@style/SettingsValueMono" />
+
+                <TextView style="@style/SettingsLabel" android:text="@string/set_lbl_code" />
+                <TextView android:id="@+id/set_code" style="@style/SettingsValueStrong" />
+
+                <TextView style="@style/SettingsLabel" android:text="@string/set_lbl_school" />
+                <TextView android:id="@+id/set_school" style="@style/SettingsValue" />
+
+                <TextView style="@style/SettingsLabel" android:text="@string/set_lbl_version" />
+                <TextView android:id="@+id/set_version" style="@style/SettingsValueMono" />
+            </LinearLayout>
+
+            <!--  session -->
+            <LinearLayout style="@style/SettingsCard">
+                <TextView style="@style/SettingsCardTitle" android:text="@string/set_head_session" />
+
+                <TextView style="@style/SettingsLabel" android:text="@string/set_lbl_state" />
+                <TextView android:id="@+id/set_state" style="@style/SettingsValueStrong" />
+
+                <TextView style="@style/SettingsLabel" android:text="@string/set_lbl_expires" />
+                <TextView android:id="@+id/set_expires" style="@style/SettingsValueMono" />
+
+                <TextView style="@style/SettingsLabel" android:text="@string/set_lbl_refresh" />
+                <TextView style="@style/SettingsValue" android:text="@string/set_refresh_value" />
+
+                <TextView
+                    style="@style/SettingsNote"
+                    android:text="@string/set_session_note" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:baselineAligned="false">
+
+            <!--  storage -->
+            <LinearLayout style="@style/SettingsCard">
+                <TextView style="@style/SettingsCardTitle" android:text="@string/set_head_storage" />
+
+                <TextView style="@style/SettingsLabel" android:text="@string/set_lbl_offline" />
+                <TextView android:id="@+id/set_storage" style="@style/SettingsValue" />
+
+                <TextView style="@style/SettingsLabel" android:text="@string/set_lbl_codec" />
+                <TextView android:id="@+id/set_codec" style="@style/SettingsValue" />
+            </LinearLayout>
+
+            <!--  updates -->
+            <LinearLayout style="@style/SettingsCard">
+                <TextView style="@style/SettingsCardTitle" android:text="@string/set_head_updates" />
+
+                <TextView style="@style/SettingsLabel" android:text="@string/set_lbl_channel" />
+                <TextView android:id="@+id/set_channel" style="@style/SettingsValue" />
+
+                <TextView style="@style/SettingsLabel" android:text="@string/set_lbl_latest" />
+                <TextView android:id="@+id/set_latest" style="@style/SettingsValueMono" />
+
+                <TextView
+                    style="@style/SettingsNote"
+                    android:text="@string/set_updates_note" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>
