@@ -53,4 +53,51 @@
     <string name="storage_free">%1$s free</string>
     <string name="lesson_stream">Stream</string>
     <string name="lesson_no_video">No video yet</string>
+    <string name="pane_lessons">LESSONS</string>
+    <string name="grid_empty">No lessons in this unit yet.</string>
+    <string name="play_glyph">▶</string>
+    <string name="unit_meta">%1$d videos · %2$d min</string>
+    <string name="row_subjects">Subjects</string>
+    <string name="row_device">This television</string>
+    <string name="unit_count">%1$d units</string>
+    <string name="nav_videos">Videos</string>
+    <string name="glyph_videos">▶</string>
+    <string name="nav_profile">Profile</string>
+    <string name="glyph_profile">◉</string>
+    <string name="glyph_downloads">↓</string>
+    <string name="glyph_settings">⚙</string>
+    <string name="profile_empty_title">No teacher profiles yet</string>
+    <string name="profile_empty_body">This television is shared by the whole school and needs no sign in. When individual teacher profiles arrive, each teacher will get their own saved place in every lesson.</string>
+    <string name="set_head_school">SCHOOL</string>
+    <string name="set_lbl_network">Network</string>
+    <string name="set_action_wifi">Open Wi-Fi settings</string>
+    <string name="set_action_unpair">Unpair this television</string>
+    <string name="unpair_title">Unpair this television?</string>
+    <string name="unpair_body">It will return to the activation screen and the central office will have to activate it again.</string>
+    <string name="unpair_confirm">Unpair</string>
+    <string name="cancel">Cancel</string>
+    <string name="net_offline">No network</string>
+    <string name="net_ethernet">Ethernet</string>
+    <string name="net_cellular">Mobile data</string>
+    <string name="net_wifi">Wi-Fi</string>
+    <string name="net_wifi_24">Wi-Fi · 2.4 GHz</string>
+    <string name="net_wifi_5">Wi-Fi · 5 GHz</string>
+    <string name="net_wifi_6">Wi-Fi · 6 GHz</string>
+
+    <!-- Manual update check. The channel is direct-to-device: these boxes are
+         sideloaded and many have no Play Store at all. -->
+    <string name="set_action_update">Check for updates</string>
+    <string name="upd_checking">Checking…</string>
+    <string name="upd_uptodate">Up to date</string>
+    <string name="upd_failed">Could not check — no connection</string>
+    <string name="upd_no_download">Version %1$s is published but has no download attached</string>
+    <string name="upd_available_title">Update available</string>
+    <string name="upd_available_body">Version %1$s is ready to install. This television is on %2$s.</string>
+    <string name="upd_available_body_forced">Version %1$s is required. This television is on %2$s and must update to keep working.</string>
+    <string name="upd_install">Download and install</string>
+    <string name="upd_later">Not now</string>
+    <string name="upd_downloading">Downloading… %1$d%%</string>
+    <string name="upd_downloading_indeterminate">Downloading…</string>
+    <string name="upd_download_failed">Download failed — check the connection and try again</string>
+    <string name="upd_handoff">Confirm the install on the next screen</string>
 </resources>

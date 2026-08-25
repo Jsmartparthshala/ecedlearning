@@ -1,6 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Host layout: the utility rail overlaying the content.
+
+     The rail overlays rather than pushes. Expanding it on focus would otherwise
+     re-lay out the entire browse screen every time a teacher arrows into it,
+     which is exactly the kind of work a Mali-450 box cannot absorb smoothly. The
+     content is inset by the collapsed width once and never moves again; the rail
+     just grows over the top of it against an opaque background.
+
+     The rail is hidden until the television is activated - the pairing screen is
+     one instruction and must not offer anything else. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/main_container"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/tv_bg" />
+    android:layout_height="match_parent">
+
+    <FrameLayout
+        android:id="@+id/main_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingStart="@dimen/sidebar_collapsed_width" />
+
+    <include layout="@layout/nav_rail" />
+</FrameLayout>

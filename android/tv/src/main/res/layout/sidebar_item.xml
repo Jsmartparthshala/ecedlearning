@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One sidebar entry: a glyph that is always visible, and a label that appears
+     only while the rail is expanded.
+
+     The glyph column is exactly the collapsed rail width, so expanding the rail
+     reveals the label to the right without the icon moving a pixel. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/sidebar_item_height"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:background="@drawable/sidebar_item_bg"
+    android:focusable="true"
+    android:focusableInTouchMode="true">
+
+    <TextView
+        android:id="@+id/si_glyph"
+        android:layout_width="@dimen/sidebar_glyph_column"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:textColor="@color/tv_ink"
+        android:textSize="26sp" />
+
+    <TextView
+        android:id="@+id/si_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:textColor="@color/tv_ink"
+        android:textSize="20sp"
+        android:visibility="gone" />
+</LinearLayout>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Opaque, with a hairline down the right edge.
+
+     Opaque because the rail expands over the content rather than pushing it, and
+     the hairline is what stops the expanded panel from looking like text floating
+     on top of the subject tiles. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/hairline" />
+        </shape>
+    </item>
+    <item android:right="1dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/tv_bg" />
+        </shape>
+    </item>
+</layer-list>

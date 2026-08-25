@@ -5,14 +5,50 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:paddingStart="@dimen/page_content_start"
+    android:paddingTop="@dimen/page_content_top"
     android:paddingEnd="@dimen/overscan_horizontal"
     android:paddingBottom="@dimen/overscan_vertical"
-    android:clipToPadding="false">
+    android:clipToPadding="false"
+    android:scrollbars="none"
+    android:focusable="false"
+    android:descendantFocusability="afterDescendants">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
+
+        <!-- Real actions, not status. Android does not let an app change the
+             Wi-Fi band or even switch Wi-Fi on, so the honest version of a
+             network control is to hand the teacher the system screen that can. -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="4dp"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp">
+
+            <!-- First, so it is the action focus lands on when Settings opens.
+                 It is the only one a teacher is ever told to use. -->
+            <TextView
+                android:id="@+id/set_action_update"
+                style="@style/SettingsAction"
+                android:text="@string/set_action_update" />
+
+            <TextView
+                android:id="@+id/set_action_wifi"
+                style="@style/SettingsAction"
+                android:layout_marginStart="14dp"
+                android:text="@string/set_action_wifi" />
+
+            <TextView
+                android:id="@+id/set_action_unpair"
+                style="@style/SettingsAction"
+                android:layout_marginStart="14dp"
+                android:text="@string/set_action_unpair" />
+        </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -35,6 +71,9 @@
 
                 <TextView style="@style/SettingsLabel" android:text="@string/set_lbl_version" />
                 <TextView android:id="@+id/set_version" style="@style/SettingsValueMono" />
+
+                <TextView style="@style/SettingsLabel" android:text="@string/set_lbl_network" />
+                <TextView android:id="@+id/set_network" style="@style/SettingsValue" />
             </LinearLayout>
 
             <!--  session -->
@@ -83,10 +122,18 @@
                 <TextView style="@style/SettingsLabel" android:text="@string/set_lbl_latest" />
                 <TextView android:id="@+id/set_latest" style="@style/SettingsValueMono" />
 
+                <!-- Result of the last manual check, so the answer appears on the
+                     card being asked about rather than only in a dialog. -->
+                <TextView
+                    android:id="@+id/set_update_status"
+                    style="@style/SettingsValue"
+                    android:visibility="gone" />
+
                 <TextView
                     style="@style/SettingsNote"
                     android:text="@string/set_updates_note" />
             </LinearLayout>
         </LinearLayout>
+
     </LinearLayout>
 </ScrollView>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Profile is an honest empty state, like Downloads was.
+
+     There is no sign in anywhere in this product by design - the television is
+     activated once by the central office and belongs to the school, not to a
+     person. Individual teacher profiles are a real future feature (the `profiles`
+     table already exists with a teacher/admin/parent role), so this names the
+     limitation rather than hiding the entry. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center_vertical"
+    android:paddingStart="@dimen/overscan_horizontal"
+    android:paddingEnd="@dimen/overscan_horizontal"
+    android:paddingBottom="90dp">
+
+    <TextView
+        android:id="@+id/profile_school"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="6dp"
+        android:textColor="@color/focus_gold"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.12" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/profile_empty_title"
+        android:textColor="@color/tv_ink"
+        android:textSize="30sp" />
+
+    <TextView
+        android:layout_width="620dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:text="@string/profile_empty_body"
+        android:textColor="@color/tv_muted"
+        android:textSize="18sp"
+        android:lineSpacingMultiplier="1.3" />
+</LinearLayout>

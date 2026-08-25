@@ -1,15 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Unit detail: units on the left, that unit's lessons on the right.
+<!-- Unit detail: a rail of unit tiles over a grid of lesson posters.
 
-     A two-pane layout rather than Leanback's DetailsFragment, because
-     DetailsFragment is built around one hero item plus related rows and this
-     screen is a picker: 24 units, each holding 6 to 12 lessons. Two lists side by
-     side is both the right shape and a shorter D-pad path - left/right switches
-     pane, up/down moves within it, which is what a remote is good at. -->
+     This replaced two stacked lists. Lists are the wrong shape for a remote and
+     the wrong shape for video: a list shows six items in the space a grid shows
+     ten, and it gives a teacher nothing to recognise except a line of text.
+     Everything on this screen is now a thumbnail.
+
+     There are exactly two focus zones, which is what makes it quick on a remote.
+     Left and right move along the rail, down drops into the grid, up comes back.
+     The rail is focus driven, so arrowing across units rewrites the header and
+     reloads the grid without pressing OK; OK on a tile jumps straight into the
+     grid rather than opening another screen.
+
+     clipChildren is off the whole way down because a focused tile scales past its
+     own bounds, and a RecyclerView will otherwise cut the gold ring in half. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:clipChildren="false"
     android:background="@color/tv_bg">
 
     <!-- top bar -->
@@ -20,8 +29,8 @@
         android:gravity="center_vertical"
         android:paddingStart="@dimen/overscan_horizontal"
         android:paddingEnd="@dimen/overscan_horizontal"
-        android:paddingTop="18dp"
-        android:paddingBottom="14dp">
+        android:paddingTop="12dp"
+        android:paddingBottom="6dp">
 
         <TextView
             android:id="@+id/unit_crumb"
@@ -31,7 +40,7 @@
             android:maxLines="1"
             android:ellipsize="end"
             android:textColor="@color/tv_ink"
-            android:textSize="24sp"
+            android:textSize="22sp"
             android:textStyle="bold" />
 
         <TextView
@@ -47,74 +56,83 @@
             android:layout_height="wrap_content" />
     </LinearLayout>
 
+    <TextView
+        style="@style/PaneHeading"
+        android:layout_marginStart="@dimen/overscan_horizontal"
+        android:layout_marginEnd="@dimen/overscan_horizontal"
+        android:layout_marginBottom="6dp"
+        android:text="@string/pane_units" />
+
+    <!-- unit rail -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/unit_rail"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:clipToPadding="false"
+        android:clipChildren="false"
+        android:paddingStart="@dimen/overscan_horizontal"
+        android:paddingEnd="@dimen/overscan_horizontal"
+        android:paddingTop="@dimen/focus_bleed"
+        android:paddingBottom="@dimen/focus_bleed" />
+
+    <!-- Header for the grid below. Written from whichever tile holds focus, so it
+         doubles as the label for the rail selection. One line keeps two rows of
+         posters on screen at 540dp of layout height. -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_height="wrap_content"
         android:orientation="horizontal"
+        android:gravity="bottom"
         android:baselineAligned="false"
         android:paddingStart="@dimen/overscan_horizontal"
         android:paddingEnd="@dimen/overscan_horizontal"
-        android:paddingBottom="@dimen/overscan_vertical">
+        android:paddingTop="6dp"
+        android:paddingBottom="8dp">
 
-        <!-- left: units -->
-        <LinearLayout
-            android:layout_width="360dp"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:layout_marginEnd="22dp">
+        <TextView
+            android:id="@+id/lesson_kicker"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="12dp"
+            android:paddingBottom="3dp"
+            android:maxLines="1"
+            android:textColor="@color/focus_gold"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.12" />
 
-            <TextView
-                style="@style/PaneHeading"
-                android:text="@string/pane_units" />
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/unit_list"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"
-                android:clipToPadding="false"
-                android:paddingBottom="24dp" />
-        </LinearLayout>
-
-        <!-- right: lessons in the selected unit -->
-        <LinearLayout
+        <TextView
+            android:id="@+id/lesson_title"
             android:layout_width="0dp"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:orientation="vertical">
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textColor="@color/tv_ink"
+            android:textSize="22sp"
+            android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/lesson_kicker"
-                style="@style/PaneHeading"
-                android:textColor="@color/focus_gold" />
-
-            <TextView
-                android:id="@+id/lesson_title"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:maxLines="1"
-                android:ellipsize="end"
-                android:textColor="@color/tv_ink"
-                android:textSize="32sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/lesson_meta"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:layout_marginBottom="14dp"
-                android:textColor="@color/tv_muted"
-                android:textSize="16sp" />
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/lesson_list"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"
-                android:clipToPadding="false"
-                android:paddingBottom="24dp" />
-        </LinearLayout>
+        <TextView
+            android:id="@+id/lesson_meta"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:paddingBottom="3dp"
+            android:maxLines="1"
+            android:textColor="@color/tv_muted"
+            android:textSize="14sp" />
     </LinearLayout>
+
+    <!-- lesson grid -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/lesson_grid"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:clipChildren="false"
+        android:paddingStart="@dimen/overscan_horizontal"
+        android:paddingEnd="@dimen/overscan_horizontal"
+        android:paddingTop="@dimen/focus_bleed"
+        android:paddingBottom="@dimen/overscan_vertical" />
 </LinearLayout>

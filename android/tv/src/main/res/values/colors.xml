@@ -4,31 +4,35 @@
      forced will show. Semantic names match values-night exactly, so no layout or
      style references change between themes.
 
+     Cooled to match the dark palette's navy cast rather than being neutral grey,
+     so the two themes read as one product.
+
      Worth knowing before enabling it in a classroom: a bright full-screen panel
      on a large TV is genuinely uncomfortable in a dim room, which is why TV
      interfaces are near-universally dark. -->
 <resources>
-    <color name="focus_gold">#B07C10</color>
-    <color name="focus_gold_dim">#D9B05A</color>
+    <color name="focus_gold">#9A6B05</color>
+    <color name="focus_gold_dim">#D8B152</color>
 
-    <color name="tv_bg">#F4F6F9</color>
+    <color name="tv_bg">#F3F6FC</color>
     <color name="tv_panel">#FFFFFF</color>
-    <color name="tv_ink">#12171F</color>
-    <color name="tv_muted">#5B6675</color>
+    <color name="tv_ink">#0B1428</color>
+    <color name="tv_muted">#55627D</color>
 
     <color name="subject_english">#1B7FA8</color>
     <color name="subject_nepali">#B45F1E</color>
     <color name="subject_maths">#2E7D34</color>
     <color name="subject_serofero">#7B2FA0</color>
     <color name="subject_arts">#B02C55</color>
-    <color name="hairline">#DDE3EA</color>
-    <color name="surface_focus">#FFF6E0</color>
+
+    <color name="hairline">#D8E0EE</color>
+    <color name="hairline_strong">#B8C4D8</color>
+    <color name="surface_focus">#FFF4DC</color>
     <color name="surface">#FFFFFF</color>
-    <color name="surface_alt">#EEF1F5</color>
-    <color name="surface_selected">#F0F4F8</color>
-    <color name="hairline_strong">#C3CDD8</color>
+    <color name="surface_alt">#EAEFF8</color>
+    <color name="surface_selected">#EEF2FA</color>
     <color name="badge_scrim">#59000000</color>
     <color name="on_subject">#FFFFFF</color>
-    <color name="subject_neutral">#5A6779</color>
-    <color name="subject_neutral_dark">#3E4959</color>
+    <color name="subject_neutral">#4C5A75</color>
+    <color name="subject_neutral_dark">#33405A</color>
 </resources>

@@ -3,6 +3,10 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Reads the connected band (2.4 / 5 / 6 GHz) for the header chip. Normal
+         permission, granted at install; it cannot change the band, only report
+         it - no app can change it. -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
 
     <!-- Required for the OTA module later. Android 12+ always shows a system
          install prompt; a fully silent install is not possible without
@@ -63,10 +67,31 @@
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize" />
 
         <activity
+            android:name=".PageActivity"
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize" />
+
+        <activity
             android:name=".PlayerActivity"
             android:exported="false"
             android:screenOrientation="landscape"
             android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenSize|smallestScreenSize" />
+
+        <!-- Hands a downloaded APK to the system package installer. A file://
+             URI throws FileUriExposedException on anything since Nougat, so the
+             OTA path has to go through a provider.
+             exported=false with grantUriPermissions: the installer gets read
+             access to the one URI it is handed, and nothing else gets anything. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.updates"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
     </application>
 </manifest>

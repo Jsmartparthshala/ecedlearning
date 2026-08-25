@@ -116,10 +116,13 @@ class CardPresenter(
                 h.title.text  = item.titleEn.clean()
                 // 963 of 968 lessons have no video yet. Saying so on the card is
                 // worth the space: landing on a dead card mid-demo looks like a crash.
-                h.meta.text = if (item.isPlayable) {
-                    subject.label
-                } else {
-                    h.meta.context.getString(R.string.no_video_short)
+                h.meta.text = when {
+                    !item.isPlayable -> h.meta.context.getString(R.string.no_video_short)
+                    // Rows that span subjects carry no label, which left the line
+                    // blank and the card looking like it had failed to load half
+                    // its content. Say how it plays instead.
+                    subject.label.isBlank() -> h.meta.context.getString(R.string.lesson_stream)
+                    else -> subject.label
                 }
                 showProgress(h, progress[item.id] ?: 0f)
             }

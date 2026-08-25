@@ -1,16 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- An information panel that can hold focus.
+
+     The settings cards are read-only, but they have to be focusable anyway: the
+     2x2 grid is taller than a 540dp screen, and with nothing focusable inside it
+     the only thing left to focus is the ScrollView, which takes the focus ring
+     off screen and leaves the remote with nothing to move between. Making the
+     cards focusable is what lets the D-pad walk down and scroll the page.
+
+     Focus is a stroke and a flat fill, never a shadow or a blur - a Mali-450 has
+     no budget for either, and a 3dp gold edge reads from the back of a
+     classroom in a way a soft glow does not. -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:state_focused="true">
         <shape android:shape="rectangle">
             <solid android:color="@color/surface_focus" />
             <stroke android:width="3dp" android:color="@color/focus_gold" />
-            <corners android:radius="14dp" />
-        </shape>
-    </item>
-    <item android:state_selected="true">
-        <shape android:shape="rectangle">
-            <solid android:color="@color/surface_selected" />
-            <stroke android:width="1dp" android:color="@color/hairline_strong" />
             <corners android:radius="14dp" />
         </shape>
     </item>

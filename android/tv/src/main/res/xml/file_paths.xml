@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Grants the system package installer read access to a downloaded APK.
+
+     Scoped to the external cache directory and nothing else: the installer is
+     another app, and a FileProvider that exposes more than the one file it
+     needs is a hole in an app that ships to hundreds of unattended devices. -->
+<paths>
+    <external-cache-path name="updates" path="." />
+</paths>

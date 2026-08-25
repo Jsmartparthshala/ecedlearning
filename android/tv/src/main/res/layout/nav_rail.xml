@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The utility rail, shared by every screen that has one.
+
+     Kept as its own layout so Videos, Profile, Downloads and Settings are peers
+     on every screen rather than a stack. Before this, opening Profile was a dead
+     end: the only way out was the system back button, with nothing on screen
+     saying so. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/sidebar"
+    android:layout_width="@dimen/sidebar_collapsed_width"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center_vertical"
+    android:background="@drawable/sidebar_bg"
+    android:layout_marginTop="@dimen/sidebar_top_inset"
+    android:paddingStart="8dp"
+    android:paddingEnd="8dp">
+
+    <include
+        android:id="@+id/nav_videos"
+        layout="@layout/sidebar_item" />
+
+    <include
+        android:id="@+id/nav_profile"
+        layout="@layout/sidebar_item" />
+
+    <include
+        android:id="@+id/nav_downloads"
+        layout="@layout/sidebar_item" />
+
+    <include
+        android:id="@+id/nav_settings"
+        layout="@layout/sidebar_item" />
+</LinearLayout>

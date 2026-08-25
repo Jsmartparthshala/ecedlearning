@@ -14,4 +14,45 @@
     <dimen name="text_title">32sp</dimen>
     <dimen name="text_body">20sp</dimen>
     <dimen name="text_caption">16sp</dimen>
+
+    <!-- Unit rail. Sized so six units sit inside the overscan padding without the sixth
+         being clipped, which is what tells a teacher the rail scrolls. -->
+    <dimen name="unit_tile_width">132dp</dimen>
+    <dimen name="unit_tile_height">76dp</dimen>
+
+    <!-- Lesson poster. The grid runs five columns inside the overscan padding,
+         giving a 161dp column; 90dp of artwork keeps that at 16:9 so real
+         thumbnails can replace the flat fill later without a relayout. -->
+    <dimen name="poster_art_height">90dp</dimen>
+    <dimen name="grid_gap">12dp</dimen>
+    <dimen name="focus_bleed">6dp</dimen>
+
+    <!-- Insets for the Downloads and Settings screens. Plain overscan now that
+         they are activities rather than fragments inside Leanback's scale_frame. -->
+    <dimen name="page_content_start">@dimen/overscan_horizontal</dimen>
+    <dimen name="page_content_top">0dp</dimen>
+
+    <!-- Subject tiles. Five across the usable width, and taller than a unit tile
+         because this is the first choice a teacher makes on the screen. -->
+    <dimen name="subject_tile_width">168dp</dimen>
+    <dimen name="subject_tile_height">118dp</dimen>
+
+    <!-- Leanback's own row inset, overridden by name.
+
+         The stock value reserves room for a hero banner this app does not have,
+         which left a dead band between the title bar and the first row. Tightened
+         so the subject tiles sit near the top where a teacher looks first. -->
+    <dimen name="lb_browse_rows_margin_top">96dp</dimen>
+
+    <!-- Utility rail. Collapsed shows glyphs only; focusing it expands over the
+         content to reveal labels at a size that reads across a classroom. The
+         glyph column is the collapsed width less the rail padding, so the icons
+         do not shift when the labels appear. -->
+    <dimen name="sidebar_collapsed_width">88dp</dimen>
+    <dimen name="sidebar_expanded_width">252dp</dimen>
+    <dimen name="sidebar_item_height">62dp</dimen>
+    <dimen name="sidebar_glyph_column">72dp</dimen>
+
+    <!-- Clears the title bar, so the expanded rail never covers the brand. -->
+    <dimen name="sidebar_top_inset">64dp</dimen>
 </resources>

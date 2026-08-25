@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Focus state lives here so Leanback's focus handling drives it for free.
-     A stroke, not a glow or shadow - strokes are effectively free on a Mali-450,
-     blurs and elevation are not. -->
+<!-- Lesson poster. Same frame logic as the unit tile, but the focused fill tints
+     the information strip under the artwork, which is the only part of the card
+     this colour is visible through. -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:state_focused="true">
         <shape android:shape="rectangle">

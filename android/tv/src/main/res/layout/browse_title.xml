@@ -9,6 +9,7 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:gravity="center_vertical"
+    android:background="@color/tv_bg"
     android:paddingStart="@dimen/overscan_horizontal"
     android:paddingEnd="@dimen/overscan_horizontal"
     android:paddingTop="20dp"

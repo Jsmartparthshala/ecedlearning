@@ -4,6 +4,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center_vertical"
+    android:paddingStart="@dimen/page_content_start"
     android:paddingEnd="@dimen/overscan_horizontal"
     android:paddingBottom="90dp">
 
@@ -15,7 +16,7 @@
         android:textSize="30sp" />
 
     <TextView
-        android:layout_width="520dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="14dp"
         android:text="@string/downloads_empty_body"

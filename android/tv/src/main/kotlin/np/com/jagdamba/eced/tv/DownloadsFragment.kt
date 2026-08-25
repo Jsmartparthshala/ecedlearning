@@ -5,7 +5,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import androidx.leanback.app.BrowseSupportFragment
 
 /**
  * Lessons saved to this television.
@@ -15,11 +14,7 @@ import androidx.leanback.app.BrowseSupportFragment
  * navigation the product promises, and because an empty state that explains
  * itself is better than a section that appears later out of nowhere.
  */
-class DownloadsFragment : Fragment(), BrowseSupportFragment.MainFragmentAdapterProvider {
-
-    private val mainFragmentAdapter = BrowseSupportFragment.MainFragmentAdapter(this)
-
-    override fun getMainFragmentAdapter() = mainFragmentAdapter
+class DownloadsFragment : Fragment() {
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?,

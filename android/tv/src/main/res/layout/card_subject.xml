@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Subject tile for the home screen.
+
+     Bigger than a unit poster and carrying the subject name rather than a number,
+     because this is the first choice a teacher makes and the only one where the
+     word matters more than the position. Same anatomy as the unit tile so the two
+     screens read as one product: flat subject fill, badge bottom right, gold ring
+     on focus. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/subject_root"
+    android:layout_width="@dimen/subject_tile_width"
+    android:layout_height="@dimen/subject_tile_height"
+    android:background="@drawable/tile_bg"
+    android:focusable="true"
+    android:focusableInTouchMode="true">
+
+    <FrameLayout
+        android:id="@+id/cs_art"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_margin="4dp">
+
+        <TextView
+            android:id="@+id/cs_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|start"
+            android:layout_marginStart="14dp"
+            android:layout_marginEnd="14dp"
+            android:layout_marginBottom="34dp"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:textColor="@color/on_subject"
+            android:textSize="21sp"
+            android:textStyle="bold"
+            android:lineSpacingMultiplier="1.05" />
+
+        <TextView
+            android:id="@+id/cs_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|start"
+            android:layout_marginStart="14dp"
+            android:layout_marginBottom="12dp"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="3dp"
+            android:background="@color/badge_scrim"
+            android:textColor="@color/on_subject"
+            android:textSize="12sp" />
+    </FrameLayout>
+</FrameLayout>

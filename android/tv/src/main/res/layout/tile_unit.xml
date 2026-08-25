@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Unit tile for the horizontal rail.
+
+     No title on the tile itself. The rail is focus driven: whichever unit holds
+     focus writes its title into the header below, so the tile only has to carry
+     the number and the video count. That keeps it small enough to fit eight units
+     on screen at once, which is the whole point of a rail over a list.
+
+     Nothing here decodes a bitmap. The artwork is a flat solid colour and the
+     numeral is text, so a rail of tiles costs a few font lookups. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/tile_root"
+    android:layout_width="@dimen/unit_tile_width"
+    android:layout_height="@dimen/unit_tile_height"
+    android:background="@drawable/tile_bg"
+    android:focusable="true"
+    android:focusableInTouchMode="true">
+
+    <FrameLayout
+        android:id="@+id/tu_art"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_margin="4dp">
+
+        <TextView
+            android:id="@+id/tu_no"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:paddingBottom="14dp"
+            android:textColor="@color/on_subject"
+            android:textSize="32sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tu_kicker"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|start"
+            android:layout_margin="8dp"
+            android:paddingHorizontal="7dp"
+            android:paddingVertical="2dp"
+            android:background="@color/badge_scrim"
+            android:textColor="@color/on_subject"
+            android:textSize="11sp"
+            android:letterSpacing="0.08"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tu_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="8dp"
+            android:paddingHorizontal="7dp"
+            android:paddingVertical="2dp"
+            android:background="@color/badge_scrim"
+            android:textColor="@color/on_subject"
+            android:textSize="11sp" />
+
+        <FrameLayout
+            android:id="@+id/tu_track"
+            android:layout_width="match_parent"
+            android:layout_height="4dp"
+            android:layout_gravity="bottom"
+            android:background="@color/badge_scrim"
+            android:visibility="gone">
+
+            <View
+                android:id="@+id/tu_fill"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:background="@color/focus_gold" />
+        </FrameLayout>
+    </FrameLayout>
+</FrameLayout>

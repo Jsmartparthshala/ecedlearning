@@ -5,8 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.drawable.Drawable
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import android.util.AttributeSet
 import android.view.View
 import android.widget.LinearLayout
@@ -72,18 +70,13 @@ class BrowseTitleView @JvmOverloads constructor(
 
     fun refresh() {
         clock.text = timeFormat.format(Date())
-        net.text = context.getString(
-            if (isOnline()) R.string.chip_online else R.string.chip_offline
-        )
+        // The real transport and band, not a generic "Wi-Fi". No app can change
+        // the band, so this reports rather than offers - the actionable version
+        // lives in Settings, which opens the system Wi-Fi screen.
+        net.text = NetworkStatus.label(context)
         val name = EcedApp.instance.devices.cachedSchoolName()
         school.text = name ?: context.getString(R.string.chip_unclaimed)
         school.visibility = if (name == null) GONE else VISIBLE
     }
 
-    private fun isOnline(): Boolean {
-        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
-            ?: return false
-        val caps = cm.getNetworkCapabilities(cm.activeNetwork) ?: return false
-        return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-    }
 }

@@ -1,28 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- Gold focus ring, carried over from the HTML prototype. This is the single
-         most important colour in the app: it is how a teacher knows where they are. -->
-    <color name="focus_gold">#E8B64C</color>
-    <color name="focus_gold_dim">#8A6C2A</color>
+<!-- Dark palette, taken from the HTML prototype rather than invented here.
 
-    <color name="tv_bg">#0B0E13</color>
-    <color name="tv_panel">#151A22</color>
-    <color name="tv_ink">#F2F6FA</color>
-    <color name="tv_muted">#93A1B2</color>
+     The prototype's world is deep navy, not neutral charcoal: #080f22 ground,
+     #101a33 panels, #22315a rules. That blue cast is most of why it reads as a
+     product rather than a dark-mode default, and it costs nothing to match.
+
+     The gold is the single most important colour in the app - it is how a teacher
+     knows where they are - so it is the prototype's #ffc233 and not a muted
+     substitute. -->
+<resources>
+    <color name="focus_gold">#FFC233</color>
+    <color name="focus_gold_dim">#A8801F</color>
+
+    <color name="tv_bg">#080F22</color>
+    <color name="tv_panel">#101A33</color>
+    <color name="tv_ink">#EEF4FF</color>
+    <color name="tv_muted">#8EA2C6</color>
 
     <color name="subject_english">#2AA9D8</color>
     <color name="subject_nepali">#E8863B</color>
     <color name="subject_maths">#4FAE54</color>
     <color name="subject_serofero">#A94BC9</color>
     <color name="subject_arts">#D94F7A</color>
-    <color name="hairline">#2A323E</color>
-    <color name="surface_focus">#1E2836</color>
-    <color name="surface">#151A22</color>
-    <color name="surface_alt">#232C39</color>
-    <color name="surface_selected">#18202B</color>
-    <color name="hairline_strong">#3A4757</color>
-    <color name="badge_scrim">#66000000</color>
+
+    <color name="hairline">#22315A</color>
+    <color name="hairline_strong">#35497C</color>
+    <color name="surface_focus">#17274D</color>
+    <color name="surface">#101A33</color>
+    <color name="surface_alt">#16223F</color>
+    <color name="surface_selected">#0D1730</color>
+    <color name="badge_scrim">#73000000</color>
     <color name="on_subject">#FFFFFF</color>
-    <color name="subject_neutral">#3A4453</color>
-    <color name="subject_neutral_dark">#1E2530</color>
+    <!-- Used by "Continue watching" and "Playable now", which mix subjects and so
+         cannot honestly carry any one subject's colour. Lifted well clear of the
+         panel fill anyway: at the old value the artwork panel was barely brighter
+         than the card behind it, and a row of them read as broken tiles rather
+         than as deliberately neutral ones. -->
+    <color name="subject_neutral">#3D5488</color>
+    <color name="subject_neutral_dark">#1B2A4E</color>
 </resources>
