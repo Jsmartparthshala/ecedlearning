@@ -35,3 +35,6 @@ dev/video-server/local_videos.sql
 
 # Packaged demo builds
 dist/
+
+# Downloaded binary, not source
+dev/video-server/cloudflared.exe
