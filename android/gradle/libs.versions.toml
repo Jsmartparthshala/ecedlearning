@@ -1,0 +1,78 @@
+# JSP ECED Learning — dependency catalogue
+#
+# VERSION FLOOR IS SET BY YOUR ANDROID STUDIO, NOT BY WHAT'S NEWEST.
+# You are on Android Studio Narwhal 2025.1.1 (June 2025), which bundles AGP 8.11.
+# As of Aug 2026 the newest AGP is 9.3.1 and the newest 8.x is 8.13.2 — do NOT use
+# either. Studio refuses to sync a project whose AGP is newer than it knows about.
+#
+# If you upgrade Studio later (Narwhal 3 / 2025.1.3 or newer), you can move to
+# AGP 8.13.2 + Gradle 8.14.3. Until then these numbers are the safe ceiling.
+#
+# Kotlin is 2.4.10 and NOT negotiable downward: supabase-kt 3.7.0 ships
+# kotlin-stdlib 2.4.0, whose metadata a 2.1 compiler cannot read. Pinning Kotlin
+# lower produces ~20 bogus "unresolved reference: runCatching / lazy / let" errors
+# that look like broken code but are purely a metadata-version mismatch.
+#
+# minSdk is 23, not 21: media3-exoplayer 1.9.0 declares minSdk 23 and the manifest
+# merger refuses 21. Android 6.0 (2015) still covers effectively every Android TV
+# box in the field, so this costs nothing real.
+
+[versions]
+agp             = "8.11.1"
+kotlin          = "2.4.10"
+coroutines      = "1.10.2"
+
+# SDK levels. minSdk floor is set by media3 (see header note).
+compileSdk      = "36"
+targetSdk       = "34"
+minSdk          = "23"
+
+coreKtx         = "1.13.1"
+appcompat       = "1.7.0"
+leanback        = "1.2.0"      # 1.3.0 is alpha-only; stay on stable
+media3          = "1.9.0"      # 1.11.0 exists but pairs better with newer AGP
+lifecycle       = "2.8.7"
+securityCrypto  = "1.1.0-alpha06"   # no stable release exists; this is the norm
+supabase        = "3.7.0"
+ktor            = "3.0.3"
+serialization   = "1.9.0"
+
+composeBom      = "2024.12.01"
+activityCompose = "1.9.3"
+
+[libraries]
+androidx-core-ktx     = { module = "androidx.core:core-ktx",           version.ref = "coreKtx" }
+androidx-appcompat    = { module = "androidx.appcompat:appcompat",     version.ref = "appcompat" }
+androidx-leanback     = { module = "androidx.leanback:leanback",       version.ref = "leanback" }
+androidx-lifecycle-rt = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycle" }
+androidx-lifecycle-vm = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
+androidx-security     = { module = "androidx.security:security-crypto", version.ref = "securityCrypto" }
+
+media3-exoplayer      = { module = "androidx.media3:media3-exoplayer", version.ref = "media3" }
+media3-ui             = { module = "androidx.media3:media3-ui",        version.ref = "media3" }
+media3-ui-leanback    = { module = "androidx.media3:media3-ui-leanback", version.ref = "media3" }
+media3-datasource     = { module = "androidx.media3:media3-datasource", version.ref = "media3" }
+
+kotlinx-coroutines    = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
+kotlinx-serialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
+
+# supabase-kt is a BOM-style setup: declare the BOM, then artifacts without versions.
+supabase-bom          = { module = "io.github.jan-tennert.supabase:bom", version.ref = "supabase" }
+supabase-postgrest    = { module = "io.github.jan-tennert.supabase:postgrest-kt" }
+supabase-realtime     = { module = "io.github.jan-tennert.supabase:realtime-kt" }
+supabase-auth         = { module = "io.github.jan-tennert.supabase:auth-kt" }
+ktor-client-okhttp    = { module = "io.ktor:ktor-client-okhttp",       version.ref = "ktor" }
+
+compose-bom           = { module = "androidx.compose:compose-bom",     version.ref = "composeBom" }
+compose-material3     = { module = "androidx.compose.material3:material3" }
+compose-ui-tooling    = { module = "androidx.compose.ui:ui-tooling" }
+compose-ui-preview    = { module = "androidx.compose.ui:ui-tooling-preview" }
+activity-compose      = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
+
+[plugins]
+android-application   = { id = "com.android.application",  version.ref = "agp" }
+android-library       = { id = "com.android.library",      version.ref = "agp" }
+kotlin-android        = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-jvm            = { id = "org.jetbrains.kotlin.jvm",  version.ref = "kotlin" }
+kotlin-serialization  = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+compose-compiler      = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

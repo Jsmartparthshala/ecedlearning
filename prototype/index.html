@@ -1,0 +1,1912 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080f22">
+<meta name="description" content="Clickable prototype of the standalone Sajilo Shikshya Android TV app.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23080f22'/%3E%3Ctext x='32' y='45' font-size='38' text-anchor='middle' fill='%23ffc233'%3E%E2%9C%A6%3C/text%3E%3C/svg%3E">
+<title>Sajilo Shikshya TV — D-Pad Prototype</title>
+<style>
+/* =========================================================
+   Sajilo Shikshya TV — D-Pad prototype
+   Everything is authored at a fixed 1920x1080 TV canvas and
+   scaled to the browser window by app.js (fit()).
+   ========================================================= */
+
+:root{
+  --bg:#05090f;
+  --tv-bg:#080f22;
+  --panel:#101a33;
+  --line:#22315a;
+  --line-soft:#ffffff14;
+  --blue:#1f7fe0;
+  --blue-deep:#0c3f7d;
+  --gold:#ffc233;
+  --gold-2:#ffd766;
+  --green:#2fbf71;
+  --text:#eef4ff;
+  --muted:#8ea2c6;
+  --font:'Segoe UI Variable Display','Segoe UI','Noto Sans Devanagari','Nirmala UI',system-ui,-apple-system,sans-serif;
+  --mono:'Cascadia Mono','Consolas',ui-monospace,monospace;
+  --r:16px;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;background:radial-gradient(1200px 800px at 50% -10%,#0d1730,#05090f 70%);
+  color:var(--text);font-family:var(--font);overflow:hidden;user-select:none;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;color:inherit;cursor:pointer}
+
+/* ---------- stage / scaling ---------- */
+#stage{position:fixed;inset:0 0 var(--bar,126px) 0;display:grid;place-items:center;overflow:hidden}
+#tv{
+  position:relative;width:1920px;height:1080px;flex:none;
+  background:
+    radial-gradient(1100px 620px at 82% -12%, #1b3d7a 0%, transparent 62%),
+    radial-gradient(900px 560px at -5% 108%, #122a5e 0%, transparent 58%),
+    var(--tv-bg);
+  border-radius:16px;overflow:hidden;font-size:24px;
+  box-shadow:0 50px 130px -20px #000e, 0 0 0 1px #24345c, 0 0 0 10px #0a0f1c;
+  transform-origin:center center;
+}
+/* faint studio texture so flat areas aren't dead */
+#tv::before{
+  content:'';position:absolute;inset:0;pointer-events:none;z-index:0;opacity:.5;
+  background-image:radial-gradient(#ffffff0a 1px, transparent 1px);background-size:34px 34px;
+}
+
+.screen{position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .3s ease;z-index:1}
+.screen.active{opacity:1;pointer-events:auto}
+
+/* ---------- shared bits ---------- */
+.spacer{flex:1}
+.mono{font-family:var(--mono);letter-spacing:.02em}
+.tag{
+  display:inline-block;font-size:16px;letter-spacing:.24em;color:var(--gold);
+  border:1px solid #7a5c22;background:linear-gradient(180deg,#4a3712aa,#2a1f0a88);
+  padding:7px 16px;border-radius:8px;margin-bottom:26px;
+}
+.pill{display:inline-block;padding:5px 15px;border-radius:999px;font-size:17px;font-weight:600;letter-spacing:.04em}
+.pill.warn{background:linear-gradient(180deg,#6b4d12,#4a3510);color:#ffdf95;box-shadow:inset 0 1px 0 #ffffff26}
+.pill.ok{background:linear-gradient(180deg,#166b45,#0e4630);color:#8bf5c0;box-shadow:inset 0 1px 0 #ffffff26}
+
+.chip{
+  display:inline-flex;align-items:center;gap:8px;
+  background:linear-gradient(180deg,#ffffff16,#ffffff08);border:1px solid #ffffff1f;
+  padding:8px 17px;border-radius:999px;font-size:19px;color:#d3dff5;white-space:nowrap;
+  box-shadow:inset 0 1px 0 #ffffff1a;
+}
+
+.btn{
+  border:1px solid #ffffff26;border-radius:14px;padding:16px 30px;font-size:23px;font-weight:600;
+  background:linear-gradient(180deg,#ffffff1c,#ffffff0b);
+  box-shadow:0 8px 20px -10px #000c, inset 0 1px 0 #ffffff26;
+  transition:transform .14s ease, background .14s ease, box-shadow .14s;
+}
+.btn.primary{
+  background:linear-gradient(180deg,#2f92ec,#1361b8);border-color:#5cabf2;
+  box-shadow:0 12px 26px -12px #1f7fe0e6, inset 0 1px 0 #ffffff4d;
+}
+.btn.ghost{background:linear-gradient(180deg,#ffffff12,#ffffff06)}
+.icon-btn{
+  background:linear-gradient(180deg,#ffffff18,#ffffff0a);border:1px solid #ffffff26;border-radius:14px;
+  min-width:62px;height:62px;font-size:26px;display:inline-grid;place-items:center;
+  box-shadow:0 8px 18px -10px #000c, inset 0 1px 0 #ffffff24;
+  transition:transform .14s ease, background .14s ease;
+}
+
+/* ---------- focus ring (the whole point of a TV app) ---------- */
+.focused{
+  outline:none!important;position:relative;z-index:6;transform:scale(1.05);
+  box-shadow:0 0 0 3px #080f22, 0 0 0 7px var(--gold), 0 0 34px #ffc23347, 0 22px 44px -18px #000e;
+}
+.card.focused{transform:scale(1.07) translateY(-2px)}
+.lesson.focused,.unit.focused{transform:scale(1.012)}
+.btn.focused,.icon-btn.focused{transform:scale(1.05);background:linear-gradient(180deg,#ffffff2b,#ffffff14)}
+.btn.primary.focused{background:linear-gradient(180deg,#3fa0f7,#1a6cc4)}
+.level-tab.focused{transform:scale(1.04)}
+
+/* ---------- brand ---------- */
+.brand-mark{display:flex;align-items:center;gap:12px}
+.brand-mark .bm-star{color:var(--gold);font-size:26px;filter:drop-shadow(0 0 10px #ffc23366)}
+.bm-text{line-height:1;display:flex;align-items:baseline;gap:8px}
+.bm-text b{font-size:26px;letter-spacing:.01em}
+.bm-text i{font-style:normal;font-size:28px;font-weight:700;
+  background:linear-gradient(180deg,var(--gold-2),#f0a90f);-webkit-background-clip:text;background-clip:text;color:transparent}
+.brand-mark.big .bm-star{font-size:46px}
+.brand-mark.big .bm-text b{font-size:54px}
+.brand-mark.big .bm-text i{font-size:58px}
+
+/* ================= BOOT ================= */
+.boot-wrap{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:38px}
+.boot-wrap::before{
+  content:'';position:absolute;width:900px;height:900px;border-radius:50%;
+  background:radial-gradient(closest-side,#1f7fe033,transparent 70%);animation:breathe 4s ease-in-out infinite;
+}
+@keyframes breathe{0%,100%{transform:scale(1);opacity:.7}50%{transform:scale(1.08);opacity:1}}
+.boot-wrap>*{position:relative}
+.boot-bar{width:440px;height:6px;border-radius:99px;background:#ffffff1a;overflow:hidden}
+.boot-bar span{display:block;height:100%;width:38%;border-radius:99px;
+  background:linear-gradient(90deg,transparent,var(--blue),var(--gold),transparent);
+  animation:bootslide 1.15s ease-in-out infinite}
+@keyframes bootslide{0%{transform:translateX(-115%)}100%{transform:translateX(290%)}}
+.boot-status{color:var(--muted);font-size:23px;letter-spacing:.05em}
+.boot-foot{position:absolute;bottom:56px;color:#5b6d95;font-size:18px;letter-spacing:.16em}
+
+/* ================= PAIRING ================= */
+.pair-grid{position:absolute;inset:0;display:grid;grid-template-columns:1.05fr .95fr;gap:60px;padding:84px 78px}
+.pair-title{font-size:68px;margin:0 0 14px;line-height:1.06;letter-spacing:-.015em;
+  text-shadow:0 6px 30px #0008}
+.pair-sub{font-size:25px;color:var(--muted);margin:0 0 34px;max-width:760px;line-height:1.45}
+.pulse-row{display:flex;align-items:center;gap:16px;font-size:21px;color:#bccbe8;margin-bottom:34px}
+.pulse-row code{font-family:var(--mono);background:#ffffff14;border:1px solid #ffffff1a;
+  padding:3px 10px;border-radius:6px;font-size:18px}
+.pulse{width:14px;height:14px;border-radius:50%;background:var(--gold);
+  box-shadow:0 0 0 0 #ffc23388, 0 0 16px #ffc233;animation:pulse 1.6s infinite;flex:none}
+@keyframes pulse{70%{box-shadow:0 0 0 22px #ffc23300, 0 0 16px #ffc233}100%{box-shadow:0 0 0 0 #ffc23300, 0 0 16px #ffc233}}
+
+.steps{list-style:none;margin:0 0 44px;padding:0;display:grid;gap:16px}
+.steps li{font-size:23px;color:#697c9f;padding-left:50px;position:relative;transition:color .3s}
+.steps li::before{
+  content:'';position:absolute;left:0;top:2px;width:28px;height:28px;border-radius:50%;
+  border:2px solid #33456f;background:#0c1428;transition:.3s;
+}
+.steps li.active{color:#e4edff}
+.steps li.active::before{border-color:var(--gold);box-shadow:0 0 0 6px #ffc2331f, 0 0 18px #ffc23355}
+.steps li.done{color:#8ee7b6}
+.steps li.done::before{content:'✓';border-color:#2fbf71;background:linear-gradient(180deg,#166b45,#0e4630);
+  color:#8bf5c0;font-size:17px;display:grid;place-items:center;line-height:1}
+.pair-actions{display:flex;gap:18px}
+
+.pair-right{display:flex;flex-direction:column;gap:34px;justify-content:center}
+.device-card{
+  background:linear-gradient(180deg,#14203d,#0e1730);
+  border:1px solid var(--line);border-radius:20px;padding:34px 38px;
+  box-shadow:0 30px 60px -30px #000, inset 0 1px 0 #ffffff14;
+}
+.dc-head{font-size:15px;letter-spacing:.24em;color:var(--muted);margin-bottom:22px}
+.device-card dl,.s-card dl{display:grid;grid-template-columns:auto 1fr;gap:15px 26px;margin:0;font-size:21px}
+.device-card dt,.s-card dt{color:var(--muted)}
+.device-card dd,.s-card dd{margin:0;text-align:right}
+
+.flow{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.flow-node{
+  background:linear-gradient(180deg,#ffffff12,#ffffff06);border:1px solid var(--line-soft);border-radius:18px;
+  padding:22px 14px;display:grid;justify-items:center;gap:10px;font-size:34px;flex:1;
+  box-shadow:inset 0 1px 0 #ffffff14;
+}
+.flow-node span{font-size:17px;color:#bccbe8}
+.flow-link{flex:0 0 90px;display:grid;justify-items:center;gap:6px}
+.flow-link i{display:block;width:100%;height:3px;border-radius:3px;
+  background:linear-gradient(90deg,#ffc23300,var(--gold),#ffc23300);animation:flowpulse 1.8s linear infinite}
+@keyframes flowpulse{0%,100%{opacity:.25}50%{opacity:1}}
+.flow-link small{font-size:14px;color:var(--muted)}
+.flow-foot{font-size:19px;color:var(--muted);text-align:center}
+
+/* ================= TOPBAR ================= */
+.topbar{position:absolute;top:0;left:0;right:0;height:100px;display:flex;align-items:center;gap:28px;
+  padding:0 64px;z-index:4;
+  background:linear-gradient(180deg,#080f22f2 40%,#080f2200);}
+.topbar.slim{height:92px;background-color:#0c142c;border-bottom:1px solid #ffffff12}
+.crumb{font-size:28px;font-weight:600;letter-spacing:-.01em}
+.levels{display:flex;gap:5px;margin-left:26px;background:#ffffff0d;border:1px solid #ffffff14;
+  border-radius:999px;padding:5px}
+.level-tab{background:transparent;border:none;border-radius:999px;padding:10px 26px;font-size:21px;color:#b4c4e2;
+  transition:.15s}
+.level-tab.sel{background:linear-gradient(180deg,var(--gold-2),#f0a90f);color:#24190a;font-weight:700;
+  box-shadow:0 8px 18px -10px #ffc233cc}
+.chips{display:flex;gap:12px;align-items:center}
+
+/* ================= HERO ================= */
+.hero{position:absolute;top:100px;left:0;right:0;height:350px;overflow:hidden}
+.hero-backdrop{position:absolute;inset:0;transition:background .45s ease;opacity:.9}
+.hero::after{content:'';position:absolute;inset:0;
+  background:
+    linear-gradient(90deg,#080f22 22%,#080f2288 52%,#080f2200 78%),
+    linear-gradient(0deg,#080f22 2%,#080f2200 55%)}
+.hero-body{position:absolute;left:64px;top:52px;right:520px;z-index:2}
+.hero-kicker{font-size:18px;letter-spacing:.24em;color:var(--gold);margin-bottom:14px;font-weight:600;
+  display:flex;align-items:center;gap:12px}
+.hero-kicker::before{content:'';width:32px;height:3px;border-radius:3px;background:var(--gold)}
+.hero-title{font-size:58px;margin:0 0 12px;line-height:1.06;letter-spacing:-.02em;text-shadow:0 6px 26px #000a}
+.hero-desc{font-size:22px;color:#b6c6e4;margin:0 0 20px;max-width:900px;line-height:1.4;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hero-chips{display:flex;gap:12px}
+.hero-art{position:absolute;right:110px;top:44px;font-size:180px;z-index:2;
+  filter:drop-shadow(0 26px 44px #000b);animation:bob 5s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-16px)}}
+
+/* ================= ROWS / CARDS ================= */
+.rows{position:absolute;top:450px;left:0;right:0;bottom:0;overflow-y:auto;padding:6px 0 70px;scroll-behavior:smooth}
+.rows::-webkit-scrollbar,.pane::-webkit-scrollbar{width:0}
+#screen-home::after{content:'';position:absolute;left:0;right:0;bottom:0;height:90px;pointer-events:none;z-index:3;
+  background:linear-gradient(0deg,#080f22 10%,#080f2200)}
+.row{margin-bottom:24px}
+.row-head{display:flex;align-items:baseline;gap:16px;padding:0 64px 8px}
+.row-title{font-size:27px;font-weight:700;letter-spacing:-.01em}
+.row-sub{font-size:18px;color:var(--muted)}
+.row-track{display:flex;gap:22px;overflow-x:auto;padding:16px 64px 28px;scroll-behavior:smooth}
+.row-track::-webkit-scrollbar{height:0}
+
+.card{
+  flex:0 0 300px;width:300px;border:1px solid #ffffff1a;border-radius:var(--r);
+  background:linear-gradient(180deg,#ffffff12,#ffffff06);
+  overflow:hidden;text-align:left;padding:0;
+  box-shadow:0 14px 30px -18px #000e;
+  transition:transform .16s cubic-bezier(.2,.7,.3,1), box-shadow .16s;
+}
+.card-thumb{height:168px;position:relative;display:grid;place-items:center;font-size:62px;overflow:hidden}
+.card-thumb::before{content:'';position:absolute;inset:0;
+  background-image:radial-gradient(#ffffff26 1.5px, transparent 1.6px);background-size:24px 24px;opacity:.5}
+.card-thumb::after{content:'';position:absolute;inset:0;
+  background:radial-gradient(110% 80% at 22% 8%, #ffffff3d, transparent 58%),
+             linear-gradient(180deg, transparent 52%, #00000066)}
+.card-thumb .ct-no,.card-thumb .ct-badge,.card-thumb .ct-dur{z-index:2}
+.card-thumb .ct-no{position:absolute;left:13px;top:12px;font-size:15px;background:#00000073;
+  padding:5px 12px;border-radius:999px;letter-spacing:.14em;font-weight:600;backdrop-filter:blur(4px)}
+.card-thumb .ct-badge{position:absolute;right:12px;top:12px;font-size:15px;
+  background:#0b3a25e0;color:#8bf5c0;padding:5px 11px;border-radius:999px;font-weight:600}
+.card-thumb .ct-dur{position:absolute;right:12px;bottom:12px;font-size:15px;background:#00000080;
+  padding:5px 11px;border-radius:999px;backdrop-filter:blur(4px)}
+.card-prog{height:4px;background:#ffffff1f}
+.card-prog span{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-2));
+  box-shadow:0 0 12px #ffc23388}
+.card-body{padding:15px 17px 19px}
+.card-title{font-size:22px;font-weight:600;margin-bottom:6px;letter-spacing:-.01em;
+  display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.card-meta{font-size:17px;color:var(--muted)}
+.card.more .card-thumb{background:linear-gradient(180deg,#ffffff10,#ffffff05);font-size:46px;color:#7f93b8}
+.card.more .card-thumb::before{opacity:.25}
+
+/* ================= COURSE ================= */
+.course-body{position:absolute;top:92px;left:0;right:0;bottom:0;display:grid;grid-template-columns:560px 1fr}
+.pane{position:relative;overflow-y:auto;padding:28px 40px 60px;scroll-behavior:smooth}
+.pane-units{border-right:1px solid #ffffff12;background:linear-gradient(180deg,#ffffff08,#ffffff02)}
+.pane-head{font-size:15px;letter-spacing:.24em;color:var(--muted);margin-bottom:18px}
+.unit{
+  display:flex;align-items:center;gap:18px;width:100%;text-align:left;
+  background:linear-gradient(180deg,#ffffff0f,#ffffff06);
+  border:1px solid #ffffff14;border-radius:14px;padding:16px 18px;margin-bottom:12px;
+  transition:transform .14s, background .14s;
+}
+.unit.sel{background:linear-gradient(90deg,#1f7fe040,#1f7fe010);border-color:#2f7fd6;
+  box-shadow:inset 3px 0 0 var(--gold)}
+.unit-ico{width:64px;height:64px;border-radius:14px;display:grid;place-items:center;font-size:30px;flex:none;
+  box-shadow:inset 0 1px 0 #ffffff33, 0 8px 16px -10px #000}
+.unit-txt{flex:1;min-width:0}
+.unit-name{font-size:22px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.unit-meta{font-size:17px;color:var(--muted);margin-top:4px}
+.unit-pct{font-size:18px;color:var(--gold);font-weight:700;flex:none}
+
+.lesson-head{display:flex;justify-content:space-between;align-items:flex-end;gap:30px;margin-bottom:26px;
+  padding-bottom:22px;border-bottom:1px solid #ffffff12}
+.lh-kicker{font-size:16px;letter-spacing:.22em;color:var(--gold);margin-bottom:10px;font-weight:600}
+.lesson-head h3{font-size:42px;margin:0 0 8px;letter-spacing:-.02em}
+.lh-meta{font-size:20px;color:var(--muted)}
+.lh-actions{display:flex;gap:14px;flex:none}
+.lesson{
+  display:flex;align-items:center;gap:20px;width:100%;text-align:left;
+  background:linear-gradient(180deg,#ffffff0d,#ffffff05);
+  border:1px solid #ffffff12;border-radius:14px;padding:15px 20px;margin-bottom:10px;transition:transform .14s;
+}
+.lesson-no{width:56px;height:56px;border-radius:12px;background:#ffffff12;display:grid;place-items:center;
+  font-size:20px;font-weight:700;color:#c3d2ee;flex:none;box-shadow:inset 0 1px 0 #ffffff1f}
+.lesson-txt{flex:1;min-width:0}
+.lesson-name{font-size:23px;font-weight:600}
+.lesson-meta{font-size:18px;color:var(--muted);margin-top:5px;display:flex;gap:14px;align-items:center}
+.lesson-state{font-size:19px;color:var(--gold);flex:none;font-weight:600}
+.mini-bar{width:120px;height:5px;border-radius:99px;background:#ffffff1f;overflow:hidden}
+.mini-bar span{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-2))}
+
+/* ================= PLAYER ================= */
+#screen-player{background:#000}
+.video{position:absolute;inset:0;overflow:hidden}
+.vs-sky{position:absolute;inset:0;background:linear-gradient(160deg,#1d4f8f,#0d2b52 55%,#08182f);transition:background .5s}
+.video::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(130% 95% at 50% 42%, transparent 38%, #00000073)}
+.vs-board{position:absolute;left:50%;top:21%;transform:translateX(-50%);width:56%;min-height:270px;
+  background:linear-gradient(180deg,#236a4d,#123f2d);
+  border:16px solid #7a5230;border-radius:12px;display:grid;place-items:center;text-align:center;padding:30px;
+  box-shadow:0 34px 80px #0009, inset 0 0 90px #00000059, inset 0 2px 0 #ffffff1a}
+.vs-board span{font-size:56px;font-weight:700;color:#f4fff8;letter-spacing:-.01em;text-shadow:0 2px 0 #0005}
+.vs-teacher{position:absolute;left:9%;bottom:13%;font-size:180px;animation:bob 4s ease-in-out infinite;
+  filter:drop-shadow(0 24px 34px #0009)}
+.vs-shapes i{position:absolute;font-size:46px;opacity:.85;animation:float 9s linear infinite}
+.vs-shapes i:nth-child(1){left:76%;top:16%;animation-duration:11s}
+.vs-shapes i:nth-child(2){left:86%;top:44%;animation-duration:9s}
+.vs-shapes i:nth-child(3){left:70%;top:66%;animation-duration:13s}
+.vs-shapes i:nth-child(4){left:16%;top:22%;animation-duration:10s}
+.vs-shapes i:nth-child(5){left:30%;top:12%;animation-duration:12s}
+@keyframes float{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-40px) rotate(10deg)}}
+.video.paused .vs-teacher,.video.paused .vs-shapes i{animation-play-state:paused}
+.vs-caption{position:absolute;left:50%;bottom:230px;transform:translateX(-50%);max-width:68%;text-align:center;
+  background:#000000a6;backdrop-filter:blur(6px);border:1px solid #ffffff1a;
+  padding:12px 28px;border-radius:14px;font-size:29px;transition:opacity .3s;z-index:2}
+.vs-paused{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:104px;opacity:0;
+  transition:opacity .2s;text-shadow:0 12px 34px #000;z-index:2}
+.video.paused .vs-paused{opacity:.92}
+
+.player-top{position:absolute;top:0;left:0;right:0;padding:40px 64px;display:flex;justify-content:space-between;
+  align-items:flex-start;gap:30px;background:linear-gradient(180deg,#000000cc,#0000);transition:opacity .3s;z-index:3}
+.player-top h2{margin:0;font-size:40px;letter-spacing:-.02em;text-shadow:0 4px 20px #000a}
+.pt-kicker{font-size:18px;letter-spacing:.18em;color:var(--gold);margin-bottom:8px;font-weight:600}
+.buffer-warn{position:absolute;top:158px;left:64px;background:#5a2222e6;border:1px solid #a04b4b;color:#ffdada;
+  padding:12px 22px;border-radius:12px;font-size:21px;opacity:0;transition:opacity .3s;z-index:3;
+  box-shadow:0 16px 30px -16px #000}
+.buffer-warn.on{opacity:1}
+
+.player-bar{position:absolute;left:64px;right:64px;bottom:40px;padding:26px 34px 28px;display:grid;
+  grid-template-columns:auto 1fr auto;grid-template-areas:'cur track dur' 'btns btns btns';gap:20px 22px;
+  background:linear-gradient(180deg,#0d1830e8,#080f22f2);border:1px solid #ffffff1a;border-radius:22px;
+  backdrop-filter:blur(10px);box-shadow:0 30px 70px -30px #000, inset 0 1px 0 #ffffff1a;
+  transition:opacity .3s, transform .3s;z-index:3}
+.player-bar.hidden,.player-top.hidden{opacity:0;pointer-events:none}
+.player-bar.hidden{transform:translateY(40px)}
+.pb-time{font-size:22px;font-family:var(--mono);color:#c3d2ee;align-self:center}
+.pb-time#pb-cur{grid-area:cur}.pb-time#pb-dur{grid-area:dur}
+.pb-track{grid-area:track;position:relative;height:8px;border-radius:99px;background:#ffffff26;align-self:center}
+.pb-buffer{position:absolute;left:0;top:0;bottom:0;background:#ffffff33;border-radius:99px;width:0}
+.pb-fill{position:absolute;left:0;top:0;bottom:0;border-radius:99px;width:0;
+  background:linear-gradient(90deg,#f0a90f,var(--gold-2));box-shadow:0 0 16px #ffc23366}
+.pb-knob{position:absolute;top:50%;width:20px;height:20px;border-radius:50%;background:#fff;
+  transform:translate(-50%,-50%);box-shadow:0 0 0 6px #ffc23340, 0 4px 10px #0008;left:0}
+.pb-btns{grid-area:btns;display:flex;gap:16px;justify-content:center;align-items:center}
+.pb-btns .icon-btn{border-radius:50%;min-width:64px;height:64px}
+#btn-play{min-width:76px;height:76px;font-size:28px;color:#24190a;border-color:#ffd766;
+  background:linear-gradient(180deg,var(--gold-2),#f0a90f);
+  box-shadow:0 14px 30px -12px #ffc233aa, inset 0 1px 0 #fff6}
+
+.next-card{position:absolute;right:64px;bottom:250px;width:520px;
+  background:linear-gradient(180deg,#132247f2,#0c142cf7);
+  border:1px solid var(--line);border-radius:20px;padding:28px 30px;
+  opacity:0;pointer-events:none;transform:translateY(20px);transition:opacity .3s, transform .3s;z-index:4;
+  box-shadow:0 30px 70px -30px #000, inset 0 1px 0 #ffffff14}
+.next-card.on{opacity:1;pointer-events:auto;transform:none}
+.nc-kicker{font-size:16px;letter-spacing:.22em;color:var(--gold);margin-bottom:10px;font-weight:600}
+.next-card h3{margin:0 0 20px;font-size:29px;letter-spacing:-.01em}
+.nc-actions{display:flex;gap:12px;flex-wrap:wrap}
+
+/* ================= SETTINGS ================= */
+.settings-grid{position:absolute;top:120px;left:64px;right:64px;display:grid;grid-template-columns:1fr 1fr;gap:26px}
+.s-card{background:linear-gradient(180deg,#14203d,#0e1730);border:1px solid var(--line);border-radius:20px;
+  padding:30px 34px;box-shadow:0 26px 56px -34px #000, inset 0 1px 0 #ffffff14}
+.s-card h4{margin:0 0 22px;font-size:25px;letter-spacing:-.01em}
+.s-card .btn{margin-top:24px;margin-right:12px;font-size:21px;padding:14px 26px}
+
+/* ================= LAYERS ================= */
+.layer{position:absolute;inset:0;background:#03060ed6;backdrop-filter:blur(5px);display:grid;place-items:center;
+  opacity:0;pointer-events:none;transition:opacity .25s;z-index:20}
+.layer.active{opacity:1;pointer-events:auto}
+
+.browser{width:1420px;background:#f5f7fb;color:#16203a;border-radius:16px;overflow:hidden;
+  box-shadow:0 50px 130px -30px #000e, 0 0 0 1px #ffffff1a}
+.browser-bar{display:flex;align-items:center;gap:10px;background:linear-gradient(180deg,#eaeef6,#dfe5f0);
+  padding:14px 18px;border-bottom:1px solid #ccd4e4}
+.dot{width:13px;height:13px;border-radius:50%}
+.dot.r{background:#ff5f57}.dot.y{background:#febc2e}.dot.g{background:#28c840}
+.browser-bar .url{flex:1;background:#fff;border:1px solid #ccd4e4;border-radius:9px;padding:9px 16px;
+  font-size:18px;color:#3b4a6b;margin-left:14px;font-family:var(--mono)}
+.browser-bar .x{background:none;border:none;font-size:23px;color:#5d6b8a;padding:4px 12px;border-radius:9px}
+.browser-body{padding:34px 40px 40px}
+.ops-head h3{margin:0 0 6px;font-size:31px;letter-spacing:-.01em}
+.ops-head p{margin:0 0 26px;color:#5d6b8a;font-size:20px}
+.ops-table{width:100%;border-collapse:collapse;font-size:20px}
+.ops-table th{text-align:left;color:#5d6b8a;font-size:15px;letter-spacing:.14em;padding:0 14px 12px;font-weight:600}
+.ops-table td{padding:16px 14px;border-top:1px solid #dde3ef;vertical-align:middle}
+.ops-table tr.new{background:linear-gradient(90deg,#fff4d6,#fffaf0)}
+.ops-table .uuid{font-family:var(--mono);font-size:17px;color:#4a5a7d}
+.st{display:inline-block;padding:5px 14px;border-radius:999px;font-size:16px;font-weight:600}
+.st.ok{background:#dcf5e8;color:#136c42}
+.st.new{background:#ffe2bc;color:#8a5100}
+.ops-btn{background:linear-gradient(180deg,#2b8ae8,#1361b8);color:#fff;border:1px solid #1361b8;border-radius:11px;
+  padding:12px 22px;font-size:19px;font-weight:600;box-shadow:0 10px 20px -12px #1668c9}
+.ops-btn.done{background:#e7f6ee;color:#136c42;border-color:#c5e7d6;box-shadow:none}
+.ops-btn.focused,.browser-bar .x.focused{
+  box-shadow:0 0 0 3px #fff, 0 0 0 7px #1668c9, 0 10px 24px -12px #1668c9!important;transform:scale(1.05)}
+.ops-foot{margin-top:26px;background:#eaf0fc;border-left:5px solid #1668c9;padding:16px 20px;
+  border-radius:0 10px 10px 0;font-size:19px;color:#33415f}
+
+.modal{width:760px;background:linear-gradient(180deg,#14203d,#0e1730);border:1px solid var(--line);
+  border-radius:22px;padding:44px 48px;box-shadow:0 50px 130px -40px #000, inset 0 1px 0 #ffffff14}
+.modal.wide{width:1180px}
+.m-kicker{font-size:16px;letter-spacing:.24em;color:var(--gold);margin-bottom:14px;font-weight:600}
+.modal h3{margin:0 0 14px;font-size:37px;letter-spacing:-.02em}
+.modal p{margin:0 0 28px;font-size:23px;color:#b6c6e4;line-height:1.45}
+.m-progress{height:10px;border-radius:99px;background:#ffffff1f;overflow:hidden;margin-bottom:28px;display:none}
+.m-progress.on{display:block}
+.m-progress span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--blue),var(--gold));
+  transition:width .2s}
+.m-actions{display:flex;gap:16px}
+.help-list{margin:0 0 28px;padding-left:24px;font-size:22px;line-height:1.75;color:#cddaf2}
+.help-list li{margin-bottom:6px}
+.help-list i{color:var(--muted);font-style:normal;font-size:18px}
+.help-keys{display:flex;flex-wrap:wrap;gap:14px 26px;margin-bottom:30px;font-size:19px;color:var(--muted)}
+kbd{background:#ffffff17;border:1px solid #ffffff2e;border-bottom-width:3px;border-radius:7px;padding:3px 10px;
+  font-family:var(--mono);font-size:17px;color:#eef4ff;margin-right:6px}
+
+/* OTA background card + toasts */
+.ota-toastcard{position:absolute;right:44px;bottom:44px;width:470px;
+  background:linear-gradient(180deg,#132247f2,#0c142cf7);border:1px solid var(--line);
+  border-radius:18px;padding:22px 26px;opacity:0;transform:translateY(20px);transition:.3s;z-index:15;
+  box-shadow:0 30px 70px -30px #000, inset 0 1px 0 #ffffff14}
+.ota-toastcard.on{opacity:1;transform:none}
+.oc-head{font-size:21px;font-weight:600;margin-bottom:6px}
+.oc-sub{font-size:18px;color:var(--muted);margin-bottom:14px;font-family:var(--mono)}
+.oc-bar{height:8px;border-radius:99px;background:#ffffff1f;overflow:hidden;margin-bottom:12px}
+.oc-bar span{display:block;height:100%;width:0;border-radius:99px;
+  background:linear-gradient(90deg,var(--blue),var(--gold));transition:width .25s}
+.oc-note{font-size:17px;color:#7e91b7}
+
+.toasts{position:absolute;top:124px;right:44px;display:grid;gap:12px;z-index:30;justify-items:end}
+.toast{background:linear-gradient(180deg,#132247f2,#0c142cf7);border:1px solid var(--line);
+  border-left:4px solid var(--gold);border-radius:14px;padding:16px 24px;font-size:21px;max-width:640px;
+  box-shadow:0 24px 50px -26px #000;animation:tin .3s cubic-bezier(.2,.7,.3,1)}
+@keyframes tin{from{opacity:0;transform:translateX(30px)}}
+
+/* ================= PRESENTER BAR (outside the TV) ================= */
+#presenter{position:fixed;left:0;right:0;bottom:0;min-height:126px;background:#060a14;border-top:1px solid #17203a;
+  display:flex;align-items:center;gap:26px;padding:14px 26px;font-family:var(--font);flex-wrap:wrap}
+#presenter.hidden{display:none}
+.p-left{display:grid;gap:4px;min-width:210px}
+.p-tag{font-size:12px;letter-spacing:.2em;color:var(--gold)}
+.p-note{font-size:12px;color:#5a6b90;max-width:230px;line-height:1.35}
+.p-btns{display:flex;gap:10px;flex-wrap:wrap;flex:1}
+.p-btns button{background:#0f1830;border:1px solid #22315a;color:#cddaf2;border-radius:10px;padding:11px 16px;
+  font-size:14px;transition:.15s}
+.p-btns button:hover{background:#182647;border-color:#3d5a97}
+.p-btns kbd{font-size:11px;padding:1px 6px;margin-left:8px;margin-right:0}
+
+.remote{display:grid;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,44px);gap:6px;flex:none}
+.remote button{background:#0f1830;border:1px solid #22315a;color:#cddaf2;border-radius:9px;font-size:15px;
+  transition:.12s}
+.remote button:hover{background:#182647}
+.remote button[data-k=up]{grid-area:1/2}
+.remote button[data-k=left]{grid-area:2/1}
+.remote button[data-k=ok]{grid-area:2/2;background:linear-gradient(180deg,#2b8ae8,#1361b8);border-color:#3d95ea;
+  color:#fff;font-weight:700;font-size:13px}
+.remote button[data-k=right]{grid-area:2/3}
+.remote button[data-k=down]{grid-area:3/2}
+.remote button[data-k=back]{grid-area:3/3}
+
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div id="tv">
+
+    <!-- ============ BOOT ============ -->
+    <section class="screen" id="screen-boot">
+      <div class="boot-wrap">
+        <div class="brand-mark big">
+          <span class="bm-star">✦</span>
+          <div class="bm-text"><b>Sajilo</b><i>Shikshya</i></div>
+        </div>
+        <div class="boot-bar"><span></span></div>
+        <div class="boot-status" id="boot-status">Starting up…</div>
+        <div class="boot-foot">Android TV (Leanback) &nbsp;•&nbsp; D-Pad Native &nbsp;•&nbsp; <span id="boot-version">v2.5.0</span></div>
+      </div>
+    </section>
+
+    <!-- ============ PAIRING / REVERSE PROVISIONING ============ -->
+    <section class="screen" id="screen-pair">
+      <div class="pair-grid">
+        <div class="pair-left">
+          <div class="tag">ZERO-FRICTION AUTHENTICATION</div>
+          <h1 class="pair-title">Waiting for activation…</h1>
+          <p class="pair-sub">No username, no password, nothing to type on the remote. The central office activates this TV.</p>
+
+          <div class="pulse-row">
+            <span class="pulse"></span>
+            <span id="pair-listen">Listening on Supabase Realtime channel <code>device:activation</code></span>
+          </div>
+
+          <ol class="steps" id="pair-steps">
+            <li data-step="uuid" class="done">Hardware UUID signature generated</li>
+            <li data-step="listen" class="active">Secure broadcast listener open</li>
+            <li data-step="token">Encrypted token received from central office</li>
+            <li data-step="cache">Session cached locally (10-year expiry)</li>
+            <li data-step="catalog">Catalog + offline thumbnails synced</li>
+          </ol>
+
+          <div class="pair-actions">
+            <button class="btn primary" data-focus data-action="open-ops">Open Ops Console (Admin)</button>
+            <button class="btn ghost" data-focus data-action="help">How it works</button>
+          </div>
+        </div>
+
+        <div class="pair-right">
+          <div class="device-card">
+            <div class="dc-head">THIS DEVICE</div>
+            <dl>
+              <dt>Hardware UUID</dt><dd id="dev-uuid" class="mono">—</dd>
+              <dt>Model</dt><dd class="mono">MiTV Stick 4K · Android TV 12</dd>
+              <dt>Local IP</dt><dd class="mono">192.168.1.42 · Wi-Fi</dd>
+              <dt>App build</dt><dd class="mono" id="dev-build">2.5.0 (leanback)</dd>
+              <dt>Status</dt><dd><span class="pill warn" id="dev-status">UNCLAIMED</span></dd>
+            </dl>
+          </div>
+
+          <div class="flow">
+            <div class="flow-node">📺<span>Android TV APK</span></div>
+            <div class="flow-link"><i></i><small>realtime socket</small></div>
+            <div class="flow-node">🗄️<span>Supabase Edge</span></div>
+            <div class="flow-link"><i></i><small>one click</small></div>
+            <div class="flow-node">💻<span>Ops Console</span></div>
+          </div>
+          <div class="flow-foot">Media is served separately from <b>BunnyCDN</b> edge nodes (H.265 / 1080p).</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ HOME / LEANBACK GRID ============ -->
+    <section class="screen" id="screen-home">
+      <header class="topbar">
+        <div class="brand-mark">
+          <span class="bm-star">✦</span>
+          <div class="bm-text"><b>Sajilo</b><i>Shikshya</i></div>
+        </div>
+        <nav class="levels" id="level-tabs"></nav>
+        <div class="spacer"></div>
+        <div class="chips">
+          <span class="chip" id="chip-school">—</span>
+          <span class="chip" id="chip-net">📶 Wi-Fi</span>
+          <span class="chip" id="chip-storage">💾 —</span>
+          <span class="chip" id="chip-clock">—</span>
+        </div>
+        <button class="icon-btn" data-focus data-action="settings" title="Settings">⚙</button>
+      </header>
+
+      <div class="hero" id="hero">
+        <div class="hero-backdrop" id="hero-backdrop"></div>
+        <div class="hero-body">
+          <div class="hero-kicker" id="hero-kicker">CONTINUE</div>
+          <h2 class="hero-title" id="hero-title">—</h2>
+          <p class="hero-desc" id="hero-desc">—</p>
+          <div class="hero-chips" id="hero-chips"></div>
+        </div>
+        <div class="hero-art" id="hero-art">📖</div>
+      </div>
+
+      <div class="rows" id="rows" data-scrollarea></div>
+    </section>
+
+    <!-- ============ COURSE / UNIT DETAIL ============ -->
+    <section class="screen" id="screen-course">
+      <header class="topbar slim">
+        <button class="icon-btn" data-focus data-action="back">←</button>
+        <div class="crumb" id="course-crumb">—</div>
+        <div class="spacer"></div>
+        <div class="chips">
+          <span class="chip" id="course-progress-chip">0%</span>
+          <span class="chip">Curriculum 2077 / TOR 2080</span>
+        </div>
+      </header>
+
+      <div class="course-body">
+        <aside class="pane pane-units" data-scrollarea>
+          <div class="pane-head">UNITS</div>
+          <div id="unit-list"></div>
+        </aside>
+        <section class="pane pane-lessons" data-scrollarea>
+          <div class="lesson-head">
+            <div>
+              <div class="lh-kicker" id="lesson-head-kicker">—</div>
+              <h3 id="lesson-head-title">—</h3>
+              <div class="lh-meta" id="lesson-head-meta">—</div>
+            </div>
+            <div class="lh-actions">
+              <button class="btn primary" data-focus data-action="play-unit">▶ Start unit</button>
+              <button class="btn ghost" data-focus data-action="download-unit" id="btn-download-unit">⬇ Save offline</button>
+            </div>
+          </div>
+          <div id="lesson-list"></div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ============ PLAYER ============ -->
+    <section class="screen" id="screen-player">
+      <div class="video" id="video-scene">
+        <div class="vs-sky"></div>
+        <div class="vs-shapes"><i>✏️</i><i>⭐</i><i>🎈</i><i>🔵</i><i>🟡</i></div>
+        <div class="vs-board"><span id="vs-board-title">—</span></div>
+        <div class="vs-teacher" id="vs-teacher">🧑‍🏫</div>
+        <div class="vs-caption" id="vs-caption">—</div>
+        <div class="vs-paused" id="vs-paused">❚❚</div>
+      </div>
+
+      <div class="player-top" id="player-top">
+        <div>
+          <div class="pt-kicker" id="pt-kicker">—</div>
+          <h2 id="pt-title">—</h2>
+        </div>
+        <div class="chips">
+          <span class="chip">1080p</span>
+          <span class="chip">H.265 / HEVC</span>
+          <span class="chip" id="pt-size">—</span>
+          <span class="chip" id="pt-source">☁ BunnyCDN edge</span>
+        </div>
+      </div>
+
+      <div class="buffer-warn" id="buffer-warn">⚠ Unstable 3G — adaptive bitrate ↓ 720p · buffering…</div>
+
+      <div class="player-bar" id="player-bar">
+        <div class="pb-time" id="pb-cur">0:00</div>
+        <div class="pb-track" id="pb-track">
+          <div class="pb-buffer" id="pb-buffer"></div>
+          <div class="pb-fill" id="pb-fill"></div>
+          <div class="pb-knob" id="pb-knob"></div>
+        </div>
+        <div class="pb-time" id="pb-dur">0:00</div>
+        <div class="pb-btns">
+          <button class="icon-btn" data-focus data-action="prev-lesson">⏮</button>
+          <button class="icon-btn" data-focus data-action="toggle-play" id="btn-play">❚❚</button>
+          <button class="icon-btn" data-focus data-action="next-lesson">⏭</button>
+          <button class="icon-btn" data-focus data-action="toggle-caption">💬</button>
+          <button class="icon-btn" data-focus data-action="save-offline">⬇</button>
+        </div>
+      </div>
+
+      <div class="next-card" id="next-card">
+        <div class="nc-kicker">UP NEXT</div>
+        <h3 id="nc-title">—</h3>
+        <div class="nc-actions">
+          <button class="btn primary" data-focus data-action="play-next">▶ Play now <span id="nc-count"></span></button>
+          <button class="btn ghost" data-focus data-action="back">Back to lessons</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SETTINGS ============ -->
+    <section class="screen" id="screen-settings">
+      <header class="topbar slim">
+        <button class="icon-btn" data-focus data-action="back">←</button>
+        <div class="crumb">DEVICE SETTINGS</div>
+      </header>
+      <div class="settings-grid">
+        <div class="s-card">
+          <h4>Device</h4>
+          <dl>
+            <dt>Hardware UUID</dt><dd class="mono" id="set-uuid">—</dd>
+            <dt>School</dt><dd id="set-school">—</dd>
+            <dt>Municipality</dt><dd id="set-muni">—</dd>
+            <dt>App version</dt><dd class="mono" id="set-version">—</dd>
+          </dl>
+        </div>
+        <div class="s-card">
+          <h4>Session token</h4>
+          <dl>
+            <dt>State</dt><dd><span class="pill ok">AUTHENTICATED</span></dd>
+            <dt>Issued</dt><dd class="mono" id="set-issued">—</dd>
+            <dt>Expires</dt><dd class="mono" id="set-expires">—</dd>
+            <dt>Refresh</dt><dd>silent, server-pushed</dd>
+          </dl>
+          <button class="btn ghost" data-focus data-action="unpair">Clear session (unpair)</button>
+        </div>
+        <div class="s-card">
+          <h4>Storage</h4>
+          <dl>
+            <dt>Offline lessons</dt><dd id="set-cached">—</dd>
+            <dt>Cache used</dt><dd id="set-cache-size">—</dd>
+            <dt>Codec</dt><dd>HEVC 1080p · ~150 MB / 15 min</dd>
+            <dt>Edge node</dt><dd>BunnyCDN · SIN → KTM POP</dd>
+          </dl>
+        </div>
+        <div class="s-card">
+          <h4>Updates (OTA)</h4>
+          <dl>
+            <dt>Channel</dt><dd>direct (Play Store bypassed)</dd>
+            <dt>Manifest</dt><dd class="mono">cdn.sajilo.np/version.json</dd>
+            <dt>Installed</dt><dd class="mono" id="set-installed">—</dd>
+          </dl>
+          <button class="btn primary" data-focus data-action="check-update">Check for updates</button>
+          <button class="btn ghost" data-focus data-action="toggle-net">Toggle network (Wi-Fi ⇄ 3G)</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ LAYERS ============ -->
+    <div class="layer" id="layer-ops">
+      <div class="browser">
+        <div class="browser-bar">
+          <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <div class="url">🔒 admin.sajiloshikshya.np/devices</div>
+          <button class="x" data-focus data-action="close-ops">✕</button>
+        </div>
+        <div class="browser-body">
+          <div class="ops-head">
+            <h3>Device Provisioning</h3>
+            <p>Central office — activate a school's TV</p>
+          </div>
+          <table class="ops-table">
+            <thead><tr><th>School</th><th>Municipality</th><th>Device UUID</th><th>Status</th><th></th></tr></thead>
+            <tbody id="ops-rows"></tbody>
+          </table>
+          <div class="ops-foot">Clicking <b>Push token</b> writes to Supabase → the TV is already listening → it authenticates itself. The school never types anything.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="layer" id="layer-ota">
+      <div class="modal">
+        <div class="m-kicker">SYSTEM UPDATE</div>
+        <h3 id="ota-title">Update ready</h3>
+        <p id="ota-body">Version 2.5.1 has been downloaded. Install it now?</p>
+        <div class="m-progress" id="ota-install-wrap"><span id="ota-install-fill"></span></div>
+        <div class="m-actions" id="ota-actions">
+          <button class="btn primary" data-focus data-action="ota-install">OK</button>
+          <button class="btn ghost" data-focus data-action="ota-later">Later</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="layer" id="layer-help">
+      <div class="modal wide">
+        <div class="m-kicker">PROTOTYPE MAP</div>
+        <h3>What this demo shows</h3>
+        <ul class="help-list">
+          <li><b>Reverse provisioning</b> — TV boots into a listening state, ops console pushes an encrypted token, session cached for 10 years. <i>(Plan §3)</i></li>
+          <li><b>D-pad native Leanback UI</b> — every element is reachable with arrows only; nothing needs a touchscreen or a pointer. <i>(Plan §3, §4)</i></li>
+          <li><b>H.265 catalog</b> — 672 lessons mapped to Curriculum 2077 / TOR 2080, ~150 MB per 15-min lesson. <i>(Plan §2, §4)</i></li>
+          <li><b>Offline cache</b> — units saved to the device, playable with the network unplugged. <i>(Plan §3)</i></li>
+          <li><b>Background OTA</b> — version manifest check → silent CDN download → one-click install, no Play Store review. <i>(Plan §3)</i></li>
+          <li><b>Unstable-network handling</b> — 3G toggle drops bitrate and shows buffer state. <i>(Plan §4 QA line)</i></li>
+        </ul>
+        <div class="help-keys">
+          <span><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> D-pad</span>
+          <span><kbd>Enter</kbd> OK</span>
+          <span><kbd>Backspace</kbd> Back</span>
+          <span><kbd>A</kbd> Ops console</span>
+          <span><kbd>U</kbd> OTA update</span>
+          <span><kbd>N</kbd> Wi-Fi ⇄ 3G</span>
+          <span><kbd>F</kbd> Fullscreen</span>
+          <span><kbd>H</kbd> Hide presenter bar</span>
+          <span><kbd>?</kbd> This panel</span>
+        </div>
+        <div class="m-actions"><button class="btn primary" data-focus data-action="close-help">Close</button></div>
+      </div>
+    </div>
+
+    <div class="ota-toastcard" id="ota-card">
+      <div class="oc-head">⬇ Downloading update in the background</div>
+      <div class="oc-sub" id="oc-sub">BunnyCDN edge · 24.6 MB</div>
+      <div class="oc-bar"><span id="oc-fill"></span></div>
+      <div class="oc-note">Keeps running while a class is on — no interruption.</div>
+    </div>
+
+    <div class="toasts" id="toasts"></div>
+  </div>
+</div>
+
+<div id="presenter">
+  <div class="p-left">
+    <span class="p-tag">PRESENTER CONTROLS</span>
+    <span class="p-note">not part of the app — these fake the events a real deployment would send</span>
+  </div>
+  <div class="p-btns">
+    <button data-p="ops">Ops console <kbd>A</kbd></button>
+    <button data-p="ota">Push OTA update <kbd>U</kbd></button>
+    <button data-p="net">Toggle 3G <kbd>N</kbd></button>
+    <button data-p="reset">Reset device <kbd>R</kbd></button>
+    <button data-p="help">What this shows <kbd>?</kbd></button>
+    <button data-p="full">Fullscreen <kbd>F</kbd></button>
+    <button data-p="hide">Hide this bar <kbd>H</kbd></button>
+  </div>
+  <div class="remote">
+    <button data-k="up">▲</button>
+    <button data-k="left">◀</button>
+    <button data-k="ok">OK</button>
+    <button data-k="right">▶</button>
+    <button data-k="down">▼</button>
+    <button data-k="back">↩</button>
+  </div>
+</div>
+
+<script>
+/* ===================== catalog data ===================== */
+/* =========================================================
+   Catalog data — generated to match the master plan:
+   4 subjects x 3 ECED levels x 8 units x 7 lessons = 672
+   lessons ("600–700 targeted instruction sets"), each
+   1080p HEVC at ~10 MB/minute (~150 MB per 15-min lesson).
+   ========================================================= */
+
+const LEVELS = [
+  { id:'nursery', name:'Nursery' },
+  { id:'lkg',     name:'LKG' },
+  { id:'ukg',     name:'UKG' }
+];
+
+const SUBJECTS = [
+  { id:'nepali',   name:'Nepali',           emoji:'📖', c1:'#e8863b', c2:'#a52f2f' },
+  { id:'english',  name:'English',          emoji:'🔤', c1:'#2aa9d8', c2:'#123a7a' },
+  { id:'maths',    name:'Maths',            emoji:'🔢', c1:'#4fae54', c2:'#14603a' },
+  { id:'serofero', name:'Our Surroundings', emoji:'🌏', c1:'#a94bc9', c2:'#3b31b0' }
+];
+
+const UNIT_TITLES = {
+  nepali:  ['Me and My Family','My Daily Life','Nepali Alphabet','Our Toys','Our Things','Colours and Shapes','Fruits and Vegetables','Poems and Songs'],
+  english: ['Alphabet A – F','Alphabet G – L','Alphabet M – R','Alphabet S – Z','My Body','My Family','Animals Around Us','Rhymes and Songs'],
+  maths:   ['Numbers 1 – 5','Numbers 6 – 10','Shapes','Big and Small','Matching','Counting Practice','Writing Numerals','Games and Counting'],
+  serofero:['Our School','Our Home','Keeping Clean','Water and Air','Birds and Animals','Plants','Transport','Festivals']
+};
+
+const UNIT_EMOJI = {
+  nepali:  ['👨‍👩‍👧','🌞','अ','🧸','🎒','🎨','🍎','🎵'],
+  english: ['A','G','M','S','🖐','👨‍👩‍👦','🐘','🎶'],
+  maths:   ['5️⃣','🔟','🔺','📏','🧩','🧮','✍️','🎲'],
+  serofero:['🏫','🏠','🧼','💧','🐦','🌱','🚌','🪔']
+};
+
+/* short caption lines shown over the placeholder video, per subject */
+const CAPTIONS = {
+  nepali:  ['Hello children!','Today we learn something new.','Say it after me.','Very good! Now the next word.'],
+  english: ['Hello children!','Say it with me — A, B, C.','Very good! One more time.','Now point at the picture.'],
+  maths:   ['Today we are counting.','One… two… three…','Count on your fingers.','Well done, very good!'],
+  serofero:['What can we see around us?','Look at it carefully.','What is this called?','Now say it on your own.']
+};
+
+function buildCatalog(){
+  const courses = [];
+  LEVELS.forEach((lvl, li) => {
+    SUBJECTS.forEach(sub => {
+      let day = 1;
+      const units = UNIT_TITLES[sub.id].map((utitle, ui) => {
+        const lessons = [];
+        for (let i = 0; i < 7; i++){
+          const mins = 12 + ((ui + i + li) % 7);            // 12–18 min
+          lessons.push({
+            id: `${lvl.id}-${sub.id}-u${ui+1}-l${i+1}`,
+            title: `Day ${day} : ${utitle}`,
+            day,
+            mins,
+            secs: mins * 60,
+            size: Math.round(mins * 10)                      // MB, HEVC ~10MB/min
+          });
+          day++;
+        }
+        return {
+          id: `${lvl.id}-${sub.id}-u${ui+1}`,
+          no: ui + 1,
+          title: utitle,
+          emoji: UNIT_EMOJI[sub.id][ui],
+          lessons
+        };
+      });
+      courses.push({
+        id: `${lvl.id}-${sub.id}`,
+        level: lvl.id,
+        levelName: lvl.name,
+        subject: sub.id,
+        subjectName: sub.name,
+        emoji: sub.emoji,
+        c1: sub.c1,
+        c2: sub.c2,
+        units
+      });
+    });
+  });
+  return courses;
+}
+
+const COURSES = buildCatalog();
+const TOTAL_LESSONS = COURSES.reduce((n,c)=>n + c.units.reduce((m,u)=>m+u.lessons.length,0), 0);
+
+function coursesFor(levelId){ return COURSES.filter(c => c.level === levelId); }
+function findCourse(id){ return COURSES.find(c => c.id === id); }
+function findUnit(unitId){
+  const cid = unitId.split('-u')[0];
+  const c = findCourse(cid);
+  return c ? { course:c, unit:c.units.find(u => u.id === unitId) } : null;
+}
+
+/* schools shown in the ops console */
+const SCHOOLS = [
+  { name:'Shree Saraswati Primary School', muni:'Dhulikhel, Kavre',        uuid:'a7f1-32c9-8b40-1d77', state:'ok' },
+  { name:'Janajyoti Primary School',       muni:'Bidur, Nuwakot',          uuid:'c0b8-71ea-45d2-9f31', state:'ok' },
+  { name:'Shree Himalaya Primary School',  muni:'Melamchi, Sindhupalchok', uuid:null,                  state:'new' },
+  { name:'Balkalyan Primary School',       muni:'Butwal, Rupandehi',       uuid:'19d4-a83b-6c05-e2aa', state:'ok' },
+  { name:'Shree Janata Primary School',    muni:'Godawari, Lalitpur',      uuid:'55e2-9c14-70bf-3a68', state:'ok' }
+];
+
+
+/* ===================== d-pad focus engine ===================== */
+/* =========================================================
+   D-pad focus engine.
+   Nothing here knows about the app: it just moves a focus
+   ring between [data-focus] elements using pure spatial
+   geometry — the same model Android's Leanback library uses.
+   ========================================================= */
+
+const Nav = (function(){
+  let cur = null;
+  let onFocus = null;
+
+  /* the topmost active surface owns the focus ring */
+  function root(){
+    const layers = document.querySelectorAll('.layer.active');
+    if (layers.length) return layers[layers.length - 1];
+    return document.querySelector('.screen.active');
+  }
+
+  function visible(el, stop){
+    const r = el.getBoundingClientRect();
+    if (r.width < 2 || r.height < 2) return false;
+    let p = el;
+    while (p && p !== stop){
+      const cs = getComputedStyle(p);
+      if (cs.display === 'none' || cs.visibility === 'hidden' ||
+          cs.pointerEvents === 'none' || parseFloat(cs.opacity) === 0) return false;
+      p = p.parentElement;
+    }
+    return true;
+  }
+
+  function items(){
+    const r = root();
+    if (!r) return [];
+    return Array.from(r.querySelectorAll('[data-focus]')).filter(el => visible(el, r));
+  }
+
+  function center(el){
+    const r = el.getBoundingClientRect();
+    return { x:r.left + r.width/2, y:r.top + r.height/2, r };
+  }
+
+  /* keep the focused thing on screen — offset* values are layout
+     coordinates, so they are immune to the CSS scale on #tv */
+  function reveal(el){
+    const track = el.closest('.row-track');
+    if (track){
+      const x = el.offsetLeft - track.offsetLeft;
+      track.scrollTo({ left: Math.max(0, x - (track.clientWidth - el.offsetWidth)/2), behavior:'smooth' });
+    }
+    const area = el.closest('[data-scrollarea]');
+    if (area){
+      const anchor = el.closest('.row') || el;
+      const top = anchor.offsetTop, h = anchor.offsetHeight, m = 30;
+      if (top - m < area.scrollTop){
+        area.scrollTo({ top: Math.max(0, top - m), behavior:'smooth' });
+      } else if (top + h + m > area.scrollTop + area.clientHeight){
+        area.scrollTo({ top: top + h + m - area.clientHeight, behavior:'smooth' });
+      }
+    }
+  }
+
+  function set(el){
+    if (!el) return;
+    if (cur && cur !== el) cur.classList.remove('focused');
+    cur = el;
+    el.classList.add('focused');
+    reveal(el);
+    if (onFocus) onFocus(el);
+  }
+
+  function first(){
+    const list = items();
+    if (list.length) set(list[0]);
+  }
+
+  function move(dir){
+    const list = items();
+    if (!list.length) return false;
+    if (!cur || !list.includes(cur) || !visible(cur, root())){ set(list[0]); return true; }
+
+    const c = center(cur);
+    let best = null, bestScore = Infinity;
+
+    for (const el of list){
+      if (el === cur) continue;
+      const p = center(el);
+      const dx = p.x - c.x, dy = p.y - c.y;
+      let primary, cross;
+
+      if (dir === 'right'){ if (dx <= 4) continue; primary = dx; cross = Math.abs(dy); }
+      else if (dir === 'left'){ if (dx >= -4) continue; primary = -dx; cross = Math.abs(dy); }
+      else if (dir === 'down'){ if (dy <= 4) continue; primary = dy; cross = Math.abs(dx); }
+      else { if (dy >= -4) continue; primary = -dy; cross = Math.abs(dx); }
+
+      /* heavily prefer candidates on the same axis, like a real remote */
+      const score = primary + cross * 3;
+      if (score < bestScore){ bestScore = score; best = el; }
+    }
+    if (best){ set(best); return true; }
+    return false;
+  }
+
+  function activate(){
+    if (cur && items().includes(cur)){ cur.click(); return true; }
+    return false;
+  }
+
+  /* mouse is a convenience for the person presenting, not a target platform */
+  document.addEventListener('mouseover', e => {
+    const el = e.target.closest && e.target.closest('[data-focus]');
+    if (el && items().includes(el)) set(el);
+  });
+
+  return {
+    set, first, move, activate, items,
+    current: () => cur,
+    clear: () => { if (cur) cur.classList.remove('focused'); cur = null; },
+    setOnFocus: fn => { onFocus = fn; }
+  };
+})();
+
+
+/* ===================== app behaviour ===================== */
+/* =========================================================
+   Sajilo Shikshya TV — prototype behaviour
+   ========================================================= */
+
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+
+/* ---------------- state ---------------- */
+const State = {
+  screen:'boot',
+  paired:false,
+  school:null,
+  muni:null,
+  level:'nursery',
+  net:'wifi',
+  version:'2.5.0',
+  uuid:'',
+  issued:null,
+  expires:null,
+  progress:{},      // lessonId -> 0..1
+  cached:{},        // unitId -> true
+  recent:[],        // lessonIds, newest first
+  lastUnit:null
+};
+
+const SAVE_KEY = 'ss-tv-demo-v1';
+function save(){
+  try{
+    localStorage.setItem(SAVE_KEY, JSON.stringify({
+      paired:State.paired, school:State.school, muni:State.muni, level:State.level,
+      version:State.version, uuid:State.uuid, issued:State.issued, expires:State.expires,
+      progress:State.progress, cached:State.cached, recent:State.recent, lastUnit:State.lastUnit
+    }));
+  }catch(e){/* file:// without storage — demo still works, just not persistent */}
+}
+function load(){
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (raw) Object.assign(State, JSON.parse(raw));
+  }catch(e){}
+}
+function wipe(){
+  try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
+}
+
+/* ---------------- helpers ---------------- */
+function uuid4(){
+  const h = '0123456789abcdef';
+  const b = n => Array.from({length:n}, () => h[Math.floor(Math.random()*16)]).join('');
+  return `${b(4)}-${b(4)}-${b(4)}-${b(4)}`;
+}
+function fmtTime(s){
+  s = Math.max(0, Math.floor(s));
+  return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+}
+function fmtDate(d){
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function levelName(id){ return (LEVELS.find(l => l.id === id) || LEVELS[0]).name; }
+function unitMinutes(u){ return u.lessons.reduce((n,l) => n + l.mins, 0); }
+function unitSize(u){ return u.lessons.reduce((n,l) => n + l.size, 0); }
+function unitPct(u){
+  const done = u.lessons.reduce((n,l) => n + (State.progress[l.id] || 0), 0);
+  return Math.round(done / u.lessons.length * 100);
+}
+function lessonById(id){
+  const cid = id.split('-u')[0];
+  const c = findCourse(cid);
+  if (!c) return null;
+  for (const u of c.units){
+    const l = u.lessons.find(x => x.id === id);
+    if (l) return { course:c, unit:u, lesson:l };
+  }
+  return null;
+}
+function cachedUnits(){
+  return Object.keys(State.cached).map(findUnit).filter(Boolean);
+}
+function cacheUsedGB(){
+  const mb = cachedUnits().reduce((n,x) => n + unitSize(x.unit), 0);
+  return (mb/1024).toFixed(1);
+}
+
+function toast(msg){
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = msg;
+  $('#toasts').appendChild(t);
+  setTimeout(() => t.remove(), 4600);
+}
+
+/* ---------------- screen scaling ---------------- */
+function fit(){
+  const p = $('#presenter');
+  const bar = p.classList.contains('hidden') ? 0 : p.offsetHeight;
+  document.documentElement.style.setProperty('--bar', bar + 'px');
+  const s = Math.min((window.innerWidth - 28)/1920, (window.innerHeight - bar - 28)/1080);
+  $('#tv').style.transform = `scale(${s})`;
+}
+window.addEventListener('resize', fit);
+document.addEventListener('fullscreenchange', () => setTimeout(fit, 60));
+
+function togglePresenter(){
+  $('#presenter').classList.toggle('hidden');
+  fit();
+}
+function toggleFullscreen(){
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen && document.documentElement.requestFullscreen();
+  else document.exitFullscreen && document.exitFullscreen();
+}
+
+/* ---------------- screens ---------------- */
+function showScreen(name){
+  State.screen = name;
+  $$('.screen').forEach(s => s.classList.toggle('active', s.id === 'screen-' + name));
+  Nav.clear();
+  setTimeout(() => {
+    if (name === 'home')          focusHomeDefault();
+    else if (name === 'course')   Nav.set($('#lesson-list .lesson') || $('#unit-list .unit'));
+    else if (name === 'settings') { fillSettings(); Nav.first(); }
+    else if (name === 'pair')     Nav.first();
+  }, 60);
+}
+function openLayer(id, preferred){
+  $(id).classList.add('active');
+  Nav.clear();
+  setTimeout(() => {
+    const p = preferred && $(preferred);
+    if (p) Nav.set(p); else Nav.first();
+  }, 60);
+}
+function closeLayer(id){
+  $(id).classList.remove('active');
+  Nav.clear();
+  setTimeout(() => {
+    if (State.screen === 'home') focusHomeDefault();
+    else Nav.first();
+  }, 60);
+}
+function anyLayer(){ return $('.layer.active'); }
+
+/* ---------------- boot ---------------- */
+const BOOT_LINES = [
+  'Starting up…',
+  'Loading Leanback UI engine…',
+  'Reading hardware signature…',
+  'Checking network…'
+];
+function boot(){
+  // a reboot clears anything that was on screen (modals, download card)
+  $$('.layer').forEach(l => l.classList.remove('active'));
+  $('#ota-card').classList.remove('on');
+  showScreen('boot');
+  $('#boot-version').textContent = 'v' + State.version;
+  let i = 0;
+  $('#boot-status').textContent = BOOT_LINES[0];
+  const t = setInterval(() => {
+    i++;
+    if (i < BOOT_LINES.length) $('#boot-status').textContent = BOOT_LINES[i];
+  }, 620);
+  setTimeout(() => {
+    clearInterval(t);
+    if (State.paired){ renderHome(); showScreen('home'); }
+    else startPairing();
+  }, 2600);
+}
+
+/* ---------------- pairing / reverse provisioning ---------------- */
+function startPairing(){
+  if (!State.uuid){ State.uuid = uuid4(); save(); }
+  $('#dev-uuid').textContent = State.uuid.toUpperCase();
+  $('#dev-build').textContent = State.version + ' (leanback)';
+  $('#dev-status').textContent = 'UNCLAIMED';
+  $('#dev-status').className = 'pill warn';
+  setStep('uuid','done'); setStep('listen','active');
+  ['token','cache','catalog'].forEach(s => setStep(s,''));
+  renderOps();
+  showScreen('pair');
+}
+function setStep(name, cls){
+  const li = $(`#pair-steps li[data-step="${name}"]`);
+  if (li) li.className = cls;
+}
+
+function renderOps(){
+  const tb = $('#ops-rows');
+  tb.innerHTML = '';
+  SCHOOLS.forEach(s => {
+    const isNew = s.state === 'new' && !State.paired;
+    const tr = document.createElement('tr');
+    if (isNew) tr.className = 'new';
+    tr.innerHTML = `
+      <td><b>${s.name}</b></td>
+      <td>${s.muni}</td>
+      <td class="uuid">${isNew ? State.uuid.toUpperCase() : (s.uuid || State.uuid).toUpperCase()}</td>
+      <td>${isNew ? '<span class="st new">NEW DEVICE</span>' : '<span class="st ok">PAIRED</span>'}</td>
+      <td></td>`;
+    const cell = tr.lastElementChild;
+    if (isNew){
+      const b = document.createElement('button');
+      b.className = 'ops-btn';
+      b.setAttribute('data-focus','');
+      b.textContent = 'Push token →';
+      b.onclick = () => pushToken(s);
+      cell.appendChild(b);
+    } else {
+      cell.innerHTML = '<button class="ops-btn done" disabled>Synced ✓</button>';
+    }
+    tb.appendChild(tr);
+  });
+}
+
+function pushToken(school){
+  closeLayer('#layer-ops');
+  toast('🔑 Ops console → Supabase: encrypted token broadcast');
+  $('#pair-listen').innerHTML = 'Token received on <code>device:activation</code> — verifying signature…';
+
+  setTimeout(() => { setStep('listen','done'); setStep('token','active'); }, 500);
+  setTimeout(() => {
+    setStep('token','done'); setStep('cache','active');
+    const now = new Date();
+    const exp = new Date(now.getTime()); exp.setFullYear(exp.getFullYear() + 10);
+    State.issued = fmtDate(now);
+    State.expires = fmtDate(exp);
+  }, 1300);
+  setTimeout(() => {
+    setStep('cache','done'); setStep('catalog','active');
+    $('#pair-listen').innerHTML = `Syncing catalog — <b>${TOTAL_LESSONS}</b> lessons, offline thumbnails…`;
+  }, 2100);
+  setTimeout(() => {
+    setStep('catalog','done');
+    State.paired = true;
+    State.school = school.name;
+    State.muni   = school.muni;
+    $('#dev-status').textContent = 'AUTHENTICATED';
+    $('#dev-status').className = 'pill ok';
+    save();
+  }, 3100);
+  setTimeout(() => {
+    renderHome();
+    showScreen('home');
+    toast(`✅ ${school.name} — session active until ${State.expires}`);
+  }, 3900);
+}
+
+/* ---------------- home ---------------- */
+function focusHomeDefault(){
+  const target = (State.lastUnit && $(`#rows .card[data-unit="${State.lastUnit}"]`)) || $('#rows .card');
+  if (target) Nav.set(target); else Nav.first();
+}
+
+function renderHome(){
+  $('#chip-school').textContent  = '🏫 ' + (State.school || '—');
+  $('#chip-storage').textContent = `💾 ${cacheUsedGB()} GB / 32 GB`;
+  updateNetChip();
+  clock();
+
+  // level tabs
+  const tabs = $('#level-tabs');
+  tabs.innerHTML = '';
+  LEVELS.forEach(l => {
+    const b = document.createElement('button');
+    b.className = 'level-tab' + (l.id === State.level ? ' sel' : '');
+    b.setAttribute('data-focus','');
+    b.textContent = l.name;
+    b.onclick = () => {
+      if (State.level === l.id) return;
+      State.level = l.id; State.lastUnit = null; save();
+      renderHome();
+      setTimeout(() => Nav.set($('#rows .card')), 60);
+    };
+    b._hero = {
+      kicker:'CHOOSE LEVEL',
+      title:l.name,
+      desc:`${coursesFor(l.id).length} subjects • ${coursesFor(l.id).reduce((n,c)=>n+c.units.length,0)} units • mapped to Curriculum 2077 / TOR 2080.`,
+      chips:['4 subjects','1080p HEVC','Offline capable'],
+      c1:'#1668c9', c2:'#0c3f7d', art:'🎓'
+    };
+    tabs.appendChild(b);
+  });
+
+  const rows = $('#rows');
+  rows.innerHTML = '';
+
+  // continue watching
+  const cont = State.recent.map(lessonById).filter(x => x && (State.progress[x.lesson.id]||0) < 0.98).slice(0,10);
+  if (cont.length){
+    rows.appendChild(makeRow('Continue watching', 'Pick up where the class left off',
+      cont.map(x => makeLessonCard(x.course, x.unit, x.lesson))));
+  }
+
+  // one row per subject
+  coursesFor(State.level).forEach(c => {
+    const cards = c.units.map(u => makeUnitCard(c,u));
+    cards.push(makeMoreCard(c));
+    const lessons = c.units.reduce((n,u) => n + u.lessons.length, 0);
+    rows.appendChild(makeRow(c.subjectName, `${levelName(c.level)} • ${c.units.length} units • ${lessons} videos`, cards));
+  });
+
+  // downloaded
+  const cu = cachedUnits();
+  if (cu.length){
+    rows.appendChild(makeRow('Saved on this device', `Offline — plays with no internet • ${cacheUsedGB()} GB`,
+      cu.map(x => makeUnitCard(x.course, x.unit))));
+  }
+}
+
+function makeRow(title, sub, cards){
+  const row = document.createElement('div');
+  row.className = 'row';
+  const head = document.createElement('div');
+  head.className = 'row-head';
+  head.innerHTML = `<div class="row-title">${title}</div><div class="row-sub">${sub}</div>`;
+  const track = document.createElement('div');
+  track.className = 'row-track';
+  cards.forEach(c => track.appendChild(c));
+  row.appendChild(head); row.appendChild(track);
+  return row;
+}
+
+function makeUnitCard(course, unit){
+  const el = document.createElement('button');
+  el.className = 'card';
+  el.setAttribute('data-focus','');
+  el.dataset.unit = unit.id;
+  const pct = unitPct(unit);
+  const cached = !!State.cached[unit.id];
+  el.innerHTML = `
+    <div class="card-thumb" style="background:linear-gradient(150deg,${course.c1},${course.c2})">
+      <span class="ct-no">UNIT ${unit.no}</span>
+      ${cached ? '<span class="ct-badge">⬇ Offline</span>' : ''}
+      <span class="ct-dur">${unit.lessons.length} videos</span>
+      ${unit.emoji}
+    </div>
+    <div class="card-prog"><span style="width:${pct}%"></span></div>
+    <div class="card-body">
+      <div class="card-title">${unit.title}</div>
+      <div class="card-meta">${course.subjectName} • ${unitMinutes(unit)} min</div>
+    </div>`;
+  el.onclick = () => openCourse(course.id, unit.id);
+  el._hero = {
+    kicker:`${course.subjectName} • ${levelName(course.level)}`,
+    title:unit.title,
+    desc:unit.lessons.slice(0,3).map(l => l.title).join('   ·   '),
+    chips:[`${unit.lessons.length} lessons`, `${unitMinutes(unit)} min`, `${unitSize(unit)} MB · H.265`,
+           cached ? '⬇ Saved offline' : '☁ BunnyCDN'],
+    c1:course.c1, c2:course.c2, art:unit.emoji.length > 2 ? course.emoji : unit.emoji
+  };
+  return el;
+}
+
+function makeLessonCard(course, unit, lesson){
+  const el = document.createElement('button');
+  el.className = 'card';
+  el.setAttribute('data-focus','');
+  el.dataset.unit = unit.id;
+  const pct = Math.round((State.progress[lesson.id] || 0) * 100);
+  el.innerHTML = `
+    <div class="card-thumb" style="background:linear-gradient(150deg,${course.c1},${course.c2})">
+      <span class="ct-no">▶ RESUME</span>
+      <span class="ct-dur">${lesson.mins} min</span>
+      ${unit.emoji}
+    </div>
+    <div class="card-prog"><span style="width:${pct}%"></span></div>
+    <div class="card-body">
+      <div class="card-title">${lesson.title}</div>
+      <div class="card-meta">${course.subjectName} • ${pct}% watched</div>
+    </div>`;
+  el.onclick = () => openPlayer(lesson.id, true);
+  el._hero = {
+    kicker:'CONTINUE WATCHING',
+    title:lesson.title,
+    desc:`${unit.title} — ${course.subjectName} ${levelName(course.level)}. ${pct}% watched.`,
+    chips:[`${lesson.mins} min`, `${lesson.size} MB · H.265`, '1080p'],
+    c1:course.c1, c2:course.c2, art:unit.emoji.length > 2 ? course.emoji : unit.emoji
+  };
+  return el;
+}
+
+function makeMoreCard(course){
+  const el = document.createElement('button');
+  el.className = 'card more';
+  el.setAttribute('data-focus','');
+  el.innerHTML = `
+    <div class="card-thumb">＋</div>
+    <div class="card-prog"><span style="width:0%"></span></div>
+    <div class="card-body">
+      <div class="card-title">See all</div>
+      <div class="card-meta">${course.subjectName} — ${course.units.length} units</div>
+    </div>`;
+  el.onclick = () => openCourse(course.id, course.units[0].id);
+  el._hero = {
+    kicker:`${course.subjectName} • ${levelName(course.level)}`,
+    title:`${course.subjectName} — full syllabus`,
+    desc:course.units.map(u => u.title).join('   ·   '),
+    chips:[`${course.units.length} units`, `${course.units.reduce((n,u)=>n+u.lessons.length,0)} videos`, 'Curriculum 2077'],
+    c1:course.c1, c2:course.c2, art:course.emoji
+  };
+  return el;
+}
+
+function applyHero(h){
+  $('#hero-kicker').textContent = h.kicker;
+  $('#hero-title').textContent  = h.title;
+  $('#hero-desc').textContent   = h.desc;
+  $('#hero-art').textContent    = h.art;
+  $('#hero-backdrop').style.background =
+    `radial-gradient(900px 500px at 78% 30%, ${h.c1}bb 0%, transparent 62%),
+     linear-gradient(120deg, ${h.c2} 0%, #0a1226 65%)`;
+  $('#hero-chips').innerHTML = h.chips.map(c => `<span class="chip">${c}</span>`).join('');
+}
+Nav.setOnFocus(el => { if (el._hero && State.screen === 'home' && !anyLayer()) applyHero(el._hero); });
+
+function updateNetChip(){
+  $('#chip-net').textContent = State.net === 'wifi' ? '📶 Wi-Fi 24 Mbps' : '📶 3G 0.9 Mbps ⚠';
+}
+function clock(){
+  const d = new Date();
+  $('#chip-clock').textContent = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+setInterval(clock, 20000);
+
+/* ---------------- course / units ---------------- */
+const Course = { course:null, unit:null };
+
+function openCourse(courseId, unitId){
+  const c = findCourse(courseId);
+  if (!c) return;
+  Course.course = c;
+  Course.unit = c.units.find(u => u.id === unitId) || c.units[0];
+  State.lastUnit = Course.unit.id; save();
+  $('#course-crumb').textContent = `${c.subjectName} — ${levelName(c.level)}`;
+  renderUnits();
+  renderLessons();
+  showScreen('course');
+}
+
+function renderUnits(){
+  const box = $('#unit-list');
+  box.innerHTML = '';
+  Course.course.units.forEach(u => {
+    const b = document.createElement('button');
+    b.className = 'unit' + (u.id === Course.unit.id ? ' sel' : '');
+    b.setAttribute('data-focus','');
+    b.innerHTML = `
+      <div class="unit-ico" style="background:linear-gradient(150deg,${Course.course.c1},${Course.course.c2})">${u.emoji}</div>
+      <div class="unit-txt">
+        <div class="unit-name">Unit ${u.no} — ${u.title}</div>
+        <div class="unit-meta">${u.lessons.length} videos • ${unitMinutes(u)} min ${State.cached[u.id] ? '• ⬇ Offline' : ''}</div>
+      </div>
+      <div class="unit-pct">${unitPct(u)}%</div>`;
+    b.onclick = () => { Course.unit = u; State.lastUnit = u.id; save(); renderUnits(); renderLessons(); Nav.set(b); };
+    box.appendChild(b);
+  });
+  const pct = Math.round(Course.course.units.reduce((n,u) => n + unitPct(u), 0) / Course.course.units.length);
+  $('#course-progress-chip').textContent = `Course progress ${pct}%`;
+}
+
+function renderLessons(){
+  const u = Course.unit, c = Course.course;
+  $('#lesson-head-kicker').textContent = `${c.subjectName} • ${levelName(c.level)} • Unit ${u.no}`;
+  $('#lesson-head-title').textContent  = u.title;
+  $('#lesson-head-meta').textContent   =
+    `${u.lessons.length} videos • ${unitMinutes(u)} min • ${unitSize(u)} MB (H.265 1080p)`;
+  $('#btn-download-unit').textContent = State.cached[u.id] ? '✓ Saved on device' : '⬇ Save offline';
+
+  const box = $('#lesson-list');
+  box.innerHTML = '';
+  u.lessons.forEach((l, i) => {
+    const p = State.progress[l.id] || 0;
+    const b = document.createElement('button');
+    b.className = 'lesson';
+    b.setAttribute('data-focus','');
+    b.innerHTML = `
+      <div class="lesson-no">${i+1}</div>
+      <div class="lesson-txt">
+        <div class="lesson-name">${l.title}</div>
+        <div class="lesson-meta">
+          <span>${l.mins} min</span><span>${l.size} MB</span><span>H.265</span>
+          ${State.cached[u.id] ? '<span>⬇ Offline</span>' : '<span>☁ Stream</span>'}
+          ${p > 0 ? `<span class="mini-bar"><span style="width:${Math.round(p*100)}%"></span></span>` : ''}
+        </div>
+      </div>
+      <div class="lesson-state">${p >= 0.98 ? '✓ Done' : (p > 0 ? Math.round(p*100)+'%' : '▶')}</div>`;
+    b.onclick = () => openPlayer(l.id, p > 0 && p < 0.98);
+    box.appendChild(b);
+  });
+}
+
+function downloadUnit(){
+  const u = Course.unit;
+  if (State.cached[u.id]){ toast('This unit is already saved on the device.'); return; }
+  toast(`⬇ ${u.title} — ${unitSize(u)} MB downloading from BunnyCDN…`);
+  setTimeout(() => {
+    State.cached[u.id] = true; save();
+    renderUnits(); renderLessons();
+    toast(`✅ ${u.title} is ready offline — plays with no internet.`);
+  }, State.net === 'wifi' ? 1600 : 3200);
+}
+
+/* ---------------- player ---------------- */
+const P = { course:null, unit:null, lesson:null, idx:0, t:0, dur:0, playing:false,
+            timer:null, barTimer:null, endTimer:null, speed:14, captions:true };
+
+function openPlayer(lessonId, resume){
+  const found = lessonById(lessonId);
+  if (!found) return;
+  clearInterval(P.endTimer);
+  P.course = found.course; P.unit = found.unit; P.lesson = found.lesson;
+  P.idx = found.unit.lessons.findIndex(l => l.id === lessonId);
+  P.dur = found.lesson.secs;
+  P.t = resume ? (State.progress[lessonId] || 0) * P.dur : 0;
+
+  State.recent = [lessonId].concat(State.recent.filter(x => x !== lessonId)).slice(0,10);
+  State.lastUnit = found.unit.id;
+  save();
+
+  $('#pt-kicker').textContent = `${P.course.subjectName} • ${levelName(P.course.level)} • Unit ${P.unit.no} — ${P.unit.title}`;
+  $('#pt-title').textContent  = P.lesson.title;
+  $('#pt-size').textContent   = `${P.lesson.size} MB`;
+  $('#pt-source').textContent = State.cached[P.unit.id] ? '⬇ From device (offline)' : '☁ BunnyCDN edge';
+  $('#vs-board-title').textContent = P.unit.title;
+  $('#vs-teacher').textContent = ['🧑‍🏫','👩‍🏫'][P.idx % 2];
+  $('#video-scene .vs-sky').style.background =
+    `linear-gradient(160deg, ${P.course.c1}, ${P.course.c2} 60%, #08182f)`;
+  $('#pb-dur').textContent = fmtTime(P.dur);
+  $('#next-card').classList.remove('on');
+
+  showScreen('player');
+  playing(true);
+  showBar();
+  if (State.net === '3g' && !State.cached[P.unit.id]){
+    $('#buffer-warn').classList.add('on');
+    setTimeout(() => $('#buffer-warn').classList.remove('on'), 3800);
+  }
+  if (!P.timer) P.timer = setInterval(tick, 100);
+}
+
+function playing(on){
+  P.playing = on;
+  $('#video-scene').classList.toggle('paused', !on);
+  $('#btn-play').textContent = on ? '❚❚' : '▶';
+  if (!on) showBar(true);
+}
+
+function tick(){
+  if (State.screen !== 'player') return;
+  if (!P.playing) return;
+  P.t += 0.1 * P.speed;
+  if (P.t >= P.dur){ P.t = P.dur; playing(false); finishLesson(); }
+  paintPlayer();
+}
+
+function paintPlayer(){
+  const pct = P.dur ? (P.t / P.dur) : 0;
+  $('#pb-fill').style.width = (pct*100) + '%';
+  $('#pb-knob').style.left  = (pct*100) + '%';
+  const buf = Math.min(1, pct + (State.cached[P.unit.id] ? 1 : (State.net === 'wifi' ? .22 : .05)));
+  $('#pb-buffer').style.width = (buf*100) + '%';
+  $('#pb-cur').textContent = fmtTime(P.t);
+
+  const lines = CAPTIONS[P.course.subject];
+  const li = Math.min(lines.length-1, Math.floor(pct * lines.length));
+  const cap = $('#vs-caption');
+  cap.style.opacity = P.captions ? 1 : 0;
+  cap.textContent = lines[li];
+
+  State.progress[P.lesson.id] = Math.max(State.progress[P.lesson.id] || 0, pct);
+}
+
+function seek(d){
+  P.t = Math.max(0, Math.min(P.dur, P.t + d));
+  paintPlayer();
+}
+
+function barVisible(){ return !$('#player-bar').classList.contains('hidden'); }
+function showBar(sticky){
+  $('#player-bar').classList.remove('hidden');
+  $('#player-top').classList.remove('hidden');
+  clearTimeout(P.barTimer);
+  if (!sticky){
+    P.barTimer = setTimeout(() => {
+      const inBar = Nav.current() && $('#player-bar').contains(Nav.current());
+      if (P.playing && !inBar) hideBar();
+    }, 4500);
+  }
+}
+function hideBar(){
+  $('#player-bar').classList.add('hidden');
+  $('#player-top').classList.add('hidden');
+  if (Nav.current() && $('#player-bar').contains(Nav.current())) Nav.clear();
+}
+
+function finishLesson(){
+  State.progress[P.lesson.id] = 1;
+  save();
+  const next = P.unit.lessons[P.idx + 1];
+  showBar(true);
+  if (!next){
+    toast('🎉 Unit complete! Move on to the next unit.');
+    return;
+  }
+  $('#vs-caption').style.opacity = 0;   // keep it clear of the up-next card
+  $('#nc-title').textContent = next.title;
+  $('#next-card').classList.add('on');
+  let n = 8;
+  $('#nc-count').textContent = `(${n})`;
+  setTimeout(() => Nav.set($('#next-card .btn.primary')), 80);
+  clearInterval(P.endTimer);
+  P.endTimer = setInterval(() => {
+    n--;
+    $('#nc-count').textContent = `(${n})`;
+    if (n <= 0){ clearInterval(P.endTimer); playNext(); }
+  }, 1000);
+}
+
+function playNext(){
+  clearInterval(P.endTimer);
+  const next = P.unit.lessons[P.idx + 1];
+  $('#next-card').classList.remove('on');
+  if (next) openPlayer(next.id, false);
+  else exitPlayer();
+}
+function playPrev(){
+  const prev = P.unit.lessons[P.idx - 1];
+  if (prev) openPlayer(prev.id, false); else seek(-P.t);
+}
+function exitPlayer(){
+  clearInterval(P.endTimer);
+  clearInterval(P.timer); P.timer = null;
+  P.playing = false;
+  $('#next-card').classList.remove('on');
+  save();
+  renderUnits(); renderLessons();
+  showScreen('course');
+}
+
+/* ---------------- OTA ---------------- */
+let otaBusy = false;
+function nextVersion(){
+  const p = State.version.split('.').map(Number);
+  p[2]++;
+  return p.join('.');
+}
+function runOTA(){
+  if (otaBusy){ toast('An update is already running…'); return; }
+  otaBusy = true;
+  const v = nextVersion();
+  toast('🔎 Version check: <span class="mono">cdn.sajilo.np/version.json</span>');
+  setTimeout(() => {
+    toast(`⬇ v${v} available — downloading in the background (no Play Store)`);
+    const card = $('#ota-card');
+    card.classList.add('on');
+    $('#oc-sub').textContent = `BunnyCDN edge · 24.6 MB · ${State.net === 'wifi' ? '24 Mbps' : '0.9 Mbps (3G)'}`;
+    let p = 0;
+    const step = State.net === 'wifi' ? 4.5 : 1.8;
+    const iv = setInterval(() => {
+      p = Math.min(100, p + step + Math.random()*2);
+      $('#oc-fill').style.width = p + '%';
+      $('#oc-sub').textContent = `BunnyCDN edge · ${(24.6*p/100).toFixed(1)} / 24.6 MB`;
+      if (p >= 100){
+        clearInterval(iv);
+        setTimeout(() => {
+          card.classList.remove('on');
+          $('#ota-title').textContent = 'Update ready';
+          $('#ota-body').innerHTML = `Version <b>v${v}</b> has been downloaded. Install it now?<br><small style="color:#8fa2c6">The teacher presses OK on the remote — no store, no review queue.</small>`;
+          $('#ota-actions').style.display = 'flex';
+          $('#ota-install-wrap').classList.remove('on');
+          $('#ota-install-fill').style.width = '0%';
+          openLayer('#layer-ota');
+        }, 500);
+      }
+    }, 260);
+  }, 1100);
+}
+function installOTA(){
+  const v = nextVersion();
+  $('#ota-actions').style.display = 'none';
+  $('#ota-install-wrap').classList.add('on');
+  $('#ota-title').textContent = 'Installing…';
+  $('#ota-body').textContent = 'Please do not switch the TV off.';
+  let p = 0;
+  const iv = setInterval(() => {
+    p = Math.min(100, p + 7);
+    $('#ota-install-fill').style.width = p + '%';
+    if (p >= 100){
+      clearInterval(iv);
+      setTimeout(() => {
+        $('#layer-ota').classList.remove('active');
+        State.version = v; save();
+        otaBusy = false;
+        boot();
+        setTimeout(() => toast(`✅ Updated to v${v} — back exactly where the class was.`), 3000);
+      }, 600);
+    }
+  }, 160);
+}
+function laterOTA(){
+  closeLayer('#layer-ota');
+  otaBusy = false;
+  toast('Update postponed — it will ask again on the next restart.');
+}
+
+/* ---------------- settings ---------------- */
+function fillSettings(){
+  $('#set-uuid').textContent      = State.uuid.toUpperCase();
+  $('#set-school').textContent    = State.school || '—';
+  $('#set-muni').textContent      = State.muni || '—';
+  $('#set-version').textContent   = 'v' + State.version;
+  $('#set-installed').textContent = 'v' + State.version;
+  $('#set-issued').textContent    = State.issued || '—';
+  $('#set-expires').textContent   = State.expires || '—';
+  $('#set-cached').textContent    = `${cachedUnits().reduce((n,x)=>n+x.unit.lessons.length,0)} videos (${cachedUnits().length} units)`;
+  $('#set-cache-size').textContent= `${cacheUsedGB()} GB / 32 GB`;
+}
+function unpair(){
+  State.paired = false; State.school = null; State.muni = null;
+  State.issued = null; State.expires = null;
+  save();
+  toast('Session cleared — the device is waiting for activation again.');
+  boot();
+}
+function resetDevice(){
+  wipe();
+  Object.assign(State, {
+    paired:false, school:null, muni:null, level:'nursery', net:'wifi', version:'2.5.0',
+    uuid:uuid4(), issued:null, expires:null, progress:{}, cached:{}, recent:[], lastUnit:null
+  });
+  otaBusy = false;
+  save();
+  boot();
+}
+function toggleNet(){
+  State.net = State.net === 'wifi' ? '3g' : 'wifi';
+  updateNetChip();
+  toast(State.net === 'wifi'
+    ? '📶 Wi-Fi back — full 1080p H.265'
+    : '📶 Dropped to 3G — adaptive bitrate ↓, offline lessons unaffected');
+  if (State.screen === 'player' && !State.cached[P.unit.id]){
+    $('#buffer-warn').classList.toggle('on', State.net === '3g');
+    if (State.net === '3g') setTimeout(() => $('#buffer-warn').classList.remove('on'), 4000);
+  }
+}
+
+/* ---------------- actions ---------------- */
+const ACTIONS = {
+  'open-ops':     () => openLayer('#layer-ops', '#ops-rows .ops-btn[data-focus]'),
+  'close-ops':    () => closeLayer('#layer-ops'),
+  'help':         () => openLayer('#layer-help'),
+  'close-help':   () => closeLayer('#layer-help'),
+  'settings':     () => showScreen('settings'),
+  'back':         () => goBack(),
+  'play-unit':    () => openPlayer(Course.unit.lessons[0].id, false),
+  'download-unit':() => downloadUnit(),
+  'toggle-play':  () => { playing(!P.playing); showBar(); },
+  'next-lesson':  () => playNext(),
+  'prev-lesson':  () => playPrev(),
+  'play-next':    () => playNext(),
+  'toggle-caption':() => { P.captions = !P.captions; paintPlayer(); toast(P.captions ? 'Captions on' : 'Captions off'); },
+  'save-offline': () => { State.cached[P.unit.id] = true; save(); $('#pt-source').textContent = '⬇ From device (offline)'; toast('⬇ This unit is now saved on the device.'); },
+  'ota-install':  () => installOTA(),
+  'ota-later':    () => laterOTA(),
+  'check-update': () => runOTA(),
+  'toggle-net':   () => toggleNet(),
+  'unpair':       () => unpair()
+};
+$('#tv').addEventListener('click', e => {
+  const el = e.target.closest('[data-action]');
+  if (el && ACTIONS[el.dataset.action]) ACTIONS[el.dataset.action]();
+});
+
+function goBack(){
+  const layer = anyLayer();
+  if (layer){
+    if (layer.id === 'layer-ota' && $('#ota-actions').style.display === 'none') return; // installing
+    closeLayer('#' + layer.id);
+    if (layer.id === 'layer-ota') otaBusy = false;
+    return;
+  }
+  if (State.screen === 'player'){ exitPlayer(); return; }
+  if (State.screen === 'course'){ renderHome(); showScreen('home'); return; }
+  if (State.screen === 'settings'){ renderHome(); showScreen('home'); return; }
+  if (State.screen === 'home') toast('This is the home screen.');
+}
+
+/* ---------------- key / remote input ---------------- */
+const KEYMAP = {
+  ArrowUp:'up', ArrowDown:'down', ArrowLeft:'left', ArrowRight:'right',
+  Enter:'ok', ' ':'ok', Backspace:'back', Escape:'back'
+};
+
+function input(k){
+  if (State.screen === 'boot') return;
+
+  if (State.screen === 'player' && !anyLayer()){
+    playerInput(k);
+    return;
+  }
+  if (k === 'back'){ goBack(); return; }
+  if (k === 'ok'){ Nav.activate(); return; }
+  Nav.move(k);
+}
+
+function playerInput(k){
+  const nc = $('#next-card').classList.contains('on');
+  if (nc){
+    if (k === 'back'){ exitPlayer(); return; }
+    if (k === 'ok'){ clearInterval(P.endTimer); Nav.activate(); return; }
+    Nav.move(k); return;
+  }
+  if (k === 'back'){ exitPlayer(); return; }
+  if (k === 'left'){ showBar(); seek(-15); return; }
+  if (k === 'right'){ showBar(); seek(15); return; }
+  if (k === 'down'){
+    if (!barVisible() || !Nav.current()){ showBar(true); Nav.set($('#btn-play')); }
+    else Nav.move('down');
+    return;
+  }
+  if (k === 'up'){
+    if (barVisible() && Nav.current()){ hideBar(); Nav.clear(); }
+    else showBar();
+    return;
+  }
+  if (k === 'ok'){
+    if (barVisible() && Nav.current() && $('#player-bar').contains(Nav.current())) Nav.activate();
+    else { playing(!P.playing); showBar(); }
+  }
+}
+
+window.addEventListener('keydown', e => {
+  const k = KEYMAP[e.key];
+  if (k){ e.preventDefault(); input(k); return; }
+  const c = e.key.toLowerCase();
+  if (c === 'a' && !State.paired) { openLayer('#layer-ops', '#ops-rows .ops-btn[data-focus]'); return; }
+  if (c === 'a'){ toast('Device is already paired — press R to reset and see it again.'); return; }
+  if (c === 'u'){ runOTA(); return; }
+  if (c === 'n'){ toggleNet(); return; }
+  if (c === 'r'){ resetDevice(); return; }
+  if (c === 'f'){ toggleFullscreen(); return; }
+  if (c === 'h'){ togglePresenter(); return; }
+  if (e.key === '?' || c === '/'){ openLayer('#layer-help'); return; }
+});
+
+/* presenter bar + on-screen remote */
+$$('#presenter [data-p]').forEach(b => {
+  b.onclick = () => {
+    const a = b.dataset.p;
+    if (a === 'ops'){
+      if (State.paired) toast('Device is already paired — press Reset device first.');
+      else openLayer('#layer-ops', '#ops-rows .ops-btn[data-focus]');
+    }
+    if (a === 'ota')  runOTA();
+    if (a === 'net')  toggleNet();
+    if (a === 'reset')resetDevice();
+    if (a === 'help') openLayer('#layer-help');
+    if (a === 'full') toggleFullscreen();
+    if (a === 'hide') togglePresenter();
+  };
+});
+$$('#presenter [data-k]').forEach(b => { b.onclick = () => input(b.dataset.k); });
+
+/* ---------------- start ---------------- */
+load();
+if (!State.uuid){ State.uuid = uuid4(); save(); }
+fit();
+boot();
+
+</script>
+</body>
+</html>

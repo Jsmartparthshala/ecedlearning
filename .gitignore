@@ -1,0 +1,30 @@
+# --- Android / Gradle ---
+android/.gradle/
+android/.kotlin/
+android/build/
+android/*/build/
+android/local.properties
+android/secrets.properties
+android/.idea/
+*.iml
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# --- IDE ---
+.idea/
+.vscode/
+
+# --- OS ---
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# --- Internal planning material, not part of the product ---
+MEMORY.md
+ROADMAP.md
+DAY1.md
+*.pdf
+screenshot-*.png
+.decode_test.py

@@ -1,0 +1,67 @@
+package np.com.jagdamba.eced.core.data
+
+import io.github.jan.supabase.postgrest.from
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import np.com.jagdamba.eced.core.model.Progress
+
+/**
+ * Watch-progress, written debounced from the player.
+ *
+ * Identity is dual: the TV writes with deviceId (no login), mobile writes with
+ * profileId (real account). The DB enforces exactly one of the two via a check
+ * constraint, so passing both is a runtime error, not a silent bug.
+ */
+class ProgressRepository(
+    private val client: io.github.jan.supabase.SupabaseClient = Supa.client,
+) {
+
+    suspend fun save(
+        lessonId: String,
+        positionSec: Int,
+        completed: Boolean,
+        deviceId: String? = null,
+        profileId: String? = null,
+    ) = withContext(Dispatchers.IO) {
+        require((deviceId == null) != (profileId == null)) {
+            "Pass exactly one of deviceId / profileId"
+        }
+        val conflict = if (deviceId != null) "device_id,lesson_id" else "profile_id,lesson_id"
+
+        quietly("progress.upsert") {
+            client.from("progress").upsert(
+                Progress(
+                    lessonId    = lessonId,
+                    deviceId    = deviceId,
+                    profileId   = profileId,
+                    positionSec = positionSec,
+                    completed   = completed,
+                )
+            ) {
+                onConflict = conflict
+            }
+        }
+        Unit
+    }
+
+    suspend fun forDevice(deviceId: String): Map<String, Progress> = withContext(Dispatchers.IO) {
+        quietly("progress.forDevice") {
+            client.from("progress")
+                .select { filter { eq("device_id", deviceId) } }
+                .decodeList<Progress>()
+                .associateBy { it.lessonId }
+        } ?: emptyMap()
+    }
+
+    suspend fun resumePosition(lessonId: String, deviceId: String): Int = withContext(Dispatchers.IO) {
+        quietly("progress.resume") {
+            client.from("progress")
+                .select {
+                    filter { eq("device_id", deviceId); eq("lesson_id", lessonId) }
+                    limit(1)
+                }
+                .decodeSingleOrNull<Progress>()
+                ?.positionSec
+        } ?: 0
+    }
+}

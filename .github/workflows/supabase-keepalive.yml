@@ -1,0 +1,26 @@
+# Supabase free-tier projects PAUSE after 7 days with no activity. A paused project
+# on demo morning is a disaster, and unpausing is manual. This pings the REST
+# endpoint daily so the project never goes idle.
+#
+# Setup: repo Settings -> Secrets and variables -> Actions, add
+#   SUPABASE_URL       https://xxxx.supabase.co
+#   SUPABASE_ANON_KEY  eyJ...
+name: Supabase keep-alive
+
+on:
+  schedule:
+    - cron: '17 3 * * *'      # 03:17 UTC daily, off the hour to avoid GH congestion
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping PostgREST
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/subjects?select=id&limit=1")
+          echo "HTTP $code"
+          test "$code" = "200"

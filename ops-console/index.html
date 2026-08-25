@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JSP ECED — Ops Console</title>
+<style>
+  :root{
+    --bg:#0e1116; --panel:#161b23; --line:#252c37; --ink:#e6edf3;
+    --muted:#8b98a8; --gold:#e8b64c; --ok:#3fb950; --warn:#d29922;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font:15px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  header{padding:20px 28px;border-bottom:1px solid var(--line);
+         display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.2px}
+  .tag{font-size:11px;color:var(--muted);border:1px solid var(--line);
+       padding:2px 8px;border-radius:99px}
+  main{padding:24px 28px;max-width:1100px}
+  .warn{background:#2a1f0d;border:1px solid #5c4415;color:#f0d9a0;
+        padding:12px 14px;border-radius:8px;font-size:13px;margin-bottom:20px}
+  .cfg{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px}
+  input,select,button{font:inherit;border-radius:7px;border:1px solid var(--line);
+       background:var(--panel);color:var(--ink);padding:9px 12px}
+  input{min-width:290px}
+  button{cursor:pointer;background:#1f6feb;border-color:#1f6feb;font-weight:600}
+  button.ghost{background:var(--panel);border-color:var(--line);font-weight:500}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);font-size:14px}
+  th{color:var(--muted);font-weight:550;font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+  code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12.5px;color:var(--gold)}
+  .pill{font-size:11px;padding:2px 9px;border-radius:99px;border:1px solid}
+  .pill.unclaimed{color:var(--warn);border-color:#5c4415;background:#2a1f0d}
+  .pill.claimed{color:var(--ok);border-color:#1c4a26;background:#0f2415}
+  .muted{color:var(--muted)}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);
+     margin:32px 0 4px;font-weight:600}
+  #status{font-size:13px;color:var(--muted);margin-left:auto}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>JSP ECED — Ops Console</h1>
+  <span class="tag">reverse provisioning</span>
+  <span id="status">not connected</span>
+</header>
+
+<main>
+  <div class="warn">
+    <strong>Run this locally only.</strong> It uses the <code>service_role</code> key, which
+    bypasses every RLS policy. Never deploy this page to Netlify or commit the key.
+    The key is held in <code>sessionStorage</code> and dies with the tab.
+    Before this ever goes public, move token issuing into an Edge Function.
+  </div>
+
+  <div class="cfg">
+    <input id="url" placeholder="https://xxxx.supabase.co" autocomplete="off">
+    <input id="key" placeholder="service_role key" type="password" autocomplete="off">
+    <button id="connect">Connect</button>
+    <button id="refresh" class="ghost" disabled>Refresh</button>
+  </div>
+
+  <h2>Devices</h2>
+  <table>
+    <thead>
+      <tr><th>Hardware UUID</th><th>School</th><th>Status</th><th>Last seen</th><th></th></tr>
+    </thead>
+    <tbody id="devices">
+      <tr><td colspan="5" class="muted">Connect to load devices.</td></tr>
+    </tbody>
+  </table>
+</main>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const $ = s => document.querySelector(s);
+let sb = null;
+
+// restore from sessionStorage so a refresh doesn't mean retyping
+$('#url').value = sessionStorage.getItem('sb_url') || '';
+$('#key').value = sessionStorage.getItem('sb_key') || '';
+
+$('#connect').onclick = async () => {
+  const url = $('#url').value.trim();
+  const key = $('#key').value.trim();
+  if (!url || !key) return setStatus('enter URL and service_role key');
+
+  sessionStorage.setItem('sb_url', url);
+  sessionStorage.setItem('sb_key', key);
+
+  sb = createClient(url, key, { auth: { persistSession: false } });
+  $('#refresh').disabled = false;
+  setStatus('connected');
+  await load();
+
+  // live-update the table as TVs boot and register themselves
+  sb.channel('ops-devices')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'devices' }, load)
+    .subscribe();
+};
+
+$('#refresh').onclick = () => load();
+
+function setStatus(t){ $('#status').textContent = t; }
+
+async function load(){
+  const { data, error } = await sb
+    .from('devices')
+    .select('id, hardware_uuid, claimed_at, last_seen, app_version, school_id, schools(name)')
+    .order('claimed_at', { ascending: true, nullsFirst: true })
+    .order('created_at', { ascending: false });
+
+  if (error) return setStatus('error: ' + error.message);
+
+  const { data: schools } = await sb.from('schools').select('id, name').order('name');
+  render(data || [], schools || []);
+  setStatus(`${(data||[]).length} device(s)`);
+}
+
+function render(devices, schools){
+  const tb = $('#devices');
+  if (!devices.length){
+    tb.innerHTML = '<tr><td colspan="5" class="muted">No devices yet. Boot the TV app.</td></tr>';
+    return;
+  }
+
+  tb.innerHTML = devices.map(d => {
+    const claimed = !!d.claimed_at;
+    const opts = schools.map(s =>
+      `<option value="${s.id}" ${s.id === d.school_id ? 'selected' : ''}>${esc(s.name)}</option>`
+    ).join('');
+
+    return `<tr>
+      <td><code>${esc(d.hardware_uuid)}</code></td>
+      <td>${claimed
+            ? esc(d.schools?.name || '—')
+            : `<select data-sel="${d.id}"><option value="">Select school…</option>${opts}</select>`}</td>
+      <td><span class="pill ${claimed?'claimed':'unclaimed'}">${claimed?'claimed':'unclaimed'}</span></td>
+      <td class="muted">${d.last_seen ? new Date(d.last_seen).toLocaleString() : '—'}</td>
+      <td>${claimed
+            ? `<button class="ghost" data-revoke="${d.id}">Revoke</button>`
+            : `<button data-push="${d.id}">Push token →</button>`}</td>
+    </tr>`;
+  }).join('');
+
+  tb.querySelectorAll('[data-push]').forEach(b => b.onclick = () => pushToken(b.dataset.push));
+  tb.querySelectorAll('[data-revoke]').forEach(b => b.onclick = () => revoke(b.dataset.revoke));
+}
+
+// This is the demo's opening beat: one click here wakes up the TV.
+async function pushToken(deviceId){
+  const sel = document.querySelector(`[data-sel="${deviceId}"]`);
+  const schoolId = sel?.value;
+  if (!schoolId) return setStatus('pick a school first');
+
+  const token   = crypto.randomUUID() + '.' + crypto.randomUUID();
+  const expires = new Date();
+  expires.setFullYear(expires.getFullYear() + 10);   // 10-year "eternal session"
+
+  setStatus('issuing token…');
+
+  const { error: e1 } = await sb.from('devices')
+    .update({ school_id: schoolId, claimed_at: new Date().toISOString() })
+    .eq('id', deviceId);
+  if (e1) return setStatus('error: ' + e1.message);
+
+  // insert last — this is the row the TV is listening for on Realtime
+  const { error: e2 } = await sb.from('sessions')
+    .insert({ device_id: deviceId, token, expires_at: expires.toISOString() });
+  if (e2) return setStatus('error: ' + e2.message);
+
+  setStatus('token pushed');
+  load();
+}
+
+async function revoke(deviceId){
+  await sb.from('sessions').update({ revoked: true }).eq('device_id', deviceId);
+  await sb.from('devices').update({ claimed_at: null, school_id: null }).eq('id', deviceId);
+  setStatus('revoked');
+  load();
+}
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+</script>
+</body>
+</html>

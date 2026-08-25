@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">JSP ECED Learning</string>
+
+    <string name="pairing_title">Waiting to be activated</string>
+    <string name="pairing_body">Give this code to the central office.</string>
+    <string name="pairing_hint">This screen will change by itself once activated.\nNothing needs to be typed here.</string>
+
+    <string name="browse_title">JSP ECED Learning</string>
+    <string name="row_continue">Continue watching</string>
+    <string name="row_playable">Playable now</string>
+
+    <string name="no_video_short">— no video yet —</string>
+    <string name="no_video">This lesson has no video yet.</string>
+    <string name="offline">No internet connection.</string>
+</resources>

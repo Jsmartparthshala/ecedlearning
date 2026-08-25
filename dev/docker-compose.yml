@@ -1,0 +1,48 @@
+# Local stand-in for Supabase, so the app can run against a real backend before
+# (or without) a Supabase project existing.
+#
+# Supabase is Postgres + PostgREST + GoTrue behind a gateway. The TV app only uses
+# the PostgREST part, so that is all this reproduces:
+#
+#   postgres  -> the same 001/002/003 migrations
+#   postgrest -> the REST API supabase-kt actually talks to
+#   gateway   -> nginx mapping /rest/v1/* to PostgREST, which is the path shape
+#                supabase-kt builds from the project URL
+#
+# No JWT secret is set, so PostgREST treats every request as the `anon` role.
+# That is exactly the TV's situation in production, and it means RLS is genuinely
+# exercised rather than bypassed.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: eced
+    ports: ["55432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      retries: 20
+
+  postgrest:
+    image: postgrest/postgrest:v12.2.3
+    environment:
+      PGRST_DB_URI: postgres://postgres:postgres@postgres:5432/eced
+      PGRST_DB_SCHEMAS: public
+      PGRST_DB_ANON_ROLE: anon
+      # supabase-kt always sends Authorization: Bearer <anon key>, and PostgREST
+      # rejects any Authorization header when no secret is configured (PGRST300).
+      # Supabase's anon key IS a JWT signed with the project secret, so we mirror
+      # that exactly - which also means RLS role switching works the same way.
+      PGRST_JWT_SECRET: local-dev-jwt-secret-at-least-32-characters-long
+      PGRST_OPENAPI_SERVER_PROXY_URI: http://localhost:8080/rest/v1
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  gateway:
+    image: nginx:alpine
+    ports: ["8080:80"]
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on: [postgrest]

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- DEBUG ONLY. Merged into debug builds; release builds never see this.
+     Needed so the app can reach the local Supabase stand-in over plain HTTP.
+     Real Supabase is HTTPS, so this disappears the moment you switch over. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application
+        android:networkSecurityConfig="@xml/network_security_config"
+        tools:replace="android:networkSecurityConfig" />
+</manifest>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Placeholder banner. Android TV requires a 320x180 banner for the home row;
+     without one the app is invisible on the launcher. Replace with real artwork. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+    <path
+        android:fillColor="#151A22"
+        android:pathData="M0,0h320v180h-320z" />
+    <path
+        android:fillColor="#E8B64C"
+        android:pathData="M28,74h44v10h-44z M28,92h64v10h-64z" />
+    <path
+        android:fillColor="#2AA9D8"
+        android:pathData="M232,58m-26,0a26,26 0,1 1,52 0a26,26 0,1 1,-52 0" />
+</vector>

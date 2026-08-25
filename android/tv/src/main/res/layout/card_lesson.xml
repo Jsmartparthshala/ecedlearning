@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Flat card. Deliberately cheap to draw for low-end Amlogic/Allwinner boxes:
+     one opaque background, one accent bar, two text views. No elevation, no
+     shadow, no gradient, no image decode. Overdraw stays at 1x across the card. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/card_root"
+    android:layout_width="280dp"
+    android:layout_height="158dp"
+    android:orientation="vertical"
+    android:background="@drawable/card_bg"
+    android:padding="16dp"
+    android:focusable="true"
+    android:focusableInTouchMode="true">
+
+    <!-- Subject colour bar: the only colour on the card, so it reads instantly
+         from across a classroom without costing any fill rate. -->
+    <View
+        android:id="@+id/card_accent"
+        android:layout_width="56dp"
+        android:layout_height="6dp"
+        android:background="#2AA9D8" />
+
+    <TextView
+        android:id="@+id/card_title"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="14dp"
+        android:maxLines="3"
+        android:ellipsize="end"
+        android:textColor="@color/tv_ink"
+        android:textSize="20sp"
+        android:lineSpacingMultiplier="1.1" />
+
+    <TextView
+        android:id="@+id/card_meta"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:textColor="@color/tv_muted"
+        android:textSize="15sp" />
+</LinearLayout>
