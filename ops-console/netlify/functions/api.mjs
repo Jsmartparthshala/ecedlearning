@@ -94,6 +94,12 @@ export default async (req) => {
         return await revoke(sb, body)
       case 'create-school':
         return await createSchool(sb, body)
+      case 'create-teacher':
+        return await createTeacher(sb, body)
+      case 'delete-teacher':
+        return await deleteTeacher(sb, body)
+      case 'assign-teacher':
+        return await assignTeacher(sb, body)
       default:
         return json({ error: `Unknown action: ${body.action}` }, 400)
     }
@@ -105,7 +111,7 @@ export default async (req) => {
 async function list(sb) {
   const { data: devices, error } = await sb
     .from('devices')
-    .select('id, hardware_uuid, claimed_at, last_seen, app_version, school_id, schools(name)')
+    .select('id, hardware_uuid, claimed_at, last_seen, app_version, school_id, schools(name), teacher_id, teachers(name, role)')
     .order('claimed_at', { ascending: true, nullsFirst: true })
     .order('created_at', { ascending: false })
   if (error) return json({ error: error.message }, 500)
@@ -116,7 +122,16 @@ async function list(sb) {
     .order('name')
   if (e2) return json({ error: e2.message }, 500)
 
-  return json({ devices: devices || [], schools: schools || [] })
+  // Every teacher in one go rather than per school. There are tens of these, not
+  // thousands, and the page filters client side as the school dropdown changes -
+  // which keeps changing school instant instead of costing a round trip.
+  const { data: teachers, error: e3 } = await sb
+    .from('teachers')
+    .select('id, school_id, name, role')
+    .order('name')
+  if (e3) return json({ error: e3.message }, 500)
+
+  return json({ devices: devices || [], schools: schools || [], teachers: teachers || [] })
 }
 
 /** Resolve a typed code to one device row, or explain why it did not resolve. */
@@ -154,7 +169,7 @@ async function lookup(sb, { code }) {
  * The demo's opening beat. The operator types the code the television is showing,
  * picks the school, and the TV wakes up by itself.
  */
-async function activate(sb, { code, schoolId }) {
+async function activate(sb, { code, schoolId, teacherId }) {
   if (!schoolId) return json({ error: 'Choose a school first.' }, 400)
 
   const found = await findByCode(sb, code)
@@ -167,13 +182,25 @@ async function activate(sb, { code, schoolId }) {
     }, 409)
   }
 
+  // A teacher belongs to exactly one school. Assigning one from a different
+  // school would leave a device showing a name nobody at that school recognises,
+  // so refuse it here rather than letting the UI be the only thing preventing it.
+  if (teacherId) {
+    const wrong = await teacherOutsideSchool(sb, teacherId, schoolId)
+    if (wrong) return json({ error: wrong }, 400)
+  }
+
   const token = `${crypto.randomUUID()}.${crypto.randomUUID()}`
   const expires = new Date()
   expires.setFullYear(expires.getFullYear() + SESSION_YEARS)
 
   const { error: e1 } = await sb
     .from('devices')
-    .update({ school_id: schoolId, claimed_at: new Date().toISOString() })
+    .update({
+      school_id: schoolId,
+      teacher_id: teacherId || null,
+      claimed_at: new Date().toISOString(),
+    })
     .eq('id', device.id)
   if (e1) return json({ error: e1.message }, 500)
 
@@ -198,9 +225,86 @@ async function revoke(sb, { deviceId }) {
 
   const { error: e2 } = await sb
     .from('devices')
-    .update({ claimed_at: null, school_id: null })
+    .update({ claimed_at: null, school_id: null, teacher_id: null })
     .eq('id', deviceId)
   if (e2) return json({ error: e2.message }, 500)
+
+  return json({ ok: true })
+}
+
+/**
+ * Shared guard. Returns an error string when the teacher does not belong to the
+ * school, or null when the pairing is fine.
+ */
+async function teacherOutsideSchool(sb, teacherId, schoolId) {
+  const { data, error } = await sb
+    .from('teachers')
+    .select('id, name, school_id')
+    .eq('id', teacherId)
+    .maybeSingle()
+  if (error) return error.message
+  if (!data) return 'That teacher no longer exists. Reload the page.'
+  if (data.school_id !== schoolId) {
+    return `${data.name} is not a teacher at that school.`
+  }
+  return null
+}
+
+async function createTeacher(sb, { schoolId, name, role }) {
+  if (!schoolId) return json({ error: 'Choose a school first.' }, 400)
+  const clean = String(name || '').trim()
+  if (!clean) return json({ error: 'A teacher needs a name.' }, 400)
+
+  const { data, error } = await sb
+    .from('teachers')
+    .insert({ school_id: schoolId, name: clean, role: String(role || '').trim() || null })
+    .select('id, school_id, name, role')
+    .single()
+  if (error) return json({ error: error.message }, 500)
+
+  return json({ ok: true, teacher: data })
+}
+
+/**
+ * Removing a teacher does not remove their televisions. The FK is
+ * `on delete set null`, so those devices stay activated for the school and fall
+ * back to showing the school name - which is what a television should do when
+ * the teacher it was assigned to leaves mid-term.
+ */
+async function deleteTeacher(sb, { teacherId }) {
+  if (!teacherId) return json({ error: 'teacherId is required' }, 400)
+
+  const { error } = await sb.from('teachers').delete().eq('id', teacherId)
+  if (error) return json({ error: error.message }, 500)
+
+  return json({ ok: true })
+}
+
+/** Point an already-activated television at a teacher, or clear it with null. */
+async function assignTeacher(sb, { deviceId, teacherId }) {
+  if (!deviceId) return json({ error: 'deviceId is required' }, 400)
+
+  const { data: device, error: e0 } = await sb
+    .from('devices')
+    .select('id, school_id')
+    .eq('id', deviceId)
+    .maybeSingle()
+  if (e0) return json({ error: e0.message }, 500)
+  if (!device) return json({ error: 'That television no longer exists.' }, 404)
+
+  if (teacherId) {
+    if (!device.school_id) {
+      return json({ error: 'Activate the television for a school before assigning a teacher.' }, 400)
+    }
+    const wrong = await teacherOutsideSchool(sb, teacherId, device.school_id)
+    if (wrong) return json({ error: wrong }, 400)
+  }
+
+  const { error } = await sb
+    .from('devices')
+    .update({ teacher_id: teacherId || null })
+    .eq('id', deviceId)
+  if (error) return json({ error: error.message }, 500)
 
   return json({ ok: true })
 }

@@ -66,8 +66,11 @@
     <string name="glyph_profile">◉</string>
     <string name="glyph_downloads">↓</string>
     <string name="glyph_settings">⚙</string>
-    <string name="profile_empty_title">No teacher profiles yet</string>
-    <string name="profile_empty_body">This television is shared by the whole school and needs no sign in. When individual teacher profiles arrive, each teacher will get their own saved place in every lesson.</string>
+    <string name="profile_teacher_kicker">Assigned teacher</string>
+    <string name="profile_role_known">%s. Progress on this television is saved against this device, so every lesson picks up where it was left.</string>
+    <string name="profile_role_blank">Progress on this television is saved against this device, so every lesson picks up where it was left.</string>
+    <string name="profile_empty_title">Shared by the whole school</string>
+    <string name="profile_empty_body">No teacher has been assigned to this television, which is right for a hall or a shared room. The central office can assign one at any time and it appears here without anyone touching the television.</string>
     <string name="set_head_school">SCHOOL</string>
     <string name="set_lbl_network">Network</string>
     <string name="set_action_wifi">Open Wi-Fi settings</string>

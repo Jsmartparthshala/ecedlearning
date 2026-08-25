@@ -30,6 +30,16 @@ const PORT = Number(process.env.PORT || 8000);
 const WANT_SQL = process.argv.includes('--sql');
 
 /**
+ * Poster frames, one per video, written by make-thumbs.js. They live beside this
+ * script rather than in ROOT because ROOT is the operator's own video library and
+ * this server has no business writing into it.
+ *
+ * Served under /thumbs/ with the same relative path as the video, extension
+ * swapped for .jpg.
+ */
+const THUMBS = path.join(__dirname, 'thumbs');
+
+/**
  * --public-url https://something.trycloudflare.com
  *
  * When the television is not on the same network as this machine, a LAN address
@@ -238,6 +248,10 @@ process.stdout.write('Probing ' + files.length + ' files for duration...\n');
 const meta = files.map(f => {
   const p = probe(f);
   const rel = path.relative(ROOT, f).split(path.sep).join('/');
+  // A poster is optional. If make-thumbs.js has not been run the catalogue is
+  // written without poster_url and the cards fall back to their colour blocks,
+  // exactly as before.
+  const thumbRel = rel.replace(/\.[^.]+$/, '') + '.jpg';
   return {
     file: f,
     rel,
@@ -245,6 +259,7 @@ const meta = files.map(f => {
     seconds: p.seconds,
     faststart: p.faststart,
     subject: classify(rel),
+    thumb: fs.existsSync(path.join(THUMBS, thumbRel)) ? 'thumbs/' + thumbRel : null,
   };
 });
 
@@ -269,11 +284,16 @@ const server = http.createServer((req, res) => {
     return res.end('<h1>' + files.length + ' videos</h1><table>' + rows + '</table>');
   }
 
+  // Poster frames come out of a different directory, so they get their own
+  // resolution and their own guard. Same rule, different root.
+  const isThumb = rel === 'thumbs' || rel.indexOf('thumbs/') === 0;
+  const root = isThumb ? THUMBS : ROOT;
+  const target = path.resolve(root, isThumb ? rel.slice('thumbs/'.length) : rel);
+
   // Path traversal guard: resolve first, then confirm the result is still
-  // inside ROOT. Checking the raw string for ".." is not enough on Windows,
+  // inside the root. Checking the raw string for ".." is not enough on Windows,
   // where separators and short names give several spellings of the same escape.
-  const target = path.resolve(ROOT, rel);
-  if (target !== ROOT && target.indexOf(ROOT + path.sep) !== 0) {
+  if (target !== root && target.indexOf(root + path.sep) !== 0) {
     res.writeHead(403).end('Forbidden');
     return;
   }
@@ -364,7 +384,8 @@ function buildSql(base, items) {
     const pool = mine.concat(filler);
     perSubject[slug] = { named: mine.length, total: pool.length };
     pool.forEach((m, i) => rows.push(
-      "    ('" + slug + "', " + i + ", '" + url(m).replace(/'/g, "''") + "', " + m.seconds + ")"));
+      "    ('" + slug + "', " + i + ", '" + url(m).replace(/'/g, "''") + "', " + m.seconds + ", " +
+      (m.thumb ? "'" + (base + '/' + encodePath(m.thumb)).replace(/'/g, "''") + "'" : 'null') + ")"));
   }
 
   const summary = SLUGS
@@ -390,7 +411,7 @@ function buildSql(base, items) {
     '-- Assigned per subject so a subject opens on footage that matches it:\n' +
     summary + '\n' +
     '\n' +
-    'with pool(slug, n, url, secs) as (values\n' +
+    'with pool(slug, n, url, secs, poster) as (values\n' +
     rows.join(',\n') + '\n' +
     '),\n' +
     'sized as (\n' +
@@ -408,13 +429,14 @@ function buildSql(base, items) {
     '  where u.sort_order <= 3\n' +
     ')\n' +
     'update lessons\n' +
-    "set video_url = p.url, duration_sec = p.secs, codec = 'h264'\n" +
+    "set video_url = p.url, duration_sec = p.secs, codec = 'h264', poster_url = p.poster\n" +
     'from target t\n' +
     'join sized z on z.slug = t.slug\n' +
     'join pool p on p.slug = t.slug and p.n = t.rn % z.cnt\n' +
     'where lessons.id = t.id;\n' +
     '\n' +
-    'select s.name_en, count(*) as playable\n' +
+    'select s.name_en, count(*) as playable,\n' +
+    '       count(l.poster_url) as with_poster\n' +
     'from lessons l\n' +
     'join units u on u.id = l.unit_id\n' +
     'join subjects s on s.id = u.subject_id\n' +

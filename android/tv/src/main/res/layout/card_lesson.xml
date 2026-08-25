@@ -22,6 +22,26 @@
         android:layout_width="match_parent"
         android:layout_height="104dp">
 
+        <!-- Poster frame, when the lesson has one. First child so it sits behind
+             the glyph and badges; empty and invisible otherwise, which leaves the
+             subject colour showing exactly as before. -->
+        <ImageView
+            android:id="@+id/card_poster"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:contentDescription="@null" />
+
+        <!-- White text over an arbitrary video frame is unreadable about half the
+             time. This darkens the frame enough to carry the glyph and badges
+             without hiding what the picture is. -->
+        <View
+            android:id="@+id/card_poster_scrim"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/poster_scrim"
+            android:visibility="gone" />
+
         <TextView
             android:id="@+id/card_glyph"
             android:layout_width="match_parent"

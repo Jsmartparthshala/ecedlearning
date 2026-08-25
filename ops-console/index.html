@@ -54,6 +54,18 @@
   .found.bad{border-color:#5c2018;background:#2a1210;color:#f8b3ad}
   .found.good{border-color:#1c4a26;background:#0f2415;color:#8fe0a4}
 
+  .opt{font-weight:400;text-transform:none;letter-spacing:0;opacity:.7}
+
+  /* Teachers reuses the activation panel's shape so the two read as one job:
+     set the school up, then hang devices off it. */
+  .teachers{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 24px 8px}
+  .teachers .row{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:6px}
+  .teachers input{min-width:220px}
+  /* An assignment dropdown sits inside a table cell, so it must not be as tall
+     as the form controls above or every row grows to match. */
+  select.assign{padding:5px 8px;font-size:13px;max-width:190px;background:var(--raise)}
+  select.assign:disabled{opacity:.4}
+
   table{width:100%;border-collapse:collapse;margin-top:4px}
   th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);font-size:14px}
   th{color:var(--muted);font-weight:550;font-size:11.5px;text-transform:uppercase;letter-spacing:.5px}
@@ -107,6 +119,10 @@
           <label for="code">2 &middot; Code shown on the device</label>
           <input id="code" maxlength="11" placeholder="A1B2C3D4" autocomplete="off" spellcheck="false">
         </div>
+        <div class="field">
+          <label for="teacher">3 &middot; Teacher <span class="opt">optional</span></label>
+          <select id="teacher" disabled><option value="">Whole school</option></select>
+        </div>
         <button id="go" disabled>Add &amp; activate</button>
       </div>
       <div class="found" id="found"></div>
@@ -117,6 +133,36 @@
         anything, and no code is ever issued from here — it always comes off the
         device.
       </p>
+      <p class="hint">
+        Assigning a teacher is optional and can be changed later from the table
+        below. A television with no teacher belongs to the school and shows the
+        school name, which is right for a hall or a shared room.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Teachers <span class="muted" id="teacher-scope"></span></h2>
+    <div class="teachers">
+      <div class="row">
+        <div class="field">
+          <label for="t-name">Name</label>
+          <input id="t-name" placeholder="Sunita Shrestha" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="t-role">Class or role <span class="opt">optional</span></label>
+          <input id="t-role" placeholder="Nursery A" autocomplete="off">
+        </div>
+        <button id="t-add" disabled>Add teacher</button>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Name</th><th>Class or role</th><th>Televisions</th><th class="right"></th></tr>
+        </thead>
+        <tbody id="teachers">
+          <tr><td colspan="4" class="muted">Choose a school above.</td></tr>
+        </tbody>
+      </table>
     </div>
   </section>
 
@@ -125,12 +171,12 @@
     <table>
       <thead>
         <tr>
-          <th>Code</th><th>School</th><th>Status</th>
+          <th>Code</th><th>School</th><th>Teacher</th><th>Status</th>
           <th>Last seen</th><th>App</th><th class="right"></th>
         </tr>
       </thead>
       <tbody id="devices">
-        <tr><td colspan="6" class="muted">Loading…</td></tr>
+        <tr><td colspan="7" class="muted">Loading…</td></tr>
       </tbody>
     </table>
   </section>
@@ -148,6 +194,8 @@ const PASS_KEY = 'jsp_ops_pass'
 let passcode = localStorage.getItem(PASS_KEY) || ''
 
 let schools = []
+let teachers = []
+let devices = []
 let pollTimer = null
 
 async function api(action, payload = {}) {
@@ -223,10 +271,14 @@ codeEl.oninput = () => {
 }
 
 codeEl.onkeydown = e => { if (e.key === 'Enter') $('#go').click() }
-$('#school').onchange = syncGo
+
+// The school drives both the teacher picker and the teachers table, so
+// everything downstream of it is rebuilt whenever it changes.
+$('#school').onchange = () => { syncGo(); renderTeacherPicker(); renderTeachers() }
 
 function syncGo() {
   $('#go').disabled = codeEl.value.length !== 8 || !$('#school').value
+  $('#t-add').disabled = !$('#school').value || !$('#t-name').value.trim()
 }
 
 /* Look the code up before committing. Typing one wrong character otherwise
@@ -253,10 +305,11 @@ async function preview(code) {
 $('#go').onclick = async () => {
   const code = codeEl.value
   const schoolId = $('#school').value
+  const teacherId = $('#teacher').value || null
   $('#go').disabled = true
   setStatus('activating…')
   try {
-    await api('activate', { code, schoolId })
+    await api('activate', { code, schoolId, teacherId })
     setStatus(`${code} activated`, 'ok')
     codeEl.value = ''
     $('#found').className = 'found'
@@ -285,16 +338,115 @@ $('#add-school').onclick = async () => {
   }
 }
 
+// --------------------------------------------------------------- teachers
+
+$('#t-name').oninput = syncGo
+$('#t-name').onkeydown = e => { if (e.key === 'Enter') $('#t-add').click() }
+$('#t-role').onkeydown = e => { if (e.key === 'Enter') $('#t-add').click() }
+
+$('#t-add').onclick = async () => {
+  const schoolId = $('#school').value
+  const name = $('#t-name').value.trim()
+  if (!schoolId || !name) return
+  $('#t-add').disabled = true
+  try {
+    const { teacher } = await api('create-teacher', {
+      schoolId, name, role: $('#t-role').value.trim(),
+    })
+    setStatus(`added ${teacher.name}`, 'ok')
+    $('#t-name').value = ''
+    $('#t-role').value = ''
+    await refresh()
+    $('#t-name').focus()
+  } catch (e) {
+    setStatus(e.message, 'err')
+  }
+  syncGo()
+}
+
+/** Teachers at the school currently selected above. */
+const teachersHere = () => teachers.filter(t => t.school_id === $('#school').value)
+
+function renderTeacherPicker() {
+  const sel = $('#teacher')
+  const keep = sel.value
+  const mine = teachersHere()
+  sel.disabled = mine.length === 0
+  sel.innerHTML = '<option value="">Whole school</option>' + mine.map(t =>
+    `<option value="${esc(t.id)}">${esc(t.name)}${t.role ? ' — ' + esc(t.role) : ''}</option>`
+  ).join('')
+  if (keep && mine.some(t => t.id === keep)) sel.value = keep
+}
+
+function renderTeachers() {
+  const tb = $('#teachers')
+  const schoolId = $('#school').value
+  const school = schools.find(s => s.id === schoolId)
+  $('#teacher-scope').textContent = school ? `· ${school.name}` : ''
+
+  if (!schoolId) {
+    tb.innerHTML = '<tr><td colspan="4" class="muted">Choose a school above.</td></tr>'
+    return
+  }
+  const mine = teachersHere()
+  if (!mine.length) {
+    tb.innerHTML = '<tr><td colspan="4" class="muted">No teachers yet at this school.</td></tr>'
+    return
+  }
+
+  tb.innerHTML = mine.map(t => {
+    const n = devices.filter(d => d.teacher_id === t.id).length
+    return `<tr>
+      <td>${esc(t.name)}</td>
+      <td class="muted">${t.role ? esc(t.role) : '—'}</td>
+      <td class="muted">${n || '—'}</td>
+      <td class="right"><button class="ghost" data-del-teacher="${esc(t.id)}">Remove</button></td>
+    </tr>`
+  }).join('')
+
+  tb.querySelectorAll('[data-del-teacher]').forEach(b => b.onclick = () => {
+    const t = teachers.find(x => x.id === b.dataset.delTeacher)
+    const n = devices.filter(d => d.teacher_id === b.dataset.delTeacher).length
+    // Say what happens to their televisions. "Remove" next to a count of live
+    // devices reads as though it might unactivate them, and it does not.
+    const warn = n
+      ? `\n\nTheir ${n} television(s) stay activated and go back to showing the school name.`
+      : ''
+    if (!confirm(`Remove ${t?.name || 'this teacher'}?${warn}`)) return
+    removeTeacher(b.dataset.delTeacher)
+  })
+}
+
+async function removeTeacher(teacherId) {
+  try {
+    await api('delete-teacher', { teacherId })
+    setStatus('teacher removed', 'ok')
+    refresh()
+  } catch (e) {
+    setStatus(e.message, 'err')
+  }
+}
+
 // ---------------------------------------------------------------- devices
 
 async function refresh() {
+  // The five second poll must not rebuild a dropdown the operator is currently
+  // inside — it would snap the list shut mid-choice and look like a crash.
+  // Their own actions call refresh() after the select has lost focus, so this
+  // only ever defers the background poll.
+  if (document.activeElement?.classList.contains('assign')) return
+
   try {
     const data = await api('list')
     schools = data.schools
+    teachers = data.teachers || []
+    devices = data.devices
     renderSchools()
-    renderDevices(data.devices)
-    const waiting = data.devices.filter(d => !d.claimed_at).length
-    setStatus(`${data.devices.length} television(s), ${waiting} waiting`)
+    renderTeacherPicker()
+    renderTeachers()
+    renderDevices(devices)
+    const waiting = devices.filter(d => !d.claimed_at).length
+    setStatus(`${devices.length} television(s), ${waiting} waiting`)
     $('#live').textContent = `· updated ${new Date().toLocaleTimeString()}`
   } catch (e) {
     setStatus(e.message, 'err')
@@ -316,7 +468,7 @@ const codeOf = uuid => String(uuid || '').split('-')[0].toUpperCase()
 function renderDevices(devices) {
   const tb = $('#devices')
   if (!devices.length) {
-    tb.innerHTML = '<tr><td colspan="6" class="muted">No televisions yet. Boot the TV app.</td></tr>'
+    tb.innerHTML = '<tr><td colspan="7" class="muted">No televisions yet. Boot the TV app.</td></tr>'
     return
   }
 
@@ -325,6 +477,7 @@ function renderDevices(devices) {
     return `<tr>
       <td><code>${esc(codeOf(d.hardware_uuid))}</code></td>
       <td>${claimed ? esc(d.schools?.name || '—') : '<span class="muted">—</span>'}</td>
+      <td>${claimed ? teacherCell(d) : '<span class="muted">—</span>'}</td>
       <td><span class="pill ${claimed ? 'claimed' : 'unclaimed'}">${claimed ? 'activated' : 'waiting'}</span></td>
       <td class="muted">${d.last_seen ? new Date(d.last_seen).toLocaleString() : '—'}</td>
       <td class="muted">${esc(d.app_version || '—')}</td>
@@ -334,6 +487,8 @@ function renderDevices(devices) {
     </tr>`
   }).join('')
 
+  tb.querySelectorAll('[data-assign]').forEach(s => s.onchange = () =>
+    assign(s.dataset.assign, s.value || null))
   tb.querySelectorAll('[data-revoke]').forEach(b => b.onclick = () => revoke(b.dataset.revoke))
   // Saves reading a code off a television when it is already on screen here.
   tb.querySelectorAll('[data-use]').forEach(b => b.onclick = () => {
@@ -341,6 +496,38 @@ function renderDevices(devices) {
     codeEl.dispatchEvent(new Event('input'))
     codeEl.focus()
   })
+}
+
+/**
+ * The teacher column is an editable dropdown rather than a label plus an edit
+ * button. Reassigning a television happens every time a teacher changes class,
+ * which is often enough that it should not cost a dialog.
+ *
+ * Only that device's own school's teachers are offered — a teacher belongs to
+ * one school, and the function rejects a cross-school assignment anyway.
+ */
+function teacherCell(d) {
+  const mine = teachers.filter(t => t.school_id === d.school_id)
+  if (!mine.length) {
+    return '<span class="muted">no teachers yet</span>'
+  }
+  return `<select class="assign" data-assign="${esc(d.id)}">
+    <option value="">Whole school</option>
+    ${mine.map(t => `<option value="${esc(t.id)}" ${t.id === d.teacher_id ? 'selected' : ''}>${
+      esc(t.name)}${t.role ? ' — ' + esc(t.role) : ''}</option>`).join('')}
+  </select>`
+}
+
+async function assign(deviceId, teacherId) {
+  try {
+    await api('assign-teacher', { deviceId, teacherId })
+    const t = teachers.find(x => x.id === teacherId)
+    setStatus(t ? `assigned to ${t.name}` : 'assigned to the school', 'ok')
+    refresh()
+  } catch (e) {
+    setStatus(e.message, 'err')
+    refresh()   // put the dropdown back to what the server actually holds
+  }
 }
 
 async function revoke(deviceId) {

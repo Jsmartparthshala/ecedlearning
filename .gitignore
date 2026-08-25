@@ -38,3 +38,6 @@ dist/
 
 # Downloaded binary, not source
 dev/video-server/cloudflared.exe
+
+# Generated from the operator's own video library by make-thumbs.js.
+dev/video-server/thumbs/

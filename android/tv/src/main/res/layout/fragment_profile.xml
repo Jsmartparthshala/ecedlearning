@@ -1,11 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Profile is an honest empty state, like Downloads was.
+<!-- Who this television belongs to.
 
-     There is no sign in anywhere in this product by design - the television is
-     activated once by the central office and belongs to the school, not to a
-     person. Individual teacher profiles are a real future feature (the `profiles`
-     table already exists with a teacher/admin/parent role), so this names the
-     limitation rather than hiding the entry. -->
+     Two states, both real, neither a placeholder:
+
+     - a teacher has been assigned from the ops console, so this names them and
+       the class they take;
+     - no teacher has been assigned, so the television belongs to the school as a
+       whole. That is the correct answer for a hall or a shared room, not a
+       failure, and it is worded as such.
+
+     There is still no sign in anywhere in this product, by design. The office
+     assigns the device to a teacher; the teacher never types a password into a
+     television with a remote control. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -25,18 +31,20 @@
         android:textStyle="bold"
         android:letterSpacing="0.12" />
 
+    <!-- The name, when there is one. Sized like a headline because on this
+         screen it IS the headline. -->
     <TextView
+        android:id="@+id/profile_name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/profile_empty_title"
         android:textColor="@color/tv_ink"
         android:textSize="30sp" />
 
     <TextView
+        android:id="@+id/profile_role"
         android:layout_width="620dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="14dp"
-        android:text="@string/profile_empty_body"
         android:textColor="@color/tv_muted"
         android:textSize="18sp"
         android:lineSpacingMultiplier="1.3" />

@@ -115,21 +115,43 @@ class DeviceRepository(
     fun cachedSchoolName(): String? = prefs.getString(KEY_SCHOOL, null)
     fun cachedExpiry(): String?     = prefs.getString(KEY_EXPIRES, null)
 
-    /** Resolve and cache the school this device belongs to, for the header chip. */
+    /**
+     * Resolve and cache the school this device belongs to, for the header chip,
+     * and the teacher it was assigned to, for the profile screen.
+     *
+     * One query for both: they come off the same device row, and the profile
+     * screen should never have to wait on a second round trip to say who the
+     * television belongs to.
+     *
+     * A teacher is optional. When the ops console has not assigned one - or has
+     * removed one, which nulls the column rather than deleting the device - the
+     * cached values are cleared so the profile screen falls back to the school.
+     */
     suspend fun refreshSchoolName(): String? = withContext(Dispatchers.IO) {
         val deviceId = cachedDeviceId() ?: return@withContext null
-        val name = quietly("devices.school") {
+        val row = quietly("devices.school") {
             client.from("devices")
-                .select(Columns.raw("school_id, schools(name)")) {
+                .select(Columns.raw("school_id, schools(name), teacher_id, teachers(name, role)")) {
                     filter { eq("id", deviceId) }
                     limit(1)
                 }
                 .decodeSingleOrNull<DeviceWithSchool>()
-                ?.schools?.name
         }
+        // A failed query leaves the cache alone. Wiping the teacher because the
+        // network blinked would blank the profile screen on a flaky connection.
+        if (row != null) {
+            prefs.edit()
+                .putString(KEY_TEACHER, row.teachers?.name)
+                .putString(KEY_TEACHER_ROLE, row.teachers?.role)
+                .apply()
+        }
+        val name = row?.schools?.name
         if (name != null) prefs.edit().putString(KEY_SCHOOL, name).apply()
         name
     }
+
+    fun cachedTeacherName(): String? = prefs.getString(KEY_TEACHER, null)
+    fun cachedTeacherRole(): String? = prefs.getString(KEY_TEACHER_ROLE, null)
 
     fun cachedToken(): String?    = prefs.getString(KEY_TOKEN, null)
     fun cachedDeviceId(): String? = prefs.getString(KEY_DEVICE_ID, null)
@@ -140,6 +162,7 @@ class DeviceRepository(
         prefs.edit()
             .remove(KEY_TOKEN).remove(KEY_EXPIRES)
             .remove(KEY_DEVICE_ID).remove(KEY_SCHOOL)
+            .remove(KEY_TEACHER).remove(KEY_TEACHER_ROLE)
             .apply()
     }
 
@@ -149,5 +172,7 @@ class DeviceRepository(
         const val KEY_EXPIRES   = "session_expires"
         const val KEY_DEVICE_ID = "device_id"
         const val KEY_SCHOOL    = "school_name"
+        const val KEY_TEACHER      = "teacher_name"
+        const val KEY_TEACHER_ROLE = "teacher_role"
     }
 }

@@ -24,6 +24,22 @@
         android:layout_height="@dimen/poster_art_height"
         android:layout_margin="3dp">
 
+        <!-- Poster frame, when the lesson has one. First child so it sits behind
+             the number and badges; empty otherwise, leaving the subject colour. -->
+        <ImageView
+            android:id="@+id/pl_poster"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:contentDescription="@null" />
+
+        <View
+            android:id="@+id/pl_scrim"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/poster_scrim"
+            android:visibility="gone" />
+
         <TextView
             android:id="@+id/pl_no"
             android:layout_width="match_parent"

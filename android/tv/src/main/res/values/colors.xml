@@ -32,6 +32,8 @@
     <color name="surface_alt">#EAEFF8</color>
     <color name="surface_selected">#EEF2FA</color>
     <color name="badge_scrim">#59000000</color>
+    <!-- Over a poster frame: enough to carry white text, not enough to hide the picture. -->
+    <color name="poster_scrim">#59000000</color>
     <color name="on_subject">#FFFFFF</color>
     <color name="subject_neutral">#4C5A75</color>
     <color name="subject_neutral_dark">#33405A</color>

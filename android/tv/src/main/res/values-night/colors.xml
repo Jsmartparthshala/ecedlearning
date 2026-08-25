@@ -30,6 +30,8 @@
     <color name="surface_alt">#16223F</color>
     <color name="surface_selected">#0D1730</color>
     <color name="badge_scrim">#73000000</color>
+    <!-- Over a poster frame: enough to carry white text, not enough to hide the picture. -->
+    <color name="poster_scrim">#66000000</color>
     <color name="on_subject">#FFFFFF</color>
     <!-- Used by "Continue watching" and "Playable now", which mix subjects and so
          cannot honestly carry any one subject's colour. Lifted well clear of the

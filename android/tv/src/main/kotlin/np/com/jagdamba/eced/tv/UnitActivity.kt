@@ -9,6 +9,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
@@ -35,8 +36,10 @@ import java.util.Locale
  * rail is focus driven: arrowing onto a unit rewrites the header and swaps the
  * grid without pressing OK, so browsing the whole subject costs no clicks at all.
  *
- * Nothing here decodes a bitmap. Artwork is a flat subject colour and every
- * numeral is text, which matters on the 1 GB Mali-450 boxes this ships to.
+ * Artwork is a flat subject colour with a poster frame over it where the lesson
+ * has one. The frames are 320x180 and decode as RGB_565 - see [PosterLoader] for
+ * why that budget holds on the 1 GB Mali-450 boxes this ships to. Every numeral
+ * is still text rather than an image.
  */
 class UnitActivity : FragmentActivity() {
 
@@ -250,6 +253,8 @@ class UnitActivity : FragmentActivity() {
 
         inner class VH(v: View) : RecyclerView.ViewHolder(v) {
             val art: FrameLayout   = v.findViewById(R.id.pl_art)
+            val poster: ImageView  = v.findViewById(R.id.pl_poster)
+            val scrim: View        = v.findViewById(R.id.pl_scrim)
             val no: TextView       = v.findViewById(R.id.pl_no)
             val kicker: TextView   = v.findViewById(R.id.pl_kicker)
             val dur: TextView      = v.findViewById(R.id.pl_dur)
@@ -268,7 +273,16 @@ class UnitActivity : FragmentActivity() {
 
         override fun onBindViewHolder(holder: VH, position: Int) {
             val l = items[position]
+            // The colour panel stays as the backdrop, so a poster that is still
+            // loading or never arrives looks deliberate rather than broken.
             holder.art.setBackgroundColor(style.colorStart)
+            if (l.posterUrl.isNullOrBlank()) {
+                PosterLoader.cancel(holder.poster)
+                holder.scrim.visibility = View.GONE
+            } else {
+                holder.scrim.visibility = View.VISIBLE
+                PosterLoader.load(holder.poster, l.posterUrl)
+            }
             holder.no.text = l.sortOrder.toString()
             holder.kicker.text = getString(R.string.card_lesson_kicker)
             holder.dur.text = "${(l.durationSec ?: 0) / 60} min"

@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.leanback.widget.Presenter
 import np.com.jagdamba.eced.core.model.Lesson
@@ -77,6 +78,8 @@ class CardPresenter(
 
     class Holder(view: View) : Presenter.ViewHolder(view) {
         val art: FrameLayout   = view.findViewById(R.id.card_art)
+        val poster: ImageView  = view.findViewById(R.id.card_poster)
+        val scrim: View        = view.findViewById(R.id.card_poster_scrim)
         val glyph: TextView    = view.findViewById(R.id.card_glyph)
         val kicker: TextView   = view.findViewById(R.id.card_kicker)
         val count: TextView    = view.findViewById(R.id.card_count)
@@ -96,7 +99,11 @@ class CardPresenter(
         val h = viewHolder as Holder
         // Flat fill, not a gradient: one solid colour is the cheapest thing a GPU
         // can draw, and it keeps the subject identity unambiguous at ten feet.
+        // It also stays as the backdrop behind any poster, so a card that is
+        // still loading — or whose poster never arrives — looks deliberate
+        // rather than broken.
         h.art.setBackgroundColor(subject.colorStart)
+        showPoster(h, (item as? Lesson)?.posterUrl)
 
         when (item) {
             is CatalogUnit -> {
@@ -138,6 +145,22 @@ class CardPresenter(
         }
     }
 
+    /**
+     * Units have no poster of their own and unplayable lessons have nothing to
+     * show a frame of, so both keep the flat colour panel. Only a lesson with a
+     * real video gets a picture, which makes the picture itself a signal that
+     * the card will play.
+     */
+    private fun showPoster(h: Holder, url: String?) {
+        if (url.isNullOrBlank()) {
+            PosterLoader.cancel(h.poster)
+            h.scrim.visibility = View.GONE
+            return
+        }
+        h.scrim.visibility = View.VISIBLE
+        PosterLoader.load(h.poster, url)
+    }
+
     private fun showProgress(h: Holder, fraction: Float) {
         if (fraction <= 0.01f) {
             h.track.visibility = View.GONE
@@ -159,6 +182,10 @@ class CardPresenter(
         h.meta.text = null
         h.glyph.text = null
         h.track.visibility = View.GONE
+        // Releases the card's reference to the bitmap and makes any in-flight
+        // fetch land nowhere. The cache still holds it, so rebinding is instant.
+        PosterLoader.cancel(h.poster)
+        h.scrim.visibility = View.GONE
     }
 
     private fun String.clean() = removePrefix("[PLACEHOLDER] ")

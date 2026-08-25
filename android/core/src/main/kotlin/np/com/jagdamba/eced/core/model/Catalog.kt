@@ -91,8 +91,21 @@ data class AppRelease(
 @Serializable
 data class SchoolName(val name: String? = null)
 
+/**
+ * A teacher, as the television needs them: a name and the class they take.
+ * Nothing else is stored - see 0004_teachers.sql for why there is no phone
+ * number on this table.
+ */
+@Serializable
+data class TeacherName(
+    val name: String? = null,
+    val role: String? = null,
+)
+
 @Serializable
 data class DeviceWithSchool(
     @SerialName("school_id") val schoolId: String? = null,
     val schools: SchoolName? = null,
+    @SerialName("teacher_id") val teacherId: String? = null,
+    val teachers: TeacherName? = null,
 )
