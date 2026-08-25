@@ -27,6 +27,11 @@ It is an Amlogic or Allwinner box with a Mali-450-class GPU and often 1 GB of RA
 Every UI decision follows from that: flat cards over bitmaps, strokes over shadows,
 overdraw held at 1x, no full-screen backdrop crossfades.
 
+**No privileged key ever reaches a browser or a device.** The TV ships the anon
+key and is held in check by row-level security. The ops console needs the
+`service_role` key, so that key lives in a serverless function's environment and
+the console page talks to the function — never to Supabase directly.
+
 ---
 
 ## Architecture
@@ -34,20 +39,24 @@ overdraw held at 1x, no full-screen backdrop crossfades.
 ```
 Android TV (Kotlin + Leanback)  ─┐
                                  ├─→  Supabase (Postgres + PostgREST + RLS)
-Android mobile (Compose)        ─┘
-                                          ▲
-Ops console (static web)  ────────────────┘
+Android mobile (Compose)        ─┘             ▲
+                                               │  service_role, server side only
+Ops console (static page)  ──→  Netlify function
 ```
 
 | Module | What it is |
 |---|---|
 | `android/core` | Data layer — models, repositories, Supabase client. No UI. |
-| `android/tv` | Leanback TV app: pairing, browse, unit grid, player |
+| `android/tv` | Leanback TV app: pairing, browse, unit grid, player, settings |
 | `android/mobile` | Compose phone app *(not yet started)* |
-| `ops-console` | Single-page admin panel for claiming devices |
+| `ops-console` | Provisioning console: static page plus one Netlify function |
 | `supabase` | Schema, row-level security, seed data |
 | `dev` | Local Supabase-compatible stack for offline development |
+| `dev/video-server` | Serves demo footage over the LAN or a tunnel, and writes the matching `lessons` rows |
 | `prototype` | Original clickable HTML mock of the agreed screen flow |
+
+`DEMO.md` is the runbook for showing the product on a laptop with no venue
+internet.
 
 ---
 
@@ -58,14 +67,19 @@ Ops console (static web)  ────────────────┘
 Run against your Supabase project's SQL editor, in order:
 
 ```
-supabase/migrations/0001_schema.sql     tables, constraints, views
-supabase/migrations/0002_security.sql   row-level security, grants, RPCs
-supabase/seed.sql                       placeholder catalogue
+supabase/migrations/0001_schema.sql      tables, constraints, views
+supabase/migrations/0002_security.sql    row-level security, grants, RPCs
+supabase/migrations/0004_teachers.sql    teachers, and devices.teacher_id
+supabase/seed.sql                        placeholder catalogue
 ```
 
 `supabase/migrations/0003_hardening.sql` tightens session access and moves quiz
 grading server-side. It requires a matching client change and is documented
-inside the file — do not apply it blind.
+inside the file — do not apply it blind. It is deliberately out of sequence for
+that reason.
+
+`supabase/seed_demo.sql` inserts a handful of real schools, for demonstrations.
+It is optional and not part of the schema.
 
 ### 2. Configure the app
 
@@ -86,11 +100,20 @@ cd android && ./gradlew :tv:assembleDebug
 Requires JDK 17+. Android Studio's bundled JBR works — point `JAVA_HOME` at it if
 building from a terminal.
 
-### 4. Provision a device
+### 4. Deploy the ops console
 
-Launch the app; it displays a pairing code. Open `ops-console/index.html`, connect
-with your project URL and service-role key, select the school, and push a token.
-The television moves to the home screen on its own.
+Import the repo into Netlify with `ops-console` as the base directory, then set
+three environment variables: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and
+`OPS_PASSCODE`. Full steps are in `ops-console/README.md`.
+
+The function fails closed if any of the three is missing, so an unconfigured
+deploy is never an open console.
+
+### 5. Provision a device
+
+Launch the app; it displays an 8-character code. Open the console, enter the
+passcode once, type the code, pick the school, and click activate. The television
+moves to the home screen on its own — no interaction at the TV end at all.
 
 ---
 
@@ -124,6 +147,10 @@ it degrades to software decode and drops frames. Both can coexist per lesson.
 view rather than the full table — the difference is 1.6 KB versus 244 KB per
 launch, which is the difference between fitting in a free-tier egress budget and
 not.
+
+**Idle projects pause.** A Supabase free-tier project suspends after seven days
+without traffic, and resuming it is manual. `.github/workflows/supabase-keepalive.yml`
+pings the REST endpoint daily so that cannot happen the morning of an install.
 
 ---
 
