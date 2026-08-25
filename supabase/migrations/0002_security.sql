@@ -184,10 +184,26 @@ create trigger on_auth_user_created
 -- --------------------------------------------------------------- realtime
 
 -- The pairing flow depends on these being in the realtime publication.
+--
+-- Supabase creates `supabase_realtime` for you, but do not assume it: if this
+-- statement aborts, everything after it is skipped and the file leaves RLS only
+-- partly applied, which is worse than not running it at all. Create it when
+-- missing, and treat "already added" as success.
 do $$
 begin
-  begin execute 'alter publication supabase_realtime add table sessions'; exception when duplicate_object then null; end;
-  begin execute 'alter publication supabase_realtime add table devices';  exception when duplicate_object then null; end;
+  if not exists (select 1 from pg_publication where pubname = 'supabase_realtime') then
+    execute 'create publication supabase_realtime';
+  end if;
+
+  begin
+    execute 'alter publication supabase_realtime add table sessions';
+  exception when duplicate_object then null;
+  end;
+
+  begin
+    execute 'alter publication supabase_realtime add table devices';
+  exception when duplicate_object then null;
+  end;
 end $$;
 
 -- --------------------------------------------------------- schema cache
