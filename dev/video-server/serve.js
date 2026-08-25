@@ -282,6 +282,16 @@ server.listen(PORT, '0.0.0.0', () => {
     net.all.map(c => '    ' + (c.virtual ? 'skip' : 'USE ') + '  ' +
       c.address + '   ' + c.name).join('\n') + '\n\n');
 
+  // Anything above this needs a good link and a box that can keep up. They are
+  // still served - they are just never the first tile in a subject.
+  const heavy = meta.filter(m => m.seconds > 0 && (m.bytes * 8 / m.seconds) > 5e6);
+  if (heavy.length) {
+    process.stdout.write(
+      '  ' + heavy.length + ' file(s) above 5 Mbps, sorted to the back of their subject:\n' +
+      heavy.map(m => '    ' + (m.bytes * 8 / m.seconds / 1e6).toFixed(1) +
+        ' Mbps  ' + m.rel).join('\n') + '\n\n');
+  }
+
   if (slow.length) {
     process.stdout.write(
       '  ' + slow.length + ' of ' + files.length + ' files are not faststart, so the player\n' +
@@ -307,8 +317,14 @@ function buildSql(host, port, items) {
   const playable = items.filter(m => m.seconds > 0);
   const url = m => 'http://' + host + ':' + port + '/' + encodePath(m.rel);
 
-  const named   = playable.filter(m => m.subject);
-  const generic = playable.filter(m => !m.subject);
+  // Lightest first. Several classes were exported twice - the same recording at
+  // ~8 Mbps and at ~1.4 Mbps, identical durations, one of them 2.4 GB. Ordering
+  // by bitrate puts the small copy on lesson 1, which is the tile a demo opens.
+  // A cheap box pulling 8 Mbps over classroom Wi-Fi buffers, and it buffers in
+  // front of the audience.
+  const byBitrate = (a, b) => (a.bytes / a.seconds) - (b.bytes / b.seconds);
+  const named   = playable.filter(m => m.subject).sort(byBitrate);
+  const generic = playable.filter(m => !m.subject).sort(byBitrate);
 
   // Each subject gets its own numbered pool: the files that name that subject
   // first, then the unlabelled ones. Ordering matters - the SQL below walks a
