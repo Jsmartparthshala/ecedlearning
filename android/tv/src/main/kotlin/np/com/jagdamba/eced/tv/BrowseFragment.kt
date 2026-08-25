@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.leanback.app.BrowseSupportFragment
 import androidx.leanback.widget.ArrayObjectAdapter
@@ -47,7 +48,9 @@ class BrowseFragment : BrowseSupportFragment() {
 
         headersState = HEADERS_ENABLED
         isHeadersTransitionOnBackEnabled = true
-        brandColor = Color.parseColor("#0B0E13")
+        // Read from the theme, not a literal: the sidebar keeps its own background
+        // and would stay dark in light mode otherwise.
+        brandColor = ContextCompat.getColor(requireContext(), R.color.tv_bg)
 
         // PageRow entries need a factory that can build their fragment; without
         // this Leanback throws as soon as one is focused.
@@ -112,7 +115,7 @@ class BrowseFragment : BrowseSupportFragment() {
 
                 if (continueRow.isNotEmpty()) {
                     val a = ArrayObjectAdapter(
-                        CardPresenter(CardPresenter.SubjectStyle.DEFAULT, fractions)
+                        CardPresenter(CardPresenter.SubjectStyle.default(requireContext()), fractions)
                     )
                     continueRow.forEach { a.add(it) }
                     rowsAdapter.add(
@@ -125,7 +128,7 @@ class BrowseFragment : BrowseSupportFragment() {
                 val playable = repo.playableSample()
                 if (playable.isNotEmpty()) {
                     val a = ArrayObjectAdapter(
-                        CardPresenter(CardPresenter.SubjectStyle.DEFAULT, fractions)
+                        CardPresenter(CardPresenter.SubjectStyle.default(requireContext()), fractions)
                     )
                     playable.forEach { a.add(it) }
                     rowsAdapter.add(ListRow(HeaderItem(1, getString(R.string.row_playable)), a))

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Gold focus ring, carried over from the HTML prototype. This is the single
+         most important colour in the app: it is how a teacher knows where they are. -->
+    <color name="focus_gold">#E8B64C</color>
+    <color name="focus_gold_dim">#8A6C2A</color>
+
+    <color name="tv_bg">#0B0E13</color>
+    <color name="tv_panel">#151A22</color>
+    <color name="tv_ink">#F2F6FA</color>
+    <color name="tv_muted">#93A1B2</color>
+
+    <color name="subject_english">#2AA9D8</color>
+    <color name="subject_nepali">#E8863B</color>
+    <color name="subject_maths">#4FAE54</color>
+    <color name="subject_serofero">#A94BC9</color>
+    <color name="subject_arts">#D94F7A</color>
+    <color name="hairline">#2A323E</color>
+    <color name="surface_focus">#1E2836</color>
+    <color name="surface">#151A22</color>
+    <color name="surface_alt">#232C39</color>
+    <color name="surface_selected">#18202B</color>
+    <color name="hairline_strong">#3A4757</color>
+    <color name="badge_scrim">#66000000</color>
+    <color name="on_subject">#FFFFFF</color>
+    <color name="subject_neutral">#3A4453</color>
+    <color name="subject_neutral_dark">#1E2530</color>
+</resources>

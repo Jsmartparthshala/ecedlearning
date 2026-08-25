@@ -5,6 +5,7 @@
          workaround and Leanback does it natively and better. -->
     <style name="Theme.Eced.Tv" parent="Theme.Leanback">
         <item name="android:windowBackground">@color/tv_bg</item>
+        <item name="android:colorBackground">@color/tv_bg</item>
         <item name="android:colorPrimary">@color/focus_gold</item>
         <item name="android:colorAccent">@color/focus_gold</item>
     </style>

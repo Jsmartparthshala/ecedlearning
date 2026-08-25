@@ -1,6 +1,8 @@
 package np.com.jagdamba.eced.tv
 
+import android.content.Context
 import android.graphics.Color
+import androidx.core.content.ContextCompat
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -45,6 +47,17 @@ class CardPresenter(
         val label: String,
     ) {
         companion object {
+            /**
+             * Fallback for rows that span subjects (Continue watching, Playable
+             * now). Resolved from resources rather than a literal so it follows
+             * the light/dark palette.
+             */
+            fun default(context: Context) = SubjectStyle(
+                ContextCompat.getColor(context, R.color.subject_neutral),
+                ContextCompat.getColor(context, R.color.subject_neutral_dark),
+                "",
+            )
+
             val DEFAULT = SubjectStyle(
                 Color.parseColor("#3A4453"),
                 Color.parseColor("#1E2530"),

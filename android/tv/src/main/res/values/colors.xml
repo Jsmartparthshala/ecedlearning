@@ -1,18 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Light palette. Android TV reports night mode by default, so in practice a
+     television uses values-night; this is what a phone or a TV with light mode
+     forced will show. Semantic names match values-night exactly, so no layout or
+     style references change between themes.
+
+     Worth knowing before enabling it in a classroom: a bright full-screen panel
+     on a large TV is genuinely uncomfortable in a dim room, which is why TV
+     interfaces are near-universally dark. -->
 <resources>
-    <!-- Gold focus ring, carried over from the HTML prototype. This is the single
-         most important colour in the app: it is how a teacher knows where they are. -->
-    <color name="focus_gold">#E8B64C</color>
-    <color name="focus_gold_dim">#8A6C2A</color>
+    <color name="focus_gold">#B07C10</color>
+    <color name="focus_gold_dim">#D9B05A</color>
 
-    <color name="tv_bg">#0B0E13</color>
-    <color name="tv_panel">#151A22</color>
-    <color name="tv_ink">#F2F6FA</color>
-    <color name="tv_muted">#93A1B2</color>
+    <color name="tv_bg">#F4F6F9</color>
+    <color name="tv_panel">#FFFFFF</color>
+    <color name="tv_ink">#12171F</color>
+    <color name="tv_muted">#5B6675</color>
 
-    <color name="subject_english">#2AA9D8</color>
-    <color name="subject_nepali">#E8863B</color>
-    <color name="subject_maths">#4FAE54</color>
-    <color name="subject_serofero">#A94BC9</color>
-    <color name="subject_arts">#D94F7A</color>
+    <color name="subject_english">#1B7FA8</color>
+    <color name="subject_nepali">#B45F1E</color>
+    <color name="subject_maths">#2E7D34</color>
+    <color name="subject_serofero">#7B2FA0</color>
+    <color name="subject_arts">#B02C55</color>
+    <color name="hairline">#DDE3EA</color>
+    <color name="surface_focus">#FFF6E0</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="surface_alt">#EEF1F5</color>
+    <color name="surface_selected">#F0F4F8</color>
+    <color name="hairline_strong">#C3CDD8</color>
+    <color name="badge_scrim">#59000000</color>
+    <color name="on_subject">#FFFFFF</color>
+    <color name="subject_neutral">#5A6779</color>
+    <color name="subject_neutral_dark">#3E4959</color>
 </resources>
