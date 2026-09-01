@@ -46,24 +46,34 @@ class ProfileFragment : Fragment() {
         val teacher = devices.cachedTeacherName()
         val role = devices.cachedTeacherRole()
 
+        // The class is a real row the office manages; teachers.role is free text
+        // somebody typed. When both exist the class is the more trustworthy of
+        // the two, so it wins.
+        val klass = devices.cachedClassLabel()?.takeIf { it.isNotBlank() }
+
         view.findViewById<TextView>(R.id.profile_school).text = when {
             teacher != null -> getString(R.string.profile_teacher_kicker).uppercase()
             else -> school?.uppercase() ?: getString(R.string.chip_unclaimed).uppercase()
         }
 
         if (teacher.isNullOrBlank()) {
+            // A television can have a class and no teacher - the office sets the
+            // room up before anyone is assigned to it, and some rooms never get
+            // one. Naming the class is more use than saying nothing about it.
             view.findViewById<TextView>(R.id.profile_name).text =
-                getString(R.string.profile_empty_title)
+                klass ?: getString(R.string.profile_empty_title)
             view.findViewById<TextView>(R.id.profile_role).text =
-                getString(R.string.profile_empty_body)
+                if (klass != null) getString(R.string.profile_class_body, klass)
+                else getString(R.string.profile_empty_body)
             return
         }
 
         view.findViewById<TextView>(R.id.profile_name).text = teacher
         // The class label is optional in the ops console, so the sentence has to
         // read correctly with and without it rather than trailing a stray comma.
+        val descriptor = klass ?: role
         view.findViewById<TextView>(R.id.profile_role).text =
-            if (role.isNullOrBlank()) getString(R.string.profile_role_blank)
-            else getString(R.string.profile_role_known, role)
+            if (descriptor.isNullOrBlank()) getString(R.string.profile_role_blank)
+            else getString(R.string.profile_role_known, descriptor)
     }
 }

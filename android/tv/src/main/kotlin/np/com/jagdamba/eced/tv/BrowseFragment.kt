@@ -15,7 +15,9 @@ import androidx.leanback.widget.ListRowPresenter
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import android.content.Context
 import np.com.jagdamba.eced.core.model.Lesson
+import np.com.jagdamba.eced.core.model.Level
 import np.com.jagdamba.eced.core.model.Subject
 
 /**
@@ -47,8 +49,26 @@ class BrowseFragment : BrowseSupportFragment() {
      */
     private val rowsAdapter = ArrayObjectAdapter(rowPresenter())
 
-    /** unit id -> owning subject, so the unit screen keeps the same styling. */
-    private val subjectById = mutableMapOf<String, Subject>()
+    /**
+     * The grade whose subjects are currently on screen, by slug.
+     *
+     * Remembered across launches in plain SharedPreferences. A television bolted
+     * to one classroom is that classroom's grade every day of the year, so making
+     * a teacher re-pick it on every boot would be a new chore in exchange for
+     * nothing. Not in the encrypted session store: this is a display preference,
+     * not a credential, and it must survive an unpair.
+     */
+    private var selectedSlug: String? = null
+
+    /**
+     * Whether the screen has ever had real content on it.
+     *
+     * Drives the loading row, which must appear on a cold start and never again.
+     * A reload keeps the previous rows on screen while it runs - that is
+     * deliberate, see the comment in loadCatalog - so flashing "Loading" over a
+     * screen that already has content would be a regression, not a courtesy.
+     */
+    private var hasLoadedOnce = false
 
     /**
      * The in-flight catalogue load. Cancelled before starting another so a slow
@@ -83,6 +103,7 @@ class BrowseFragment : BrowseSupportFragment() {
         setOnItemViewClickedListener { _, item, _, _ ->
             when (item) {
                 is SubjectPresenter.SubjectTile -> openSubject(item.subject)
+                is SubjectPresenter.LevelTile   -> selectLevel(item.level)
                 is Lesson -> openLesson(item)
             }
         }
@@ -127,13 +148,26 @@ class BrowseFragment : BrowseSupportFragment() {
 
     private fun loadCatalog() {
         loadJob?.cancel()
-        subjectById.clear()
 
         val repo = EcedApp.instance.catalog
         val progressRepo = EcedApp.instance.progress
         val deviceId = EcedApp.instance.devices.cachedDeviceId()
 
         loadJob = lifecycleScope.launch {
+            // Cold start only. The catalogue is a network read that takes real
+            // seconds on a rural link, and the placeholder row that exists to get
+            // Leanback to build its rows fragment draws nothing - so until now the
+            // very first thing a teacher saw after switching the television on was
+            // an empty screen with no indication anything was happening.
+            if (!hasLoadedOnce) {
+                val a = ArrayObjectAdapter(CardPresenter())
+                a.add(getString(R.string.loading))
+                rowsAdapter.setItems(
+                    listOf(ListRow(HeaderItem(ID_LOADING, getString(R.string.loading)), a)),
+                    null,
+                )
+            }
+
             // Collected first, attached at the end. Clearing the live adapter up
             // front would blank the screen for the length of the fetch, and a
             // cancelled load would leave it blank for good.
@@ -145,18 +179,71 @@ class BrowseFragment : BrowseSupportFragment() {
                 EcedApp.instance.devices.refreshSchoolName()
                 (titleView as? BrowseTitleView)?.refresh()
 
-                // Subjects first. This is the row a teacher lands on, so it is
-                // built and shown before the progress queries below run.
-                val subjects = repo.subjects()
+                // The ladder. Empty on a database that has not had
+                // 0007_levels_and_classes.sql applied yet, and the whole grade
+                // layer then falls back to the single-grade behaviour below -
+                // an older APK and a newer database, or the reverse, must both
+                // keep working, because the two are updated by different people
+                // on different days.
+                val levels = repo.levels()
+                val current = levels.pickCurrent()
+                selectedSlug = current?.slug
+
+                // Subjects for the chosen grade. This is the row a teacher lands
+                // on, so it is built and shown before the progress queries below.
+                //
+                // One request, counts included: subject_cards carries unit_count,
+                // which is what the tile badge needs. The old code called
+                // units(subject.id) once per subject to get that number and did
+                // it again on every onResume, including every return from the
+                // player.
                 val subjectAdapter = ArrayObjectAdapter(SubjectPresenter())
-                subjects.forEach { subject ->
-                    val units = repo.units(subject.id)
-                    units.forEach { subjectById[it.id] = subject }
-                    subjectAdapter.add(SubjectPresenter.SubjectTile(subject, units.size))
+                if (current != null) {
+                    repo.subjectCards(current.id).forEach {
+                        subjectAdapter.add(
+                            SubjectPresenter.SubjectTile(it.toSubject(), it.unitCount)
+                        )
+                    }
+                } else {
+                    // Pre-0007 database: no levels, so every subject is the
+                    // catalogue. No per-subject unit count is available without
+                    // the view, and one query per subject is exactly what this
+                    // change exists to remove, so the badge shows nothing.
+                    repo.subjects().forEach {
+                        subjectAdapter.add(SubjectPresenter.SubjectTile(it, 0))
+                    }
                 }
                 rows.add(
-                    ListRow(HeaderItem(ID_SUBJECTS, getString(R.string.row_subjects)), subjectAdapter)
+                    ListRow(
+                        HeaderItem(
+                            ID_SUBJECTS,
+                            current?.let { getString(R.string.row_subjects_of, it.nameEn) }
+                                ?: getString(R.string.row_subjects),
+                        ),
+                        subjectAdapter,
+                    )
                 )
+
+                // The grade row, directly under the subjects it controls, so the
+                // relationship between the two is visible rather than something a
+                // teacher has to be told. Picking a grade swaps the row above in
+                // place - it does not open a screen, because that would put a
+                // fourth press between a teacher and a video on every launch, for
+                // a choice a classroom television makes once.
+                //
+                // Hidden entirely when there is only one grade, which is the
+                // state every television in the field is in today.
+                if (levels.size > 1) {
+                    val levelAdapter = ArrayObjectAdapter(SubjectPresenter())
+                    levels.forEach {
+                        levelAdapter.add(
+                            SubjectPresenter.LevelTile(it, selected = it.slug == current?.slug)
+                        )
+                    }
+                    rows.add(
+                        ListRow(HeaderItem(ID_LEVELS, getString(R.string.row_levels)), levelAdapter)
+                    )
+                }
 
                 // Progress: every row below needs it, and one fetch beats
                 // one-per-row on a rural connection.
@@ -208,8 +295,69 @@ class BrowseFragment : BrowseSupportFragment() {
             // is not rebound and focus survives the reload on return from the
             // player. This is also where the placeholder row disappears.
             rowsAdapter.setItems(rows, null)
+            hasLoadedOnce = true
         }
     }
+
+    /**
+     * Which grade to show: the one remembered from last time if it still exists
+     * and still has something in it, otherwise the first grade that does.
+     *
+     * The fallback matters more than it looks. Grades are seeded empty and filled
+     * in over months, so "first in the ladder" would land a television on ECED
+     * whether or not ECED is what that school teaches, and "remembered" would pin
+     * it to a grade whose content was later moved. Preferring a grade that has
+     * content means a television never opens on an empty screen.
+     */
+    private fun List<Level>.pickCurrent(): Level? {
+        if (isEmpty()) return null
+
+        val devices = EcedApp.instance.devices
+        val p = prefs()
+
+        // A reassignment from the office outranks whatever was last chosen with
+        // the remote. Moving a television from Nursery A to Grade 3 is an
+        // administrative decision, and it would be useless if the set carried on
+        // opening on the old grade because somebody had once pressed a tile. The
+        // remembered pick is cleared on change rather than ignored, so a teacher
+        // can still browse elsewhere afterwards and have that stick.
+        val assignedClass = devices.cachedClassId()
+        if (assignedClass != p.getString(KEY_CLASS, null)) {
+            p.edit().putString(KEY_CLASS, assignedClass).remove(KEY_LEVEL).apply()
+        }
+
+        val remembered = p.getString(KEY_LEVEL, null)
+        val assignedLevel = devices.cachedClassLevel()
+        return firstOrNull { it.slug == remembered && it.hasContent }
+            ?: firstOrNull { it.slug == assignedLevel && it.hasContent }
+            ?: firstOrNull { it.hasContent }
+            ?: first()
+    }
+
+    /**
+     * Switch the visible grade and reload.
+     *
+     * A full reload rather than swapping one row: the continue-watching row is
+     * scoped to the device rather than to a grade, so it is still correct either
+     * way, but rebuilding everything keeps one code path for what the screen
+     * contains instead of two that can drift apart. A grade switch is a rare,
+     * deliberate act - one extra fetch on something a teacher does once a term.
+     */
+    private fun selectLevel(level: Level) {
+        if (level.slug == selectedSlug) return
+        if (!level.hasContent) return          // nothing to open; the tile says so
+        prefs().edit().putString(KEY_LEVEL, level.slug).apply()
+        selectedSlug = level.slug
+        loadCatalog()
+    }
+
+    /**
+     * Plain, unencrypted preferences on purpose. This holds one grade slug - a
+     * display choice, not a credential - and it has to outlive an unpair, which
+     * clears the encrypted session store.
+     */
+    private fun prefs() =
+        requireContext().getSharedPreferences(PREFS_UI, Context.MODE_PRIVATE)
 
     /** Straight into the subject's units. No unit id, so the rail opens at the first. */
     private fun openSubject(subject: Subject) {
@@ -236,6 +384,17 @@ class BrowseFragment : BrowseSupportFragment() {
         const val ID_SUBJECTS  = 100L
         const val ID_CONTINUE  = 101L
         const val ID_PLAYABLE  = 102L
+        const val ID_LEVELS    = 103L
         const val ID_OFFLINE   = 104L
+        const val ID_LOADING   = 105L
+
+        const val PREFS_UI  = "tv_ui"
+        const val KEY_LEVEL = "selected_level_slug"
+
+        /**
+         * The class the television was assigned to when KEY_LEVEL was last
+         * written. Only used to notice that the office has since moved it.
+         */
+        const val KEY_CLASS = "known_class_id"
     }
 }

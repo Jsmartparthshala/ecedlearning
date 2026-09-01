@@ -5,6 +5,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import np.com.jagdamba.eced.core.model.AppRelease
 import np.com.jagdamba.eced.core.model.Lesson
+import np.com.jagdamba.eced.core.model.Level
+import np.com.jagdamba.eced.core.model.SubjectCard
 import np.com.jagdamba.eced.core.model.Subject
 import np.com.jagdamba.eced.core.model.Unit as CatalogUnit
 
@@ -19,6 +21,38 @@ class CatalogRepository(private val client: io.github.jan.supabase.SupabaseClien
         quietly("catalog.subjects") { client.from("subjects")
             .select { order("sort_order", io.github.jan.supabase.postgrest.query.Order.ASCENDING) }
             .decodeList<Subject>() } ?: emptyList()
+    }
+
+    /**
+     * The grade ladder, with a content count on each rung.
+     *
+     * Reads the `level_cards` view, so one request answers both "which grades
+     * exist" and "which of them have anything in them yet" - the television needs
+     * both to draw the grade row, and a second query for the counts would be a
+     * round trip on a rural link to render a number.
+     */
+    suspend fun levels(): List<Level> = withContext(Dispatchers.IO) {
+        quietly("catalog.levels") { client.from("level_cards")
+            .select { order("sort_order", io.github.jan.supabase.postgrest.query.Order.ASCENDING) }
+            .decodeList<Level>() } ?: emptyList()
+    }
+
+    /**
+     * One grade's subjects, counts included, from the `subject_cards` view.
+     *
+     * This replaces subjects() + a units() call per subject on the home screen.
+     * That pattern was six requests for five ECED subjects and would have been
+     * close to a hundred across the full ladder, repeated on every return from
+     * the player, against an egress budget shared by every television in the
+     * field. Here it is one request per grade.
+     */
+    suspend fun subjectCards(levelId: String): List<SubjectCard> = withContext(Dispatchers.IO) {
+        quietly("catalog.subjectCards") { client.from("subject_cards")
+            .select {
+                filter { eq("level_id", levelId) }
+                order("sort_order", io.github.jan.supabase.postgrest.query.Order.ASCENDING)
+            }
+            .decodeList<SubjectCard>() } ?: emptyList()
     }
 
     suspend fun units(subjectId: String): List<CatalogUnit> = withContext(Dispatchers.IO) {

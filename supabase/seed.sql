@@ -43,6 +43,24 @@ insert into subjects (slug, name_en, name_np, sort_order, color_1, color_2, icon
   ('serofero', 'Sero Phero',      'वरपरको वातावरण',        4, '#a94bc9', '#3b31b0', 'globe'),
   ('arts',     'Arts & Crafts',   'दृश्यकला र सिर्जनशीलता', 5, '#d94f7a', '#7a1f4f', 'palette');
 
+-- These five are ECED, and the insert above deliberately does not say so: this
+-- file has to keep working on a database that has not had
+-- 0007_levels_and_classes.sql applied yet, where there is no level to point at.
+--
+-- Once the ladder exists, subjects with no level are invisible - the home screen
+-- reads `subject_cards` filtered by level_id, so a NULL there means the tile
+-- appears in no grade at all. Re-running this seed after migrating would
+-- therefore empty the app, which is exactly the sort of thing that gets found on
+-- a demo morning. Assign them if, and only if, the ladder is there.
+do $seed$
+begin
+  if to_regclass('public.levels') is not null then
+    update subjects
+       set level_id = (select id from levels where slug = 'eced')
+     where level_id is null;
+  end if;
+end $seed$;
+
 -- --------------------------------------------------------- units + lessons
 
 do $$
