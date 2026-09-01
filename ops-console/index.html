@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>JSP ECED — Ops Console</title>
+<title>Jagdamba Smart Pathshala — Ops Console</title>
 <style>
   :root{
     --bg:#0e1116; --panel:#161b23; --raise:#1c222c; --line:#252c37; --ink:#e6edf3;
@@ -18,6 +18,7 @@
   header{padding:18px 28px;border-bottom:1px solid var(--line);
          display:flex;align-items:center;gap:14px;flex-wrap:wrap}
   h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.2px}
+  h1 .sub{font-weight:450;color:var(--muted)}
   .tag{font-size:11px;color:var(--muted);border:1px solid var(--line);
        padding:2px 8px;border-radius:99px}
   #status{font-size:13px;color:var(--muted);margin-left:auto}
@@ -35,6 +36,10 @@
   button{cursor:pointer;background:var(--blue);border-color:var(--blue);font-weight:600}
   button.ghost{background:var(--panel);border-color:var(--line);font-weight:500}
   button:disabled{opacity:.45;cursor:not-allowed}
+  button:hover:not(:disabled){background:#2b7bf3;border-color:#2b7bf3}
+  button.ghost:hover:not(:disabled){background:var(--raise);border-color:#39424f}
+  button:active:not(:disabled){transform:translateY(1px)}
+  button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 
   /* Activation: the one thing this console exists to do, so it gets the top of
      the page, the largest control, and keyboard focus on load. */
@@ -47,8 +52,8 @@
         background:var(--raise)}
   #school{min-width:270px;padding:13px}
   #go{padding:14px 26px;font-size:15px}
-  .hint{font-size:12.5px;color:var(--muted);margin-top:12px}
-  .found{margin-top:14px;font-size:13.5px;padding:11px 14px;border-radius:9px;
+  .hint{font-size:13px;color:var(--muted);margin-top:12px}
+  .found{margin-top:14px;font-size:13px;padding:11px 14px;border-radius:9px;
          border:1px solid var(--line);background:var(--raise);display:none}
   .found.show{display:block}
   .found.bad{border-color:#5c2018;background:#2a1210;color:#f8b3ad}
@@ -68,8 +73,11 @@
 
   table{width:100%;border-collapse:collapse;margin-top:4px}
   th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);font-size:14px}
-  th{color:var(--muted);font-weight:550;font-size:11.5px;text-transform:uppercase;letter-spacing:.5px}
-  code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12.5px;color:var(--gold)}
+  td{font-variant-numeric:tabular-nums}
+  tbody tr:hover{background:#12171f}
+  tbody tr:last-child td{border-bottom:none}
+  th{color:var(--muted);font-weight:550;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+  code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;color:var(--gold)}
   .pill{font-size:11px;padding:2px 9px;border-radius:99px;border:1px solid;white-space:nowrap}
   .pill.unclaimed{color:var(--warn);border-color:#5c4415;background:#2a1f0d}
   .pill.claimed{color:var(--ok);border-color:#1c4a26;background:#0f2415}
@@ -84,13 +92,49 @@
   #gate button{width:100%}
   #gate .err{color:var(--bad);font-size:13px;min-height:20px;margin-top:10px}
   [hidden]{display:none !important}
+
+  /* The parts of the page nobody draws but that still ship with the design. */
+  ::selection{background:#1f4b8f;color:#fff}
+  input,select{caret-color:var(--blue)}
+  html{scrollbar-color:var(--line) transparent;scrollbar-width:thin}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
+  ::-webkit-scrollbar-thumb:hover{background:#39424f}
+
+  /* Eight columns do not fit a phone. Let the table scroll inside its own box
+     rather than dragging the whole page sideways - the office works from a
+     laptop, but a phone is what is to hand when someone is stood next to the
+     television reading the code off its screen. */
+  .scroller{overflow-x:auto;overscroll-behavior-x:contain}
+  .scroller table{min-width:460px}
+  .scroller.wide table{min-width:840px}
+  /* The scroller exists so rows stay one line. Without this a long school name
+     wraps to four lines and every row in the table grows to match it, which is
+     the failure the horizontal scroll was added to avoid. */
+  .scroller th,.scroller td{white-space:nowrap}
+
+  @media (max-width:720px){
+    header{padding:14px 16px;gap:8px}
+    main{padding:18px 16px 48px}
+    #status{margin-left:0;flex-basis:100%}
+    .activate{padding:16px;border-radius:12px}
+    .teachers{padding:16px 16px 6px;border-radius:12px}
+    .activate .row,.teachers .row{flex-direction:column;align-items:stretch}
+    .field{width:100%}
+    #code,#school,.teachers input,.teachers select{width:100%;min-width:0}
+    #go,#t-add,#c-add,#add-school{width:100%}
+    /* Comfortable to hit with a thumb; the desktop rule keeps it small so a
+       dropdown in a cell does not stretch every row. */
+    select.assign{max-width:none;padding:9px 10px;font-size:14px}
+  }
 </style>
 </head>
 <body>
 
 <div id="gate">
   <div class="box">
-    <h2>JSP ECED — Ops Console</h2>
+    <h2>Jagdamba Smart Pathshala</h2>
     <input id="pass" type="password" placeholder="Passcode" autocomplete="current-password">
     <button id="unlock">Unlock</button>
     <div class="err" id="gate-err"></div>
@@ -99,7 +143,7 @@
 </div>
 
 <header>
-  <h1>JSP ECED — Ops Console</h1>
+  <h1>Jagdamba Smart Pathshala <span class="sub">Ops Console</span></h1>
   <span class="tag">reverse provisioning</span>
   <span id="status">idle</span>
 </header>
@@ -155,14 +199,16 @@
         </div>
         <button id="t-add" disabled>Add teacher</button>
       </div>
-      <table>
-        <thead>
-          <tr><th>Name</th><th>Class or role</th><th>Televisions</th><th class="right"></th></tr>
-        </thead>
-        <tbody id="teachers">
-          <tr><td colspan="4" class="muted">Choose a school above.</td></tr>
-        </tbody>
-      </table>
+      <div class="scroller">
+        <table>
+          <thead>
+            <tr><th>Name</th><th>Class or role</th><th>Televisions</th><th class="right"></th></tr>
+          </thead>
+          <tbody id="teachers">
+            <tr><td colspan="4" class="muted">Choose a school above.</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </section>
 
@@ -184,14 +230,16 @@
         </div>
         <button id="c-add" disabled>Add class</button>
       </div>
-      <table>
-        <thead>
-          <tr><th>Class</th><th>Grade</th><th>Televisions</th><th class="right"></th></tr>
-        </thead>
-        <tbody id="classes">
-          <tr><td colspan="4" class="muted">Choose a school above.</td></tr>
-        </tbody>
-      </table>
+      <div class="scroller">
+        <table>
+          <thead>
+            <tr><th>Class</th><th>Grade</th><th>Televisions</th><th class="right"></th></tr>
+          </thead>
+          <tbody id="classes">
+            <tr><td colspan="4" class="muted">Choose a school above.</td></tr>
+          </tbody>
+        </table>
+      </div>
       <p class="muted" style="margin:14px 0 6px">
         A class is what gives a television its grade. A television with no class
         stays activated and browses the whole ladder, which is right for a hall
@@ -202,17 +250,19 @@
 
   <section>
     <h2>Televisions <span class="muted" id="live"></span></h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Code</th><th>School</th><th>Teacher</th><th>Class</th><th>Status</th>
-          <th>Last seen</th><th>App</th><th class="right"></th>
-        </tr>
-      </thead>
-      <tbody id="devices">
-        <tr><td colspan="8" class="muted">Loading…</td></tr>
-      </tbody>
-    </table>
+    <div class="scroller wide">
+      <table>
+        <thead>
+          <tr>
+            <th>Code</th><th>School</th><th>Teacher</th><th>Class</th><th>Status</th>
+            <th>Last seen</th><th>App</th><th class="right"></th>
+          </tr>
+        </thead>
+        <tbody id="devices">
+          <tr><td colspan="8" class="muted">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
   </section>
 
 </main>
@@ -703,7 +753,9 @@ async function assign(deviceId, teacherId) {
 }
 
 async function revoke(deviceId) {
-  if (!confirm('Revoke this television? It returns to the pairing screen.')) return
+  if (!confirm('Revoke this television?
+
+It returns to the pairing screen the next time it checks in — within about ten minutes, or straight away if someone restarts it.')) return
   try {
     await api('revoke', { deviceId })
     setStatus('revoked', 'ok')
