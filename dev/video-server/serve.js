@@ -343,8 +343,13 @@ server.listen(PORT, '0.0.0.0', () => {
     const base = PUBLIC_URL || ('http://' + net.best + ':' + PORT);
     const out = path.join(__dirname, 'local_videos.sql');
     fs.writeFileSync(out, buildSql(base, meta));
+    const rehost = path.join(__dirname, 'rehost.sql');
+    fs.writeFileSync(rehost, buildRehostSql(base));
     process.stdout.write('  Wrote ' + out + '\n' +
-                         '  Paste it into the Supabase SQL editor.\n\n');
+                         '  Paste it into the Supabase SQL editor.\n\n' +
+                         '  Wrote ' + rehost + '\n' +
+                         '  If the catalogue already points at an older run of this\n' +
+                         '  server, paste that one instead - it just moves the host.\n\n');
   } else if (!PUBLIC_URL) {
     process.stdout.write('  Add --sql to write the catalogue update.\n\n');
   }
@@ -353,6 +358,55 @@ server.listen(PORT, '0.0.0.0', () => {
 });
 
 /* ---------------------------------------------------------------------- SQL */
+
+// A quick tunnel takes a new hostname every time it starts, so every URL in the
+// catalogue dies at once and every lesson on the television goes unreachable
+// together. The repair is the same each time and only the host changes, so emit
+// the small version of it as well: one update that moves the host and leaves the
+// paths, the durations and which lesson holds which video exactly where they are.
+// Re-pasting the 56 KB file also works, and is far easier to paste half of.
+//
+// It moves one host, not every URL in the table. The seed ships five lessons on a
+// public sample CDN, which are the only ones that play when this machine is off -
+// dragging those onto the tunnel would take away the fallback at the exact moment
+// the tunnel is what failed. So find the host the catalogue mostly points at, which
+// is the previous run of this server, and move only that one.
+//
+// This assumes the catalogue already points at a previous run of this server.
+// On a fresh or reseeded database there is nothing to move - paste
+// local_videos.sql instead, which assigns the videos as well as addressing them.
+function buildRehostSql(base) {
+  const b = base.replace(/'/g, "''");
+  return '-- Moves the catalogue to ' + base + ' without re-assigning anything.\n' +
+    '--\n' +
+    '-- Use this after restarting the tunnel: the paths, the durations and which\n' +
+    '-- lesson holds which video are unchanged, only the host moves. Lessons on\n' +
+    '-- any other host are left alone, including the handful of sample-CDN ones\n' +
+    '-- from the seed, which are the fallback when this machine is not serving.\n' +
+    '--\n' +
+    '-- If the catalogue holds no URLs yet this moves nothing and says so - paste\n' +
+    '-- local_videos.sql instead.\n' +
+    '\n' +
+    'with previous as (\n' +
+    "  select substring(video_url from '^https?://[^/]+') as host, count(*) as n\n" +
+    '  from lessons\n' +
+    "  where video_url ~ '^https?://'\n" +
+    '  group by 1\n' +
+    '  order by n desc\n' +
+    '  limit 1\n' +
+    ')\n' +
+    'update lessons l\n' +
+    "set video_url  = '" + b + "' || substr(l.video_url,  length(p.host) + 1),\n" +
+    "    poster_url = case when starts_with(l.poster_url, p.host || '/')\n" +
+    "                      then '" + b + "' || substr(l.poster_url, length(p.host) + 1)\n" +
+    '                      else l.poster_url end\n' +
+    'from previous p\n' +
+    "where starts_with(l.video_url, p.host || '/')\n" +
+    "  and p.host <> '" + b + "';\n" +
+    '\n' +
+    'select count(*) as on_this_host from lessons\n' +
+    "where starts_with(video_url, '" + b + "/');\n";
+}
 
 const SLUGS = ['english', 'nepali', 'maths', 'serofero', 'arts'];
 
