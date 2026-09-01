@@ -257,10 +257,29 @@ class BrowseFragment : BrowseSupportFragment() {
                 val durations = watchedLessons.associate { it.id to (it.durationSec ?: 0) }
                 val fractions = progressRepo.fractions(saved, durations)
 
-                // Continue watching — anything started but not finished, newest first.
+                // Continue watching - anything started but not finished, newest first.
+                //
+                // Newest by when it was last watched. This said "newest first" and
+                // then sorted on how far through each lesson was, so the row was
+                // ordered by percentage: the lesson abandoned at 90% sat at the
+                // front for good, and the one just watched went to the back for
+                // being two minutes in. Pressing Back out of a lesson is the most
+                // common thing anyone does here, and the lesson that was just left
+                // is the one they are looking for.
+                //
+                // Fraction stays as the tie-break, for rows written before the
+                // timestamp was maintained, which all carry the same first-opened
+                // value.
+                //
+                // Compared as text, which holds because every row here comes back
+                // from one database rendering one column at one offset, so the
+                // strings sort the way the instants do.
                 val continueRow = watchedLessons
                     .filter { (fractions[it.id] ?: 0f) in 0.01f..0.97f }
-                    .sortedByDescending { fractions[it.id] ?: 0f }
+                    .sortedWith(
+                        compareByDescending<Lesson> { saved[it.id]?.updatedAt.orEmpty() }
+                            .thenByDescending { fractions[it.id] ?: 0f }
+                    )
                     .take(10)
 
                 if (continueRow.isNotEmpty()) {

@@ -36,6 +36,7 @@ class ProgressRepository(
                     profileId   = profileId,
                     positionSec = positionSec,
                     completed   = completed,
+                    updatedAt   = nowIso(),
                 )
             ) {
                 onConflict = conflict
@@ -43,6 +44,20 @@ class ProgressRepository(
         }
         Unit
     }
+
+    /**
+     * Now, as Postgres will read it back.
+     *
+     * SimpleDateFormat rather than java.time because minSdk is 23 and core
+     * library desugaring is off, so Instant is not available here.
+     *
+     * Only ever compared against other rows written by this same television,
+     * so a set with a wrong clock still orders its own history correctly.
+     */
+    private fun nowIso(): String =
+        java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US)
+            .apply { timeZone = java.util.TimeZone.getTimeZone("UTC") }
+            .format(java.util.Date())
 
     suspend fun forDevice(deviceId: String): Map<String, Progress> = withContext(Dispatchers.IO) {
         quietly("progress.forDevice") {

@@ -112,6 +112,18 @@ data class Progress(
     @SerialName("profile_id") val profileId: String? = null,
     @SerialName("position_sec") val positionSec: Int = 0,
     val completed: Boolean = false,
+    /**
+     * When this row was last written, as an ISO-8601 instant.
+     *
+     * The column has always existed and has always been sent back on every
+     * select; nothing read it, which is why the continue row could describe
+     * itself as newest first while having no idea which row was newest.
+     *
+     * The client supplies it on write. The column defaults to now() and the
+     * table has no trigger, so left to the database it records when a lesson
+     * was first opened and never moves again.
+     */
+    @SerialName("updated_at") val updatedAt: String? = null,
 )
 
 @Serializable
