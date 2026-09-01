@@ -159,6 +159,17 @@ create policy classes_read on classes
 revoke insert, update, delete on levels  from anon, authenticated;
 revoke insert, update, delete on classes from anon, authenticated;
 
+-- A view does not inherit the grants of the tables underneath it, and RLS
+-- policies say nothing about table privileges. Supabase's default privileges
+-- usually grant new public objects to anon, but 0003 did not rely on that for
+-- quiz_options_public and neither does this: without these two lines the
+-- televisions read the catalogue through subject_cards and get
+-- "permission denied for view", which looks like an empty catalogue rather
+-- than an error. Both views are security_invoker, so the underlying RLS still
+-- applies - this grants reach, not visibility.
+grant select on subject_cards to anon, authenticated;
+grant select on level_cards   to anon, authenticated;
+
 -- devices.class_id must not be settable by the television, for exactly the
 -- reason school_id is not: a device that can choose its own class has
 -- self-provisioned. 0002 already revoked direct writes on devices and routes

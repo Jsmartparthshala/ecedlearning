@@ -32,7 +32,14 @@
 
 -- ------------------------------------------------------------ progress
 
-drop policy if exists progress_device_all on progress;
+-- These run by hand, so they have to survive being run twice. The three names
+-- below are dropped as well as the old one: without that, a second run gets
+-- past the drop and then dies on the first create, leaving the old `for all`
+-- policy already gone and only some of the replacements in place.
+drop policy if exists progress_device_all    on progress;
+drop policy if exists progress_device_read   on progress;
+drop policy if exists progress_device_insert on progress;
+drop policy if exists progress_device_update on progress;
 
 create policy progress_device_read on progress
   for select to anon, authenticated
@@ -49,7 +56,10 @@ create policy progress_device_update on progress
 
 -- ------------------------------------------------------- quiz_attempts
 
-drop policy if exists attempts_device_all on quiz_attempts;
+drop policy if exists attempts_device_all    on quiz_attempts;
+drop policy if exists attempts_device_read   on quiz_attempts;
+drop policy if exists attempts_device_insert on quiz_attempts;
+drop policy if exists attempts_device_update on quiz_attempts;
 
 create policy attempts_device_read on quiz_attempts
   for select to anon, authenticated
