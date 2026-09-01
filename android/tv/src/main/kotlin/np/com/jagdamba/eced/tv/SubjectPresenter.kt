@@ -61,8 +61,18 @@ class SubjectPresenter : Presenter() {
                 )
                 h.name.text = item.subject.nameEn
                 h.setSecondary(item.subject.nameNp)
-                h.count.text = context.getString(R.string.unit_count, item.unitCount)
-                h.count.visibility = View.VISIBLE
+                // A zero here means the count is unknown, not that the subject is
+                // empty: on a database without 0007 there is no subject_cards view
+                // to read unit_count from, and every tile would otherwise claim
+                // "0 units" for a subject that has twenty-four. Say nothing rather
+                // than something false.
+                if (item.unitCount > 0) {
+                    h.count.text = context.getString(R.string.unit_count, item.unitCount)
+                    h.count.visibility = View.VISIBLE
+                } else {
+                    h.count.text = ""
+                    h.count.visibility = View.GONE
+                }
             }
 
             is LevelTile -> {

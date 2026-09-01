@@ -160,10 +160,15 @@ class BrowseFragment : BrowseSupportFragment() {
             // very first thing a teacher saw after switching the television on was
             // an empty screen with no indication anything was happening.
             if (!hasLoadedOnce) {
-                val a = ArrayObjectAdapter(CardPresenter())
+                // One line of muted text, not a card. CardPresenter renders an
+                // unknown item as a full tile with an empty artwork panel, so the
+                // old loading row looked like a card that had failed - the
+                // opposite of what it is there to say. The word appears once, in
+                // the row rather than in a header above it.
+                val a = ArrayObjectAdapter(MessagePresenter())
                 a.add(getString(R.string.loading))
                 rowsAdapter.setItems(
-                    listOf(ListRow(HeaderItem(ID_LOADING, getString(R.string.loading)), a)),
+                    listOf(ListRow(HeaderItem(ID_LOADING, ""), a)),
                     null,
                 )
             }
