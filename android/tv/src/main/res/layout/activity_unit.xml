@@ -40,7 +40,7 @@
             android:maxLines="1"
             android:ellipsize="end"
             android:textColor="@color/tv_ink"
-            android:textSize="22sp"
+            android:textSize="@dimen/text_heading"
             android:textStyle="bold" />
 
         <TextView
@@ -97,7 +97,7 @@
             android:paddingBottom="3dp"
             android:maxLines="1"
             android:textColor="@color/focus_gold"
-            android:textSize="13sp"
+            android:textSize="@dimen/text_label"
             android:textStyle="bold"
             android:letterSpacing="0.12" />
 
@@ -109,7 +109,7 @@
             android:maxLines="1"
             android:ellipsize="end"
             android:textColor="@color/tv_ink"
-            android:textSize="22sp"
+            android:textSize="@dimen/text_heading"
             android:textStyle="bold" />
 
         <TextView
@@ -120,7 +120,7 @@
             android:paddingBottom="3dp"
             android:maxLines="1"
             android:textColor="@color/tv_muted"
-            android:textSize="14sp" />
+            android:textSize="@dimen/text_label" />
     </LinearLayout>
 
     <!-- lesson grid -->

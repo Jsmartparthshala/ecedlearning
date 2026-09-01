@@ -49,7 +49,7 @@
             android:gravity="center"
             android:textColor="@color/on_subject"
             android:alpha="0.92"
-            android:textSize="44sp"
+            android:textSize="@dimen/text_display"
             android:textStyle="bold" />
 
         <TextView
@@ -62,7 +62,7 @@
             android:paddingVertical="3dp"
             android:background="@color/badge_scrim"
             android:textColor="@color/on_subject"
-            android:textSize="12sp"
+            android:textSize="@dimen/text_label"
             android:letterSpacing="0.08"
             android:textStyle="bold" />
 
@@ -76,7 +76,7 @@
             android:paddingVertical="3dp"
             android:background="@color/badge_scrim"
             android:textColor="@color/on_subject"
-            android:textSize="12sp" />
+            android:textSize="@dimen/text_label" />
     </FrameLayout>
 
     <!-- Watch progress sits directly under the artwork, like a video scrubber. -->
@@ -110,7 +110,7 @@
             android:maxLines="2"
             android:ellipsize="end"
             android:textColor="@color/tv_ink"
-            android:textSize="17sp" />
+            android:textSize="@dimen/text_body" />
 
         <TextView
             android:id="@+id/card_meta"
@@ -120,6 +120,6 @@
             android:maxLines="1"
             android:ellipsize="end"
             android:textColor="@color/tv_muted"
-            android:textSize="14sp" />
+            android:textSize="@dimen/text_label" />
     </LinearLayout>
 </LinearLayout>

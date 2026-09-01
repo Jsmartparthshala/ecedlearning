@@ -28,6 +28,6 @@
         android:maxLines="1"
         android:ellipsize="end"
         android:textColor="@color/tv_ink"
-        android:textSize="20sp"
+        android:textSize="@dimen/text_body"
         android:visibility="gone" />
 </LinearLayout>

@@ -10,20 +10,37 @@
     <dimen name="card_width">280dp</dimen>
     <dimen name="card_height">158dp</dimen>   <!-- 16:9 -->
 
-    <!-- 10-foot type. Anything under 18sp is unreadable across a classroom. -->
+    <!-- 10-foot type. Anything under 18sp is unreadable across a classroom.
+
+         The rule was already written here and then broken everywhere: the token
+         block itself defined a 16sp caption, no layout referenced any of these
+         three names, and sixteen hardcoded sizes ran down to 10sp. A five year
+         old at the back of a classroom cannot read 10sp on a 32 inch panel from
+         three metres, so that text was not small - it was absent.
+
+         Five steps, and 18sp is a floor rather than a suggestion. Where a badge
+         could not fit its text at 18sp the badge came off the tile instead of
+         the type coming down; a floor with exceptions is not a floor. -->
+    <dimen name="text_display">44sp</dimen>
     <dimen name="text_title">32sp</dimen>
+    <dimen name="text_heading">24sp</dimen>
     <dimen name="text_body">20sp</dimen>
-    <dimen name="text_caption">16sp</dimen>
+    <dimen name="text_label">18sp</dimen>
 
     <!-- Unit rail. Sized so six units sit inside the overscan padding without the sixth
          being clipped, which is what tells a teacher the rail scrolls. -->
     <dimen name="unit_tile_width">132dp</dimen>
     <dimen name="unit_tile_height">76dp</dimen>
 
-    <!-- Lesson poster. The grid runs five columns inside the overscan padding,
-         giving a 161dp column; 90dp of artwork keeps that at 16:9 so real
-         thumbnails can replace the flat fill later without a relayout. -->
-    <dimen name="poster_art_height">90dp</dimen>
+    <!-- Lesson poster. The grid runs four columns inside the overscan padding,
+         giving a 207dp column; 116dp of artwork keeps that at 16:9 so real
+         thumbnails can replace the flat fill later without a relayout.
+
+         It was five columns and a 161dp poster, which is the reason the title
+         underneath was set at 15sp: nothing larger fitted. Widening the column
+         is what buys the type its floor - the poster is the densest thing in
+         the app and it set the ceiling for everything else. -->
+    <dimen name="poster_art_height">116dp</dimen>
     <dimen name="grid_gap">12dp</dimen>
     <dimen name="focus_bleed">6dp</dimen>
 
@@ -32,12 +49,20 @@
     <dimen name="page_content_start">@dimen/overscan_horizontal</dimen>
     <dimen name="page_content_top">0dp</dimen>
 
-    <!-- Subject tiles. Five across the usable width, and taller than a unit tile
-         because this is the first choice a teacher makes on the screen. -->
-    <dimen name="subject_tile_width">168dp</dimen>
-    <!-- Grown from 118dp to fit the Nepali name under the English one without
-         squeezing the count badge against the bottom edge. -->
-    <dimen name="subject_tile_height">134dp</dimen>
+    <!-- Subject tiles. The first choice a teacher makes on the screen, so this is
+         the one tile sized around its words rather than around how many fit.
+
+         200dp carries "ECED English" on one line at 24sp, which is what the
+         subject name is worth; 168dp did not, which is why the name sat at 21sp
+         and the Nepali under it at 14sp. Four now sit inside the usable width
+         with the fifth peeking, where five used to be claimed and the fifth was
+         clipped mid word - the row scrolls either way, and a peek that shows a
+         readable half tile says so more clearly than a sliver does.
+
+         The height follows the stack: two lines of name, the Devanagari, and the
+         count badge, all at the 18sp floor or above. -->
+    <dimen name="subject_tile_width">200dp</dimen>
+    <dimen name="subject_tile_height">152dp</dimen>
 
     <!-- Leanback's own row inset, overridden by name.
 

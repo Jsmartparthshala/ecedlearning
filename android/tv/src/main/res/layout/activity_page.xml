@@ -27,7 +27,7 @@
             android:paddingTop="16dp"
             android:paddingBottom="10dp"
             android:textColor="@color/tv_ink"
-            android:textSize="22sp"
+            android:textSize="@dimen/text_heading"
             android:textStyle="bold" />
 
         <FrameLayout

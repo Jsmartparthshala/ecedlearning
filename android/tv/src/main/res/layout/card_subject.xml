@@ -42,7 +42,7 @@
                 android:maxLines="2"
                 android:ellipsize="end"
                 android:textColor="@color/on_subject"
-                android:textSize="21sp"
+                android:textSize="@dimen/text_heading"
                 android:textStyle="bold"
                 android:lineSpacingMultiplier="1.05" />
 
@@ -61,7 +61,7 @@
                 android:ellipsize="end"
                 android:alpha="0.82"
                 android:textColor="@color/on_subject"
-                android:textSize="14sp" />
+                android:textSize="@dimen/text_label" />
 
             <TextView
                 android:id="@+id/cs_count"
@@ -72,7 +72,7 @@
                 android:paddingVertical="3dp"
                 android:background="@color/badge_scrim"
                 android:textColor="@color/on_subject"
-                android:textSize="12sp" />
+                android:textSize="@dimen/text_label" />
         </LinearLayout>
     </FrameLayout>
 </FrameLayout>

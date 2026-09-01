@@ -212,8 +212,6 @@ class UnitActivity : FragmentActivity() {
         inner class VH(v: View) : RecyclerView.ViewHolder(v) {
             val art: FrameLayout = v.findViewById(R.id.tu_art)
             val no: TextView     = v.findViewById(R.id.tu_no)
-            val kicker: TextView = v.findViewById(R.id.tu_kicker)
-            val count: TextView  = v.findViewById(R.id.tu_count)
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = VH(
@@ -226,9 +224,6 @@ class UnitActivity : FragmentActivity() {
             val u = items[position]
             holder.art.setBackgroundColor(style.colorStart)
             holder.no.text = u.sortOrder.toString()
-            holder.kicker.text = getString(R.string.card_unit_kicker)
-            val n = u.estDays ?: 0
-            holder.count.text = if (n > 0) "$n videos" else ""
 
             holder.itemView.setOnFocusChangeListener { view, hasFocus ->
                 lift(view, hasFocus)
@@ -256,9 +251,8 @@ class UnitActivity : FragmentActivity() {
             val poster: ImageView  = v.findViewById(R.id.pl_poster)
             val scrim: View        = v.findViewById(R.id.pl_scrim)
             val no: TextView       = v.findViewById(R.id.pl_no)
-            val kicker: TextView   = v.findViewById(R.id.pl_kicker)
             val dur: TextView      = v.findViewById(R.id.pl_dur)
-            val play: TextView     = v.findViewById(R.id.pl_play)
+            val play: ImageView    = v.findViewById(R.id.pl_play)
             val title: TextView    = v.findViewById(R.id.pl_title)
             val meta: TextView     = v.findViewById(R.id.pl_meta)
             val track: FrameLayout = v.findViewById(R.id.pl_track)
@@ -284,7 +278,6 @@ class UnitActivity : FragmentActivity() {
                 PosterLoader.load(holder.poster, l.posterUrl)
             }
             holder.no.text = l.sortOrder.toString()
-            holder.kicker.text = getString(R.string.card_lesson_kicker)
             holder.dur.text = "${(l.durationSec ?: 0) / 60} min"
             holder.title.text = l.titleEn.clean()
 
@@ -299,7 +292,6 @@ class UnitActivity : FragmentActivity() {
 
             showProgress(holder, progress[l.id] ?: 0f)
 
-            holder.play.text = getString(R.string.play_glyph)
             holder.play.visibility = View.GONE
             holder.no.visibility = View.VISIBLE
             holder.itemView.alpha = if (l.isPlayable) 1f else DIMMED_ALPHA
@@ -385,7 +377,7 @@ class UnitActivity : FragmentActivity() {
         const val EXTRA_COLOR_2    = "color_2"
         const val EXTRA_SUBJECT    = "subject"
 
-        private const val GRID_COLUMNS = 5
+        private const val GRID_COLUMNS = 4
         private const val FOCUS_SCALE = 1.06f
 
         /** Unreleased lessons. Most of the catalog is still unreleased, so this has

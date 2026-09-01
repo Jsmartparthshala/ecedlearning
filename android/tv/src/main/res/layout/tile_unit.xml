@@ -2,9 +2,15 @@
 <!-- Unit tile for the horizontal rail.
 
      No title on the tile itself. The rail is focus driven: whichever unit holds
-     focus writes its title into the header below, so the tile only has to carry
-     the number and the video count. That keeps it small enough to fit eight units
-     on screen at once, which is the whole point of a rail over a list.
+     focus writes its title, lesson count and running time into the header below,
+     so the tile only has to carry the number. That keeps it small enough to fit
+     eight units on screen at once, which is the whole point of a rail over a list.
+
+     It used to carry a "UNIT" badge and a video count too, both set at 11sp. The
+     badge repeated the word on every tile in a rail of units sitting under a
+     header that already says it, and the count repeated what the header prints
+     for the focused tile. Neither fits at 18sp in a 132dp tile, and the tile is
+     not worth widening for text that says nothing new.
 
      Nothing here decodes a bitmap. The artwork is a flat solid colour and the
      numeral is text, so a rail of tiles costs a few font lookups. -->
@@ -27,36 +33,9 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:gravity="center"
-            android:paddingBottom="14dp"
             android:textColor="@color/on_subject"
-            android:textSize="32sp"
+            android:textSize="@dimen/text_title"
             android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/tu_kicker"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top|start"
-            android:layout_margin="8dp"
-            android:paddingHorizontal="7dp"
-            android:paddingVertical="2dp"
-            android:background="@color/badge_scrim"
-            android:textColor="@color/on_subject"
-            android:textSize="11sp"
-            android:letterSpacing="0.08"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/tu_count"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom|end"
-            android:layout_margin="8dp"
-            android:paddingHorizontal="7dp"
-            android:paddingVertical="2dp"
-            android:background="@color/badge_scrim"
-            android:textColor="@color/on_subject"
-            android:textSize="11sp" />
 
         <FrameLayout
             android:id="@+id/tu_track"

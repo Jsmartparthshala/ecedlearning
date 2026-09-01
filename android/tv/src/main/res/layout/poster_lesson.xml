@@ -6,7 +6,7 @@
      flush with the overscan padding.
 
      Anatomy follows the prototype card: artwork panel on top carrying the number
-     and badges, a watch progress scrubber directly beneath it, then a dark
+     and the running time, a watch progress scrubber directly beneath it, then a dark
      information strip. The artwork and the strip do not overlap, so overdraw
      stays at 1x. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -47,21 +47,7 @@
             android:gravity="center"
             android:textColor="@color/on_subject"
             android:alpha="0.92"
-            android:textSize="34sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/pl_kicker"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top|start"
-            android:layout_margin="7dp"
-            android:paddingHorizontal="6dp"
-            android:paddingVertical="2dp"
-            android:background="@color/badge_scrim"
-            android:textColor="@color/on_subject"
-            android:textSize="10sp"
-            android:letterSpacing="0.08"
+            android:textSize="@dimen/text_title"
             android:textStyle="bold" />
 
         <TextView
@@ -74,17 +60,17 @@
             android:paddingVertical="2dp"
             android:background="@color/badge_scrim"
             android:textColor="@color/on_subject"
-            android:textSize="10sp" />
+            android:textSize="@dimen/text_label" />
 
         <!-- Play chevron. Shown only on the focused poster: a play mark on every
              card is noise, on the focused one it says what OK will do. -->
-        <TextView
+        <ImageView
             android:id="@+id/pl_play"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:layout_gravity="center"
-            android:textColor="@color/on_subject"
-            android:textSize="28sp"
+            android:src="@drawable/ic_play"
+            android:importantForAccessibility="no"
             android:visibility="gone" />
 
         <FrameLayout
@@ -118,7 +104,7 @@
             android:maxLines="1"
             android:ellipsize="end"
             android:textColor="@color/tv_ink"
-            android:textSize="15sp"
+            android:textSize="@dimen/text_body"
             android:textStyle="bold" />
 
         <TextView
@@ -129,6 +115,6 @@
             android:maxLines="1"
             android:ellipsize="end"
             android:textColor="@color/tv_muted"
-            android:textSize="12sp" />
+            android:textSize="@dimen/text_label" />
     </LinearLayout>
 </LinearLayout>

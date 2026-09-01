@@ -57,7 +57,6 @@
     <string name="lesson_no_video">No video yet</string>
     <string name="pane_lessons">LESSONS</string>
     <string name="grid_empty">No lessons in this unit yet.</string>
-    <string name="play_glyph">▶</string>
     <string name="unit_meta">%1$d videos · %2$d min</string>
     <string name="row_subjects">Subjects</string>
     <string name="row_levels">Grades</string>
