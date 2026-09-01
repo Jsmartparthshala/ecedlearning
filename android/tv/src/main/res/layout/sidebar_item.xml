@@ -13,13 +13,13 @@
     android:focusable="true"
     android:focusableInTouchMode="true">
 
-    <TextView
+    <ImageView
         android:id="@+id/si_glyph"
         android:layout_width="@dimen/sidebar_glyph_column"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:textColor="@color/tv_ink"
-        android:textSize="26sp" />
+        android:layout_height="@dimen/sidebar_glyph_size"
+        android:scaleType="fitCenter"
+        android:tint="@color/tv_ink"
+        android:importantForAccessibility="no" />
 
     <TextView
         android:id="@+id/si_label"

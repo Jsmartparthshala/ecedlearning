@@ -6,6 +6,7 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
+import android.widget.ImageView
 import android.widget.TextView
 
 /**
@@ -40,13 +41,13 @@ class NavRail(
 
     private val root: ViewGroup = activity.findViewById(R.id.sidebar)
 
-    private data class Entry(val viewId: Int, val glyph: Int, val label: Int, val page: String?)
+    private data class Entry(val viewId: Int, val icon: Int, val label: Int, val page: String?)
 
     private val entries = listOf(
-        Entry(R.id.nav_videos, R.string.glyph_videos, R.string.nav_videos, null),
-        Entry(R.id.nav_profile, R.string.glyph_profile, R.string.nav_profile, PageActivity.PAGE_PROFILE),
-        Entry(R.id.nav_downloads, R.string.glyph_downloads, R.string.nav_downloads, PageActivity.PAGE_DOWNLOADS),
-        Entry(R.id.nav_settings, R.string.glyph_settings, R.string.nav_settings, PageActivity.PAGE_SETTINGS),
+        Entry(R.id.nav_videos, R.drawable.ic_nav_videos, R.string.nav_videos, null),
+        Entry(R.id.nav_profile, R.drawable.ic_nav_profile, R.string.nav_profile, PageActivity.PAGE_PROFILE),
+        Entry(R.id.nav_downloads, R.drawable.ic_nav_downloads, R.string.nav_downloads, PageActivity.PAGE_DOWNLOADS),
+        Entry(R.id.nav_settings, R.drawable.ic_nav_settings, R.string.nav_settings, PageActivity.PAGE_SETTINGS),
     )
 
     /** The entry matching this screen, which stays marked while the rail is closed. */
@@ -59,7 +60,7 @@ class NavRail(
     fun attach() {
         entries.forEach { entry ->
             val row = activity.findViewById<View>(entry.viewId)
-            row.findViewById<TextView>(R.id.si_glyph).text = activity.getString(entry.glyph)
+            row.findViewById<ImageView>(R.id.si_glyph).setImageResource(entry.icon)
             row.findViewById<TextView>(R.id.si_label).text = activity.getString(entry.label)
             row.isSelected = entry.page == current
 

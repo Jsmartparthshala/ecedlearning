@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Settings. Authored rather than borrowed: a ring plus eight teeth placed by
+     rotating one tooth around the centre, which keeps every tooth identical and
+     the whole form obviously geometric. The ring is an even-odd donut so the
+     hole stays crisp when the icon is tinted. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <group android:rotation="0" android:pivotX="12" android:pivotY="12">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M10.35,2.1 h3.3 v4.8 h-3.3 Z" />
+    </group>
+    <group android:rotation="45" android:pivotX="12" android:pivotY="12">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M10.35,2.1 h3.3 v4.8 h-3.3 Z" />
+    </group>
+    <group android:rotation="90" android:pivotX="12" android:pivotY="12">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M10.35,2.1 h3.3 v4.8 h-3.3 Z" />
+    </group>
+    <group android:rotation="135" android:pivotX="12" android:pivotY="12">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M10.35,2.1 h3.3 v4.8 h-3.3 Z" />
+    </group>
+    <group android:rotation="180" android:pivotX="12" android:pivotY="12">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M10.35,2.1 h3.3 v4.8 h-3.3 Z" />
+    </group>
+    <group android:rotation="225" android:pivotX="12" android:pivotY="12">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M10.35,2.1 h3.3 v4.8 h-3.3 Z" />
+    </group>
+    <group android:rotation="270" android:pivotX="12" android:pivotY="12">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M10.35,2.1 h3.3 v4.8 h-3.3 Z" />
+    </group>
+    <group android:rotation="315" android:pivotX="12" android:pivotY="12">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M10.35,2.1 h3.3 v4.8 h-3.3 Z" />
+    </group>
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M12,5.4 a6.6,6.6 0 1,0 0.01,0 Z M12,9.0 a3.0,3.0 0 1,1 -0.01,0 Z" />
+</vector>

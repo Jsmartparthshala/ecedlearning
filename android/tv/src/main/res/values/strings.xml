@@ -68,11 +68,7 @@
     <string name="row_device">This television</string>
     <string name="unit_count">%1$d units</string>
     <string name="nav_videos">Videos</string>
-    <string name="glyph_videos">▶</string>
     <string name="nav_profile">Profile</string>
-    <string name="glyph_profile">◉</string>
-    <string name="glyph_downloads">↓</string>
-    <string name="glyph_settings">⚙</string>
     <string name="profile_teacher_kicker">Assigned teacher</string>
     <string name="profile_role_known">%s. Progress on this television is saved against this device, so every lesson picks up where it was left.</string>
     <string name="profile_role_blank">Progress on this television is saved against this device, so every lesson picks up where it was left.</string>

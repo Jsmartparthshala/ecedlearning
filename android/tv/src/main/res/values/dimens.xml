@@ -54,6 +54,11 @@
     <dimen name="sidebar_expanded_width">252dp</dimen>
     <dimen name="sidebar_item_height">62dp</dimen>
     <dimen name="sidebar_glyph_column">72dp</dimen>
+    <!-- Drawn icons, not font glyphs. The old rail set four Unicode characters
+         as text, two of which (U+25C9, U+2699) are routinely missing from the
+         font on cheap Amlogic and Allwinner boxes - where the teacher gets a
+         tofu box instead of an icon. -->
+    <dimen name="sidebar_glyph_size">28dp</dimen>
 
     <!-- Clears the title bar, so the expanded rail never covers the brand. -->
     <dimen name="sidebar_top_inset">64dp</dimen>
