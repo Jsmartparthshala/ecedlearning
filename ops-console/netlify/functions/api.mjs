@@ -110,7 +110,7 @@ export default async (req) => {
         return json({ error: `Unknown action: ${body.action}` }, 400)
     }
   } catch (e) {
-    return json({ error: e?.message || String(e) }, 500)
+    return json({ error: reason(e, String(e)) }, 500)
   }
 }
 
@@ -120,6 +120,22 @@ const DEVICE_COLUMNS =
 
 const DEVICE_COLUMNS_WITH_CLASS =
   DEVICE_COLUMNS + ', class_id, classes(label, level_id)'
+
+/**
+ * Turn whatever supabase-js threw into something an operator can repeat back.
+ *
+ * An error is not guaranteed to carry a message. `.single()` is the sharp case:
+ * against a table that does not exist it rejects with a completely empty object,
+ * which `JSON.stringify` renders as `{}` - so the console reported a failure
+ * with nothing whatsoever in it, and the operator had nothing to tell anyone.
+ * Note that this is also why isMissingSchema cannot see such an error: there is
+ * no code and no message on it to match.
+ */
+const reason = (err, fallback = 'The database rejected that without saying why.') =>
+  err?.message ||
+  err?.details ||
+  err?.hint ||
+  (err?.code ? `Database error ${err.code}.` : fallback)
 
 /**
  * Does this error mean the schema simply does not have the class columns yet,
@@ -164,13 +180,13 @@ async function list(sb) {
       .order('claimed_at', { ascending: true, nullsFirst: true })
       .order('created_at', { ascending: false }))
   }
-  if (error) return json({ error: error.message }, 500)
+  if (error) return json({ error: reason(error) }, 500)
 
   const { data: schools, error: e2 } = await sb
     .from('schools')
     .select('id, name, municipality')
     .order('name')
-  if (e2) return json({ error: e2.message }, 500)
+  if (e2) return json({ error: reason(e2) }, 500)
 
   // Every teacher in one go rather than per school. There are tens of these, not
   // thousands, and the page filters client side as the school dropdown changes -
@@ -179,7 +195,7 @@ async function list(sb) {
     .from('teachers')
     .select('id, school_id, name, role')
     .order('name')
-  if (e3) return json({ error: e3.message }, 500)
+  if (e3) return json({ error: reason(e3) }, 500)
 
   // Same tolerance as the device select above: on a database without 0007 these
   // two come back empty and the page simply shows no class controls.
@@ -211,7 +227,7 @@ async function findByCode(sb, rawCode) {
     .from('devices')
     .select('id, hardware_uuid, claimed_at, last_seen, app_version, school_id, schools(name)')
     .ilike('hardware_uuid', `${code}-%`)
-  if (error) return { error: error.message, status: 500 }
+  if (error) return { error: reason(error), status: 500 }
 
   if (!data || data.length === 0) {
     // Almost always means the TV has not reached Supabase yet, not a typo.
@@ -270,14 +286,14 @@ async function activate(sb, { code, schoolId, teacherId }) {
       claimed_at: new Date().toISOString(),
     })
     .eq('id', device.id)
-  if (e1) return json({ error: e1.message }, 500)
+  if (e1) return json({ error: reason(e1) }, 500)
 
   // Insert last. This is the row the TV is polling for, so it must not arrive
   // before the device row says which school it belongs to.
   const { error: e2 } = await sb
     .from('sessions')
     .insert({ device_id: device.id, token, expires_at: expires.toISOString() })
-  if (e2) return json({ error: e2.message }, 500)
+  if (e2) return json({ error: reason(e2) }, 500)
 
   return json({ ok: true, deviceId: device.id, code: found.code })
 }
@@ -289,13 +305,13 @@ async function revoke(sb, { deviceId }) {
     .from('sessions')
     .update({ revoked: true })
     .eq('device_id', deviceId)
-  if (e1) return json({ error: e1.message }, 500)
+  if (e1) return json({ error: reason(e1) }, 500)
 
   const { error: e2 } = await sb
     .from('devices')
     .update({ claimed_at: null, school_id: null, teacher_id: null })
     .eq('id', deviceId)
-  if (e2) return json({ error: e2.message }, 500)
+  if (e2) return json({ error: reason(e2) }, 500)
 
   return json({ ok: true })
 }
@@ -310,7 +326,7 @@ async function teacherOutsideSchool(sb, teacherId, schoolId) {
     .select('id, name, school_id')
     .eq('id', teacherId)
     .maybeSingle()
-  if (error) return error.message
+  if (error) return reason(error)
   if (!data) return 'That teacher no longer exists. Reload the page.'
   if (data.school_id !== schoolId) {
     return `${data.name} is not a teacher at that school.`
@@ -328,7 +344,7 @@ async function createTeacher(sb, { schoolId, name, role }) {
     .insert({ school_id: schoolId, name: clean, role: String(role || '').trim() || null })
     .select('id, school_id, name, role')
     .single()
-  if (error) return json({ error: error.message }, 500)
+  if (error) return json({ error: reason(error) }, 500)
 
   return json({ ok: true, teacher: data })
 }
@@ -343,7 +359,7 @@ async function deleteTeacher(sb, { teacherId }) {
   if (!teacherId) return json({ error: 'teacherId is required' }, 400)
 
   const { error } = await sb.from('teachers').delete().eq('id', teacherId)
-  if (error) return json({ error: error.message }, 500)
+  if (error) return json({ error: reason(error) }, 500)
 
   return json({ ok: true })
 }
@@ -357,7 +373,7 @@ async function assignTeacher(sb, { deviceId, teacherId }) {
     .select('id, school_id')
     .eq('id', deviceId)
     .maybeSingle()
-  if (e0) return json({ error: e0.message }, 500)
+  if (e0) return json({ error: reason(e0) }, 500)
   if (!device) return json({ error: 'That television no longer exists.' }, 404)
 
   if (teacherId) {
@@ -372,7 +388,7 @@ async function assignTeacher(sb, { deviceId, teacherId }) {
     .from('devices')
     .update({ teacher_id: teacherId || null })
     .eq('id', deviceId)
-  if (error) return json({ error: error.message }, 500)
+  if (error) return json({ error: reason(error) }, 500)
 
   return json({ ok: true })
 }
@@ -390,7 +406,7 @@ async function createSchool(sb, { name, municipality }) {
     .insert({ name: clean, municipality: String(municipality || '').trim() || null })
     .select('id, name, municipality')
     .single()
-  if (error) return json({ error: error.message }, 500)
+  if (error) return json({ error: reason(error) }, 500)
 
   return json({ ok: true, school: data })
 }
@@ -423,7 +439,7 @@ async function createClass(sb, { schoolId, levelId, label }) {
     if (error.code === '23505') {
       return json({ error: `That school already has a class called "${clean}" in that grade.` }, 409)
     }
-    return json({ error: error.message }, 500)
+    return json({ error: reason(error) }, 500)
   }
 
   return json({ ok: true, class: data })
@@ -439,7 +455,7 @@ async function deleteClass(sb, { classId }) {
   if (!classId) return json({ error: 'classId is required' }, 400)
 
   const { error } = await sb.from('classes').delete().eq('id', classId)
-  if (error) return json({ error: error.message }, 500)
+  if (error) return json({ error: reason(error) }, 500)
 
   return json({ ok: true })
 }
@@ -453,7 +469,7 @@ async function assignClass(sb, { deviceId, classId }) {
     .select('id, school_id')
     .eq('id', deviceId)
     .maybeSingle()
-  if (e0) return json({ error: e0.message }, 500)
+  if (e0) return json({ error: reason(e0) }, 500)
   if (!device) return json({ error: 'That television no longer exists.' }, 404)
 
   if (classId) {
@@ -468,7 +484,7 @@ async function assignClass(sb, { deviceId, classId }) {
       .select('id, label, school_id')
       .eq('id', classId)
       .maybeSingle()
-    if (e1) return json({ error: e1.message }, 500)
+    if (e1) return json({ error: reason(e1) }, 500)
     if (!klass) return json({ error: 'That class no longer exists. Reload the page.' }, 404)
     if (klass.school_id !== device.school_id) {
       return json({ error: `${klass.label} is not a class at that school.` }, 400)
@@ -479,7 +495,7 @@ async function assignClass(sb, { deviceId, classId }) {
     .from('devices')
     .update({ class_id: classId || null })
     .eq('id', deviceId)
-  if (error) return json({ error: error.message }, 500)
+  if (error) return json({ error: reason(error) }, 500)
 
   return json({ ok: true })
 }
