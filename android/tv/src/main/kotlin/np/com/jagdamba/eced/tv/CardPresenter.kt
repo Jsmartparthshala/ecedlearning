@@ -188,5 +188,4 @@ class CardPresenter(
         h.scrim.visibility = View.GONE
     }
 
-    private fun String.clean() = removePrefix("[PLACEHOLDER] ")
 }

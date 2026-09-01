@@ -108,4 +108,9 @@
     <string name="upd_downloading_indeterminate">Downloading…</string>
     <string name="upd_download_failed">Download failed — check the connection and try again</string>
     <string name="upd_handoff">Confirm the install on the next screen</string>
+    <string name="player_error_kicker">Could not play</string>
+    <string name="player_error_title_network">This lesson would not load</string>
+    <string name="player_error_title_other">This lesson would not play</string>
+    <string name="player_error_body_network">The television is online but could not reach the video. Press OK to try again, or press Back to choose another lesson.</string>
+    <string name="player_error_body_other">Something went wrong while starting this lesson. Press OK to try again, or press Back to choose another lesson.</string>
 </resources>

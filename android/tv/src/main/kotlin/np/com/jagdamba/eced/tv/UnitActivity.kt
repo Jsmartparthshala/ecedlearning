@@ -367,7 +367,6 @@ class UnitActivity : FragmentActivity() {
         }
     }
 
-    private fun String.clean() = removePrefix("[PLACEHOLDER] ")
 
     companion object {
         const val EXTRA_UNIT_ID    = "unit_id"
