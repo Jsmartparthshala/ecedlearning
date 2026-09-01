@@ -30,11 +30,32 @@
             android:textSize="@dimen/text_heading"
             android:textStyle="bold" />
 
+        <!-- Focusable, and its children focus before it does.
+
+             Profile and Downloads are prose, and prose never gave the rail a
+             focusable child to hand focus to. The rail's fallback is to keep focus
+             itself, so both opened with the menu expanded across the first 250dp
+             of every line - and right did nothing, because there was nothing to
+             the right to move to. The page was unreadable and no key fixed it.
+             Settings escaped only because it happens to carry three buttons.
+
+             Focusable here is what breaks that: the rail hands focus over and
+             collapses, because it no longer holds it. Left still opens the rail,
+             because focusSearch to the left of an overlaid rail returns null and
+             the rail reads that null as the request.
+
+             afterDescendants matters for Settings, which brings its own scroller.
+             Without it this frame would win the focus it is meant to be standing
+             in for, and the settings cards would sit below the fold with no key
+             that reaches them. Profile and Downloads have nothing focusable
+             inside, so there the frame itself takes it, which is the point. -->
         <FrameLayout
             android:id="@+id/page_container"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1" />
+            android:layout_weight="1"
+            android:focusable="true"
+            android:descendantFocusability="afterDescendants" />
     </LinearLayout>
 
     <include layout="@layout/nav_rail" />
