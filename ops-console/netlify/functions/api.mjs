@@ -122,6 +122,22 @@ const DEVICE_COLUMNS_WITH_CLASS =
   DEVICE_COLUMNS + ', class_id, classes(label, level_id)'
 
 /**
+ * Does this error mean the schema simply does not have the class columns yet,
+ * as opposed to something having gone wrong?
+ *
+ * Worth distinguishing. Falling back on *any* error means one transient blip
+ * renders every television in the fleet as having no class, and an operator
+ * reading that reasonably concludes the assignments were lost and starts
+ * redoing them by hand.
+ *
+ * 42703 undefined_column, 42P01 undefined_table, PGRST200 no such relationship
+ * in the schema cache, PGRST204 unknown column.
+ */
+const isMissingSchema = err =>
+  ['42703', '42P01', 'PGRST200', 'PGRST204'].includes(err?.code) ||
+  /does not exist|schema cache/i.test(err?.message || '')
+
+/**
  * Read the fleet.
  *
  * The class columns are requested optimistically and dropped if the database has
@@ -141,7 +157,7 @@ async function list(sb) {
     .order('claimed_at', { ascending: true, nullsFirst: true })
     .order('created_at', { ascending: false }))
 
-  if (error) {
+  if (error && isMissingSchema(error)) {
     ;({ data: devices, error } = await sb
       .from('devices')
       .select(DEVICE_COLUMNS)

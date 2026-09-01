@@ -112,25 +112,37 @@ class DeviceRepository(
      * same hardware UUID and finds the session nobody revoked. That is not a
      * cosmetic bug: it makes the device impossible to log out.
      *
-     * Returns false when the server could not be reached or the token is no
-     * longer live, and in that case the cache is left alone. A television that
-     * has forgotten its token but is still claimed server-side cannot be
-     * reactivated by the office — the code it shows is already claimed — so
-     * failing loudly and staying paired is the safer of the two wrong states.
+     * Three-valued, for the same reason [sessionLive] is:
+     *
+     *  - true : the set is released. Either this call revoked the session, or
+     *           there was no live session to revoke because the office had
+     *           already removed it. Both end with this television free to be
+     *           activated again, so both clear the cache.
+     *  - null : the office could not be reached, or release_device is not
+     *           installed yet. The cache is left alone.
+     *
+     * The cache is only cleared on a definite answer. A television that has
+     * forgotten its token while the server still shows it claimed cannot be
+     * reactivated by the office — the code it displays is already spoken for —
+     * so staying paired is the recoverable half of those two wrong states.
      */
-    suspend fun release(): Boolean = withContext(Dispatchers.IO) {
-        val token = cachedToken() ?: return@withContext false
-        val released = quietly("devices.release") {
+    suspend fun release(): Boolean? = withContext(Dispatchers.IO) {
+        val token = cachedToken() ?: return@withContext true
+        quietly("devices.release") {
             client.postgrest
                 .rpc("release_device", buildJsonObject {
                     put("p_hardware_uuid", hardwareUuid())
                     put("p_token", token)
                 })
                 .decodeAs<Boolean>()
-        } ?: false
+        } ?: return@withContext null
 
-        if (released) factoryReset()
-        released
+        // A false from the server means no live session matched this token,
+        // which is exactly what it says when the office revoked the set first.
+        // There is nothing left to release, so forgetting it locally is the
+        // correct outcome rather than an error to report to the teacher.
+        factoryReset()
+        true
     }
 
     /**
@@ -150,7 +162,9 @@ class DeviceRepository(
      * cases stay distinguishable.
      */
     suspend fun sessionLive(): Boolean? = withContext(Dispatchers.IO) {
-        val token = cachedToken() ?: return@withContext false
+        // Null, not false: no token means nothing was ever asked of the server,
+        // and false is documented as "the server said this session is gone".
+        val token = cachedToken() ?: return@withContext null
         quietly("devices.sessionStatus") {
             client.postgrest
                 .rpc("session_status", buildJsonObject {
@@ -196,14 +210,15 @@ class DeviceRepository(
         // two are never simultaneous - and without the fallback a television on
         // the older schema would lose its school name too, because one missing
         // column fails the whole select.
-        val row = quietly("devices.school") {
+        val withClass = quietly("devices.school") {
             client.from("devices")
                 .select(Columns.raw(DEVICE_COLUMNS_WITH_CLASS)) {
                     filter { eq("id", deviceId) }
                     limit(1)
                 }
                 .decodeSingleOrNull<DeviceWithSchool>()
-        } ?: quietly("devices.school.noClass") {
+        }
+        val row = withClass ?: quietly("devices.school.noClass") {
             client.from("devices")
                 .select(Columns.raw(DEVICE_COLUMNS)) {
                     filter { eq("id", deviceId) }
@@ -214,13 +229,24 @@ class DeviceRepository(
         // A failed query leaves the cache alone. Wiping the teacher because the
         // network blinked would blank the profile screen on a flaky connection.
         if (row != null) {
-            prefs.edit()
+            val edit = prefs.edit()
                 .putString(KEY_TEACHER, row.teachers?.name)
                 .putString(KEY_TEACHER_ROLE, row.teachers?.role)
-                .putString(KEY_CLASS_ID, row.classId)
-                .putString(KEY_CLASS_LABEL, row.classes?.label)
-                .putString(KEY_CLASS_LEVEL, row.classes?.levels?.slug)
-                .apply()
+
+            // Only the class-aware select can say anything about the class. The
+            // fallback ran because the first select failed, and a failure is not
+            // evidence that this television has no class - it comes back with
+            // classId null because the column was never asked for. Writing that
+            // null here would clear a real assignment, and the home screen reads
+            // a cleared assignment as the office having moved the set, so it
+            // would drop the teacher's remembered grade and silently open on a
+            // different one. Stale beats wrong: leave the last known class alone.
+            if (withClass != null) {
+                edit.putString(KEY_CLASS_ID, row.classId)
+                    .putString(KEY_CLASS_LABEL, row.classes?.label)
+                    .putString(KEY_CLASS_LEVEL, row.classes?.levels?.slug)
+            }
+            edit.apply()
         }
         val name = row?.schools?.name
         if (name != null) prefs.edit().putString(KEY_SCHOOL, name).apply()

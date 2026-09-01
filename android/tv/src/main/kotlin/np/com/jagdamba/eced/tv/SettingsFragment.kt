@@ -27,10 +27,16 @@ class SettingsFragment : Fragment() {
     private var checking = false
 
     /**
-     * The release the confirmation panel is currently asking about. Held here
-     * rather than captured in a lambda because the panel replaces this fragment's
-     * container, and on a 1 GB box the process can be killed while the teacher is
-     * still reading the question.
+     * The release the confirmation panel is currently asking about.
+     *
+     * Held in a field rather than captured in a lambda, and written to saved
+     * state, because on a 1 GB box the process can be killed while the teacher
+     * is still reading the question. A plain field survives the panel being
+     * pushed on top of this fragment - the instance is retained, only the view
+     * goes - but it does not survive process death, and without the saved copy
+     * the restored fragment answers a confirmed Install with a null release and
+     * silently does nothing, which is the exact symptom this screen exists to
+     * stop producing.
      */
     private var pendingRelease: AppRelease? = null
 
@@ -38,9 +44,38 @@ class SettingsFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?,
     ): View = inflater.inflate(R.layout.fragment_settings, container, false)
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        // Written as four plain values rather than as JSON: :tv depends on :core
+        // with `implementation`, so core's serialization runtime is not on this
+        // module's compile classpath, and adding one to persist four fields
+        // would be the wrong trade.
+        pendingRelease?.let {
+            outState.putString(STATE_VERSION_NAME, it.versionName)
+            outState.putInt(STATE_VERSION_CODE, it.versionCode)
+            outState.putString(STATE_APK_URL, it.apkUrl)
+            outState.putBoolean(STATE_MANDATORY, it.mandatory)
+        }
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val devices = EcedApp.instance.devices
+
+        // Restored before the result listeners below are registered, so an
+        // answer that was waiting while the process was dead still has the
+        // release it refers to by the time it is delivered.
+        if (pendingRelease == null && savedInstanceState != null) {
+            val name = savedInstanceState.getString(STATE_VERSION_NAME)
+            if (name != null) {
+                pendingRelease = AppRelease(
+                    versionName = name,
+                    versionCode = savedInstanceState.getInt(STATE_VERSION_CODE),
+                    apkUrl      = savedInstanceState.getString(STATE_APK_URL),
+                    mandatory   = savedInstanceState.getBoolean(STATE_MANDATORY),
+                )
+            }
+        }
 
         // Registered before anything can post a result. The fragment manager
         // holds a result until this fragment is STARTED again, so an answer given
@@ -242,7 +277,12 @@ class SettingsFragment : Fragment() {
         status(R.string.unpair_working)
 
         viewLifecycleOwner.lifecycleScope.launch {
-            if (!EcedApp.instance.devices.release()) {
+            // Only null is a failure. A false from the server means the office
+            // had already removed this set, which release() treats as released
+            // rather than as an error - telling a teacher to check the
+            // connection in that case would send them after a fault that is not
+            // there, and the set really is free to be activated again.
+            if (EcedApp.instance.devices.release() == null) {
                 status(R.string.unpair_failed)
                 return@launch
             }
@@ -260,5 +300,9 @@ class SettingsFragment : Fragment() {
     private companion object {
         const val KEY_UNPAIR = "confirm_unpair"
         const val KEY_UPDATE = "confirm_update"
+        const val STATE_VERSION_NAME = "pending_version_name"
+        const val STATE_VERSION_CODE = "pending_version_code"
+        const val STATE_APK_URL      = "pending_apk_url"
+        const val STATE_MANDATORY    = "pending_mandatory"
     }
 }
