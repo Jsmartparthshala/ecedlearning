@@ -70,8 +70,29 @@ Run against your Supabase project's SQL editor, in order:
 supabase/migrations/0001_schema.sql      tables, constraints, views
 supabase/migrations/0002_security.sql    row-level security, grants, RPCs
 supabase/migrations/0004_teachers.sql    teachers, and devices.teacher_id
+supabase/migrations/0005_release_device.sql  the RPC behind "Unpair this television"
+supabase/migrations/0006_progress_no_delete.sql  closes a fleet-wide DELETE hole
+supabase/migrations/0007_levels_and_classes.sql  the grade ladder, classes, and the
+                                         subject_cards / level_cards views
+supabase/migrations/0008_session_status.sql  lets a TV notice it has been revoked
+supabase/migrations/0009_release_device_class.sql  unpair also clears the class
 supabase/seed.sql                        placeholder catalogue
 ```
+
+The numbers are the order. 0009 redefines a function first created in 0005, so
+running them out of order silently reinstates the older behaviour.
+
+Two of these fix defects you can see from the sofa, and neither is fixed by
+installing the app alone:
+
+- **0005 + 0009** — until they are applied, "Unpair this television" cannot
+  work. It used to clear the local cache only, so the set re-registered under the
+  same hardware id, found the session nobody had revoked, and paired itself back
+  in within about two seconds. The button had never once logged a television out.
+- **0008** — until it is applied, **Revoke** in the ops console does not reach a
+  running television. It marks the session revoked and the set never asks, so it
+  keeps playing and keeps writing progress until somebody clears its data by
+  hand.
 
 `supabase/migrations/0003_hardening.sql` tightens session access and moves quiz
 grading server-side. It requires a matching client change and is documented
