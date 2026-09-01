@@ -40,4 +40,11 @@
          than as deliberately neutral ones. -->
     <color name="subject_neutral">#3D5488</color>
     <color name="subject_neutral_dark">#1B2A4E</color>
+
+    <!-- Grade-ladder tiles, coloured by stage rather than by grade: thirteen
+         distinct hues would be noise, four stages is the grouping teachers use. -->
+    <color name="stage_eced">#E0648A</color>
+    <color name="stage_basic">#4FB3DC</color>
+    <color name="stage_secondary">#5FBF67</color>
+    <color name="stage_higher">#B071D6</color>
 </resources>

@@ -19,7 +19,60 @@ data class Subject(
     @SerialName("color_1") val color1: String? = null,
     @SerialName("color_2") val color2: String? = null,
     val icon: String? = null,
+    /** Null only on a database that predates 0007_levels_and_classes.sql. */
+    @SerialName("level_id") val levelId: String? = null,
 )
+
+/**
+ * One rung of the CDC ladder: ECED, Basic 1-8, Secondary 9-10, 11-12.
+ *
+ * Read from the `level_cards` view rather than `levels`, so the counts arrive
+ * with the row. The television uses [playableCount] to mark a grade that has no
+ * video content yet, which is the difference between a screen that says "coming
+ * soon" and one that just looks broken.
+ */
+@Serializable
+data class Level(
+    val id: String,
+    val slug: String,
+    @SerialName("name_en") val nameEn: String,
+    @SerialName("name_np") val nameNp: String? = null,
+    /** eced | basic | secondary | higher. Groups the tiles and picks their colour. */
+    val stage: String = "basic",
+    @SerialName("sort_order") val sortOrder: Int = 0,
+    @SerialName("subject_count") val subjectCount: Int = 0,
+    @SerialName("playable_count") val playableCount: Int = 0,
+) {
+    val hasContent: Boolean get() = subjectCount > 0
+}
+
+/**
+ * A subject with its counts already totalled, from the `subject_cards` view.
+ *
+ * This exists to delete a query-per-subject. The home screen used to call
+ * units(subject.id) once per subject just to put "6 units" on a tile, on every
+ * single resume - six round trips for five ECED subjects, and close to a hundred
+ * across the full ladder. The counts belong in the same row as the subject.
+ */
+@Serializable
+data class SubjectCard(
+    val id: String,
+    val slug: String,
+    @SerialName("level_id") val levelId: String? = null,
+    @SerialName("name_en") val nameEn: String,
+    @SerialName("name_np") val nameNp: String? = null,
+    @SerialName("sort_order") val sortOrder: Int = 0,
+    @SerialName("color_1") val color1: String? = null,
+    @SerialName("color_2") val color2: String? = null,
+    val icon: String? = null,
+    @SerialName("unit_count") val unitCount: Int = 0,
+    @SerialName("lesson_count") val lessonCount: Int = 0,
+    @SerialName("playable_count") val playableCount: Int = 0,
+) {
+    /** The plain subject, for the screens that only need identity and colour. */
+    fun toSubject(): Subject =
+        Subject(id, slug, nameEn, nameNp, sortOrder, color1, color2, icon)
+}
 
 @Serializable
 data class Unit(
@@ -102,10 +155,31 @@ data class TeacherName(
     val role: String? = null,
 )
 
+/**
+ * The class a television belongs to, as the device needs it: the school's label
+ * for the room, and the grade that class sits in. The grade is what the home
+ * screen actually uses - it is the default the television opens on.
+ */
+@Serializable
+data class ClassRow(
+    val label: String? = null,
+    @SerialName("level_id") val levelId: String? = null,
+    val levels: LevelSlug? = null,
+)
+
+/** Just enough of a level to name it and match it against the ladder. */
+@Serializable
+data class LevelSlug(
+    val slug: String? = null,
+    @SerialName("name_en") val nameEn: String? = null,
+)
+
 @Serializable
 data class DeviceWithSchool(
     @SerialName("school_id") val schoolId: String? = null,
     val schools: SchoolName? = null,
     @SerialName("teacher_id") val teacherId: String? = null,
     val teachers: TeacherName? = null,
+    @SerialName("class_id") val classId: String? = null,
+    val classes: ClassRow? = null,
 )

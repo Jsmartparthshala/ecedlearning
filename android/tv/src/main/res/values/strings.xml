@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">JSP ECED Learning</string>
+    <string name="app_name">Jagdamba Smart Pathshala</string>
 
     <string name="brand_mark">✦</string>
     <string name="chip_online">Wi-Fi</string>
@@ -10,7 +10,6 @@
     <string name="pairing_body">Give this code to the central office.</string>
     <string name="pairing_hint">This screen will change by itself once activated.\nNothing needs to be typed here.</string>
 
-    <string name="browse_title">JSP ECED Learning</string>
     <string name="row_continue">Continue watching</string>
     <string name="row_playable">Playable now</string>
 
@@ -19,6 +18,7 @@
     <string name="no_video_short">— no video yet —</string>
     <string name="no_video">This lesson has no video yet.</string>
     <string name="offline">No internet connection.</string>
+    <string name="loading">Loading…</string>
 
     <!-- settings -->
     <string name="nav_settings">Settings</string>
@@ -30,6 +30,8 @@
     <string name="set_lbl_uuid">Hardware ID</string>
     <string name="set_lbl_code">Activation code</string>
     <string name="set_lbl_school">School</string>
+    <string name="set_lbl_class">Class</string>
+    <string name="set_class_none">Every grade (no class assigned)</string>
     <string name="set_lbl_version">Installed version</string>
     <string name="set_lbl_state">Status</string>
     <string name="set_lbl_expires">Valid until</string>
@@ -58,6 +60,11 @@
     <string name="play_glyph">▶</string>
     <string name="unit_meta">%1$d videos · %2$d min</string>
     <string name="row_subjects">Subjects</string>
+    <string name="row_levels">Grades</string>
+    <string name="level_showing">Showing</string>
+    <string name="level_empty">Coming soon</string>
+    <string name="level_subject_count">%1$d subjects</string>
+    <string name="row_subjects_of">%1$s subjects</string>
     <string name="row_device">This television</string>
     <string name="unit_count">%1$d units</string>
     <string name="nav_videos">Videos</string>
@@ -70,6 +77,7 @@
     <string name="profile_role_known">%s. Progress on this television is saved against this device, so every lesson picks up where it was left.</string>
     <string name="profile_role_blank">Progress on this television is saved against this device, so every lesson picks up where it was left.</string>
     <string name="profile_empty_title">Shared by the whole school</string>
+    <string name="profile_class_body">This television is set up for %1$s. It opens on that class’s grade, and the central office can move it to another class at any time without anyone touching the television.</string>
     <string name="profile_empty_body">No teacher has been assigned to this television, which is right for a hall or a shared room. The central office can assign one at any time and it appears here without anyone touching the television.</string>
     <string name="set_head_school">SCHOOL</string>
     <string name="set_lbl_network">Network</string>
@@ -78,6 +86,8 @@
     <string name="unpair_title">Unpair this television?</string>
     <string name="unpair_body">It will return to the activation screen and the central office will have to activate it again.</string>
     <string name="unpair_confirm">Unpair</string>
+    <string name="unpair_working">Releasing this television…</string>
+    <string name="unpair_failed">Could not reach the office — this television is still activated. Check the connection and try again.</string>
     <string name="cancel">Cancel</string>
     <string name="net_offline">No network</string>
     <string name="net_ethernet">Ethernet</string>

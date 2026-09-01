@@ -14,6 +14,19 @@
         <item name="android:windowBackground">@android:color/black</item>
     </style>
 
+    <!-- Confirmation panels. GuidedStepSupportFragment needs a GuidedStep theme,
+         and the activities hosting it are plain Theme.Leanback, so ConfirmFragment
+         supplies this through onProvideTheme() rather than the manifest.
+
+         This exists because AppCompat's AlertDialog cannot work here at all: it
+         requires the activity theme to descend from Theme.AppCompat, and every
+         activity in this app is Leanback. Building one threw the moment a teacher
+         pressed OK, which on a television looks exactly like a dead button. -->
+    <style name="Theme.Eced.GuidedStep" parent="Theme.Leanback.GuidedStep">
+        <item name="android:colorPrimary">@color/focus_gold</item>
+        <item name="android:colorAccent">@color/focus_gold</item>
+    </style>
+
     <!-- Status chip: flat pill, no elevation, no gradient. -->
     <style name="StatusChip">
         <item name="android:layout_marginStart">10dp</item>

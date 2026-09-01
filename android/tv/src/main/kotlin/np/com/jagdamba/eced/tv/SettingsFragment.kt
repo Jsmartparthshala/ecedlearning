@@ -7,7 +7,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import np.com.jagdamba.eced.core.model.AppRelease
@@ -27,6 +26,14 @@ class SettingsFragment : Fragment() {
     /** True while an update check or download is in flight. */
     private var checking = false
 
+    /**
+     * The release the confirmation panel is currently asking about. Held here
+     * rather than captured in a lambda because the panel replaces this fragment's
+     * container, and on a 1 GB box the process can be killed while the teacher is
+     * still reading the question.
+     */
+    private var pendingRelease: AppRelease? = null
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?,
     ): View = inflater.inflate(R.layout.fragment_settings, container, false)
@@ -35,9 +42,28 @@ class SettingsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         val devices = EcedApp.instance.devices
 
+        // Registered before anything can post a result. The fragment manager
+        // holds a result until this fragment is STARTED again, so an answer given
+        // while the confirmation panel covered the screen still arrives.
+        parentFragmentManager.setFragmentResultListener(KEY_UNPAIR, viewLifecycleOwner) { _, bundle ->
+            if (bundle.getBoolean(ConfirmFragment.RESULT_CONFIRMED)) unpair()
+        }
+        parentFragmentManager.setFragmentResultListener(KEY_UPDATE, viewLifecycleOwner) { _, bundle ->
+            val release = pendingRelease
+            pendingRelease = null
+            if (bundle.getBoolean(ConfirmFragment.RESULT_CONFIRMED) && release != null) {
+                downloadAndInstall(release)
+            }
+        }
+
         view.bind(R.id.set_uuid, devices.hardwareUuid().uppercase())
         view.bind(R.id.set_code, devices.pairingCode())
         view.bind(R.id.set_school, devices.cachedSchoolName() ?: "—")
+        view.bind(
+            R.id.set_class,
+            devices.cachedClassLabel()?.takeIf { it.isNotBlank() }
+                ?: getString(R.string.set_class_none),
+        )
         view.bind(R.id.set_version, "v" + BuildConfig.VERSION_NAME)
         view.bind(R.id.set_network, NetworkStatus.label(requireContext()))
 
@@ -129,12 +155,17 @@ class SettingsFragment : Fragment() {
             BuildConfig.VERSION_NAME,
         )
 
-        AlertDialog.Builder(requireContext())
-            .setTitle(R.string.upd_available_title)
-            .setMessage(body)
-            .setNegativeButton(R.string.upd_later, null)
-            .setPositiveButton(R.string.upd_install) { _, _ -> downloadAndInstall(release) }
-            .show()
+        pendingRelease = release
+        ConfirmFragment.show(
+            fm = parentFragmentManager,
+            containerId = R.id.page_root,
+            requestKey = KEY_UPDATE,
+            title = getString(R.string.upd_available_title),
+            body = body,
+            confirm = getString(R.string.upd_install),
+            cancel = getString(R.string.upd_later),
+            breadcrumb = getString(R.string.nav_settings),
+        )
     }
 
     private fun downloadAndInstall(release: AppRelease) {
@@ -180,23 +211,54 @@ class SettingsFragment : Fragment() {
      * central office has to activate the television again - so it asks first.
      */
     private fun confirmUnpair() {
-        AlertDialog.Builder(requireContext())
-            .setTitle(R.string.unpair_title)
-            .setMessage(R.string.unpair_body)
-            .setNegativeButton(R.string.cancel, null)
-            .setPositiveButton(R.string.unpair_confirm) { _, _ ->
-                EcedApp.instance.devices.factoryReset()
-                // Back to the activation screen, with no way to walk back into a
-                // session that no longer exists.
-                val intent = Intent(requireContext(), MainActivity::class.java)
-                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
-                startActivity(intent)
-                requireActivity().finish()
+        ConfirmFragment.show(
+            fm = parentFragmentManager,
+            containerId = R.id.page_root,
+            requestKey = KEY_UNPAIR,
+            title = getString(R.string.unpair_title),
+            body = getString(R.string.unpair_body),
+            confirm = getString(R.string.unpair_confirm),
+            cancel = getString(R.string.cancel),
+            breadcrumb = getString(R.string.nav_settings),
+        )
+    }
+
+    /**
+     * Unpair for real.
+     *
+     * The old version cleared the local cache and restarted into the pairing
+     * screen, which looked right for about two seconds - then the television
+     * re-registered under the same hardware UUID, found the session nobody had
+     * revoked, and paired itself straight back in. The button could not be made
+     * to work by pressing it harder; it had never once logged a television out.
+     *
+     * The revoke now happens server side first, and the screen only changes if
+     * it succeeded. Without a connection this reports that and stays paired,
+     * which is the recoverable failure: a television that has forgotten its token
+     * while the server still shows it claimed cannot be activated again, because
+     * the code it displays is already spoken for.
+     */
+    private fun unpair() {
+        status(R.string.unpair_working)
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            if (!EcedApp.instance.devices.release()) {
+                status(R.string.unpair_failed)
+                return@launch
             }
-            .show()
+            val intent = Intent(requireContext(), MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(intent)
+            requireActivity().finish()
+        }
     }
 
     private fun View.bind(id: Int, value: String) {
         findViewById<TextView>(id)?.text = value
+    }
+
+    private companion object {
+        const val KEY_UNPAIR = "confirm_unpair"
+        const val KEY_UPDATE = "confirm_update"
     }
 }

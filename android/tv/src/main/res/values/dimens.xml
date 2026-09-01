@@ -35,7 +35,9 @@
     <!-- Subject tiles. Five across the usable width, and taller than a unit tile
          because this is the first choice a teacher makes on the screen. -->
     <dimen name="subject_tile_width">168dp</dimen>
-    <dimen name="subject_tile_height">118dp</dimen>
+    <!-- Grown from 118dp to fit the Nepali name under the English one without
+         squeezing the count badge against the bottom edge. -->
+    <dimen name="subject_tile_height">134dp</dimen>
 
     <!-- Leanback's own row inset, overridden by name.
 

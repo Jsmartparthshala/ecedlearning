@@ -69,6 +69,13 @@
                 <TextView style="@style/SettingsLabel" android:text="@string/set_lbl_school" />
                 <TextView android:id="@+id/set_school" style="@style/SettingsValue" />
 
+                <!-- Which class this set is assigned to, and therefore which grade
+                     it opens on. Read-only here on purpose: a television that can
+                     choose its own class has self-provisioned, which is the whole
+                     thing reverse provisioning exists to prevent. -->
+                <TextView style="@style/SettingsLabel" android:text="@string/set_lbl_class" />
+                <TextView android:id="@+id/set_class" style="@style/SettingsValue" />
+
                 <TextView style="@style/SettingsLabel" android:text="@string/set_lbl_version" />
                 <TextView android:id="@+id/set_version" style="@style/SettingsValueMono" />
 

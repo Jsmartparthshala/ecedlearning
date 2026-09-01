@@ -14,7 +14,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "JSP ECED Learning"
+rootProject.name = "Jagdamba Smart Pathshala"
 
 include(":core")
 include(":tv")
