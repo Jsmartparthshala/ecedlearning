@@ -7,6 +7,7 @@ import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.leanback.widget.Presenter
+import np.com.jagdamba.eced.core.model.Level
 import np.com.jagdamba.eced.core.model.Subject
 
 /**
@@ -28,9 +29,17 @@ class SubjectPresenter : Presenter() {
     /** Downloads and Settings. Not subjects, but the same tile shape. */
     data class UtilityTile(val id: Long, val label: String)
 
+    /**
+     * One grade in the ladder row. [selected] is the grade currently showing in
+     * the Subjects row above, marked so a teacher can see where they are without
+     * having to move focus back down to find out.
+     */
+    data class LevelTile(val level: Level, val selected: Boolean)
+
     class Holder(view: View) : Presenter.ViewHolder(view) {
         val art: FrameLayout = view.findViewById(R.id.cs_art)
         val name: TextView   = view.findViewById(R.id.cs_name)
+        val nameNp: TextView = view.findViewById(R.id.cs_name_np)
         val count: TextView  = view.findViewById(R.id.cs_count)
     }
 
@@ -51,7 +60,35 @@ class SubjectPresenter : Presenter() {
                         .getOrDefault(ContextCompat.getColor(context, R.color.subject_neutral))
                 )
                 h.name.text = item.subject.nameEn
+                h.setSecondary(item.subject.nameNp)
                 h.count.text = context.getString(R.string.unit_count, item.unitCount)
+                h.count.visibility = View.VISIBLE
+            }
+
+            is LevelTile -> {
+                // Colour by stage rather than per grade: thirteen distinct hues
+                // would be noise, and the four stages are the grouping a teacher
+                // actually thinks in. A grade with nothing in it yet is drawn
+                // muted and says so, instead of opening an empty screen.
+                val stageColor = when (item.level.stage) {
+                    "eced"      -> R.color.stage_eced
+                    "basic"     -> R.color.stage_basic
+                    "secondary" -> R.color.stage_secondary
+                    else        -> R.color.stage_higher
+                }
+                h.art.setBackgroundColor(
+                    ContextCompat.getColor(
+                        context,
+                        if (item.level.hasContent) stageColor else R.color.subject_neutral_dark
+                    )
+                )
+                h.name.text = item.level.nameEn
+                h.setSecondary(item.level.nameNp)
+                h.count.text = when {
+                    !item.level.hasContent -> context.getString(R.string.level_empty)
+                    item.selected          -> context.getString(R.string.level_showing)
+                    else -> context.getString(R.string.level_subject_count, item.level.subjectCount)
+                }
                 h.count.visibility = View.VISIBLE
             }
 
@@ -61,12 +98,14 @@ class SubjectPresenter : Presenter() {
                     ContextCompat.getColor(context, R.color.subject_neutral)
                 )
                 h.name.text = item.label
+                h.setSecondary(null)
                 h.count.text = ""
                 h.count.visibility = View.GONE
             }
 
             else -> {
                 h.name.text = item?.toString().orEmpty()
+                h.setSecondary(null)
                 h.count.text = ""
                 h.count.visibility = View.GONE
             }
@@ -76,6 +115,25 @@ class SubjectPresenter : Presenter() {
     override fun onUnbindViewHolder(viewHolder: Presenter.ViewHolder) {
         val h = viewHolder as Holder
         h.name.text = null
+        h.nameNp.text = null
         h.count.text = null
+    }
+
+    /**
+     * The Nepali line, hidden rather than left empty when a row has none.
+     *
+     * GONE and not INVISIBLE: the column is bottom-anchored, so an invisible line
+     * would still hold its height and lift the English name off the baseline the
+     * tiles beside it use. A half-translated catalogue would then show as a row
+     * of tiles whose titles do not line up.
+     */
+    private fun Holder.setSecondary(text: String?) {
+        if (text.isNullOrBlank()) {
+            nameNp.text = null
+            nameNp.visibility = View.GONE
+        } else {
+            nameNp.text = text
+            nameNp.visibility = View.VISIBLE
+        }
     }
 }

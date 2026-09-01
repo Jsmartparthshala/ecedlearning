@@ -5,6 +5,7 @@ import android.view.KeyEvent
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
+import androidx.leanback.app.GuidedStepSupportFragment
 
 /**
  * Host for Profile, Downloads and Settings.
@@ -60,8 +61,19 @@ class PageActivity : FragmentActivity() {
         rail.deferFocusToContent()
     }
 
-    override fun dispatchKeyEvent(event: KeyEvent): Boolean =
-        rail.handleKey(event) || super.dispatchKeyEvent(event)
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        // A confirmation panel owns the whole screen and the whole remote for as
+        // long as it is up. Without this guard the rail keeps answering LEFT
+        // underneath it: the panel's actions are stacked vertically, so nothing
+        // sits to their left, NavRail.handleKey reads that as "show me the menu"
+        // and focus leaps out of the question onto a rail the teacher cannot see
+        // over the panel. The remote then appears dead - which is the exact
+        // symptom ConfirmFragment exists to remove.
+        if (GuidedStepSupportFragment.getCurrentGuidedStepSupportFragment(supportFragmentManager) != null) {
+            return super.dispatchKeyEvent(event)
+        }
+        return rail.handleKey(event) || super.dispatchKeyEvent(event)
+    }
 
     companion object {
         const val EXTRA_PAGE = "page"
