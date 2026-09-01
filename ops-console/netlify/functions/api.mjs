@@ -100,6 +100,12 @@ export default async (req) => {
         return await deleteTeacher(sb, body)
       case 'assign-teacher':
         return await assignTeacher(sb, body)
+      case 'create-class':
+        return await createClass(sb, body)
+      case 'delete-class':
+        return await deleteClass(sb, body)
+      case 'assign-class':
+        return await assignClass(sb, body)
       default:
         return json({ error: `Unknown action: ${body.action}` }, 400)
     }
@@ -108,12 +114,40 @@ export default async (req) => {
   }
 }
 
+const DEVICE_COLUMNS =
+  'id, hardware_uuid, claimed_at, last_seen, app_version, ' +
+  'school_id, schools(name), teacher_id, teachers(name, role)'
+
+const DEVICE_COLUMNS_WITH_CLASS =
+  DEVICE_COLUMNS + ', class_id, classes(label, level_id)'
+
+/**
+ * Read the fleet.
+ *
+ * The class columns are requested optimistically and dropped if the database has
+ * not had 0007_levels_and_classes.sql applied yet. Netlify deploys on push and
+ * the migration is run by hand, so the two are never simultaneous - and the
+ * failure mode without this is the whole console going blank because one column
+ * in one select does not exist yet, rather than the class feature simply not
+ * appearing until the migration lands.
+ */
 async function list(sb) {
-  const { data: devices, error } = await sb
+  let devices = null
+  let error = null
+
+  ;({ data: devices, error } = await sb
     .from('devices')
-    .select('id, hardware_uuid, claimed_at, last_seen, app_version, school_id, schools(name), teacher_id, teachers(name, role)')
+    .select(DEVICE_COLUMNS_WITH_CLASS)
     .order('claimed_at', { ascending: true, nullsFirst: true })
-    .order('created_at', { ascending: false })
+    .order('created_at', { ascending: false }))
+
+  if (error) {
+    ;({ data: devices, error } = await sb
+      .from('devices')
+      .select(DEVICE_COLUMNS)
+      .order('claimed_at', { ascending: true, nullsFirst: true })
+      .order('created_at', { ascending: false }))
+  }
   if (error) return json({ error: error.message }, 500)
 
   const { data: schools, error: e2 } = await sb
@@ -131,7 +165,25 @@ async function list(sb) {
     .order('name')
   if (e3) return json({ error: e3.message }, 500)
 
-  return json({ devices: devices || [], schools: schools || [], teachers: teachers || [] })
+  // Same tolerance as the device select above: on a database without 0007 these
+  // two come back empty and the page simply shows no class controls.
+  const { data: levels } = await sb
+    .from('levels')
+    .select('id, slug, name_en, stage, sort_order')
+    .order('sort_order')
+
+  const { data: classes } = await sb
+    .from('classes')
+    .select('id, school_id, level_id, label')
+    .order('label')
+
+  return json({
+    devices: devices || [],
+    schools: schools || [],
+    teachers: teachers || [],
+    levels: levels || [],
+    classes: classes || [],
+  })
 }
 
 /** Resolve a typed code to one device row, or explain why it did not resolve. */
@@ -325,4 +377,93 @@ async function createSchool(sb, { name, municipality }) {
   if (error) return json({ error: error.message }, 500)
 
   return json({ ok: true, school: data })
+}
+
+/**
+ * A class is a school, a grade, and the school's own label for the room:
+ * "Nursery A", "Grade 3 (morning)".
+ *
+ * This is the row that makes the console a CRM rather than a device list.
+ * `teachers.role` is free text and stays that way - it is a human description,
+ * not a key - so it cannot be what a class is built on. A class is a real row
+ * that a television can point at, and pointing at it is what gives the device
+ * its grade.
+ */
+async function createClass(sb, { schoolId, levelId, label }) {
+  if (!schoolId) return json({ error: 'Choose a school first.' }, 400)
+  if (!levelId) return json({ error: 'Choose a grade for this class.' }, 400)
+
+  const clean = String(label || '').trim()
+  if (!clean) return json({ error: 'A class needs a name, such as "Nursery A".' }, 400)
+
+  const { data, error } = await sb
+    .from('classes')
+    .insert({ school_id: schoolId, level_id: levelId, label: clean })
+    .select('id, school_id, level_id, label')
+    .single()
+
+  if (error) {
+    // unique (school_id, level_id, label)
+    if (error.code === '23505') {
+      return json({ error: `That school already has a class called "${clean}" in that grade.` }, 409)
+    }
+    return json({ error: error.message }, 500)
+  }
+
+  return json({ ok: true, class: data })
+}
+
+/**
+ * Deleting a class does not delete its televisions, for the same reason deleting
+ * a teacher does not: the FK is `on delete set null`, so those devices stay
+ * activated and fall back to browsing the whole ladder. Losing a class label
+ * mid-term must never take a working television off the wall.
+ */
+async function deleteClass(sb, { classId }) {
+  if (!classId) return json({ error: 'classId is required' }, 400)
+
+  const { error } = await sb.from('classes').delete().eq('id', classId)
+  if (error) return json({ error: error.message }, 500)
+
+  return json({ ok: true })
+}
+
+/** Point an already-activated television at a class, or clear it with null. */
+async function assignClass(sb, { deviceId, classId }) {
+  if (!deviceId) return json({ error: 'deviceId is required' }, 400)
+
+  const { data: device, error: e0 } = await sb
+    .from('devices')
+    .select('id, school_id')
+    .eq('id', deviceId)
+    .maybeSingle()
+  if (e0) return json({ error: e0.message }, 500)
+  if (!device) return json({ error: 'That television no longer exists.' }, 404)
+
+  if (classId) {
+    if (!device.school_id) {
+      return json({ error: 'Activate the television for a school before assigning a class.' }, 400)
+    }
+    // Same check assignTeacher makes, and for the same reason: the dropdown is
+    // filtered client side, and a stale page could otherwise hand a television
+    // to another school's class.
+    const { data: klass, error: e1 } = await sb
+      .from('classes')
+      .select('id, label, school_id')
+      .eq('id', classId)
+      .maybeSingle()
+    if (e1) return json({ error: e1.message }, 500)
+    if (!klass) return json({ error: 'That class no longer exists. Reload the page.' }, 404)
+    if (klass.school_id !== device.school_id) {
+      return json({ error: `${klass.label} is not a class at that school.` }, 400)
+    }
+  }
+
+  const { error } = await sb
+    .from('devices')
+    .update({ class_id: classId || null })
+    .eq('id', deviceId)
+  if (error) return json({ error: error.message }, 500)
+
+  return json({ ok: true })
 }

@@ -66,7 +66,7 @@ Single endpoint, `POST /api`, with an `action` field:
 
 | Action | Purpose |
 |---|---|
-| `list` | Devices with their school and teacher, plus the school and teacher lists |
+| `list` | Devices with their school, teacher and class, plus the school, teacher, level and class lists |
 | `lookup` | Resolve a typed code to one device, without changing anything |
 | `activate` | Claim the device for a school and insert its 10-year session |
 | `revoke` | Mark sessions revoked and return the TV to the pairing screen |
@@ -74,6 +74,9 @@ Single endpoint, `POST /api`, with an `action` field:
 | `create-teacher` | Add a teacher to a school |
 | `delete-teacher` | Remove a teacher; their televisions stay activated and fall back to the school name |
 | `assign-teacher` | Point an already-activated television at a teacher, or clear it |
+| `create-class` | Add a class - a school, a grade, and the school's own label for the room |
+| `delete-class` | Remove a class; its televisions stay activated and go back to browsing every grade |
+| `assign-class` | Point an already-activated television at a class, which is what gives it its grade |
 
 `activate` writes the `devices` row **before** inserting into `sessions`,
 because the session row is what the television is polling for — it must not

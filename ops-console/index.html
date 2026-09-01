@@ -166,17 +166,51 @@
     </div>
   </section>
 
+  <!-- Hidden until the database has levels in it, i.e. until
+       0007_levels_and_classes.sql has been run. Netlify deploys on push and the
+       migration is run by hand, so this page will be live before the tables are
+       - and a class panel whose every control errors is worse than no panel. -->
+  <section id="classes-section" hidden>
+    <h2>Classes <span class="muted" id="class-scope"></span></h2>
+    <div class="teachers">
+      <div class="row">
+        <div class="field">
+          <label for="c-level">Grade</label>
+          <select id="c-level"></select>
+        </div>
+        <div class="field">
+          <label for="c-label">Class name</label>
+          <input id="c-label" placeholder="Nursery A" autocomplete="off">
+        </div>
+        <button id="c-add" disabled>Add class</button>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Class</th><th>Grade</th><th>Televisions</th><th class="right"></th></tr>
+        </thead>
+        <tbody id="classes">
+          <tr><td colspan="4" class="muted">Choose a school above.</td></tr>
+        </tbody>
+      </table>
+      <p class="muted" style="margin:14px 0 6px">
+        A class is what gives a television its grade. A television with no class
+        stays activated and browses the whole ladder, which is right for a hall
+        or a shared room.
+      </p>
+    </div>
+  </section>
+
   <section>
     <h2>Televisions <span class="muted" id="live"></span></h2>
     <table>
       <thead>
         <tr>
-          <th>Code</th><th>School</th><th>Teacher</th><th>Status</th>
+          <th>Code</th><th>School</th><th>Teacher</th><th>Class</th><th>Status</th>
           <th>Last seen</th><th>App</th><th class="right"></th>
         </tr>
       </thead>
       <tbody id="devices">
-        <tr><td colspan="7" class="muted">Loading…</td></tr>
+        <tr><td colspan="8" class="muted">Loading…</td></tr>
       </tbody>
     </table>
   </section>
@@ -196,6 +230,8 @@ let passcode = localStorage.getItem(PASS_KEY) || ''
 let schools = []
 let teachers = []
 let devices = []
+let levels = []
+let classes = []
 let pollTimer = null
 
 async function api(action, payload = {}) {
@@ -274,7 +310,7 @@ codeEl.onkeydown = e => { if (e.key === 'Enter') $('#go').click() }
 
 // The school drives both the teacher picker and the teachers table, so
 // everything downstream of it is rebuilt whenever it changes.
-$('#school').onchange = () => { syncGo(); renderTeacherPicker(); renderTeachers() }
+$('#school').onchange = () => { syncGo(); renderTeacherPicker(); renderTeachers(); renderClasses() }
 
 function syncGo() {
   $('#go').disabled = codeEl.value.length !== 8 || !$('#school').value
@@ -427,6 +463,102 @@ async function removeTeacher(teacherId) {
   }
 }
 
+// ---------------------------------------------------------------- classes
+
+$('#c-label').oninput = () => { $('#c-add').disabled = !canAddClass() }
+$('#c-label').onkeydown = e => { if (e.key === 'Enter') $('#c-add').click() }
+$('#c-level').onchange = () => { $('#c-add').disabled = !canAddClass() }
+
+const canAddClass = () => !!$('#school').value && !!$('#c-level').value && !!$('#c-label').value.trim()
+
+$('#c-add').onclick = async () => {
+  if (!canAddClass()) return
+  $('#c-add').disabled = true
+  try {
+    const { class: created } = await api('create-class', {
+      schoolId: $('#school').value,
+      levelId: $('#c-level').value,
+      label: $('#c-label').value.trim(),
+    })
+    setStatus(`added ${created.label}`, 'ok')
+    $('#c-label').value = ''
+    await refresh()
+    $('#c-label').focus()
+  } catch (e) {
+    setStatus(e.message, 'err')
+  }
+  $('#c-add').disabled = !canAddClass()
+}
+
+/** Classes at the school currently selected above. */
+const classesHere = () => classes.filter(c => c.school_id === $('#school').value)
+
+const levelName = id => levels.find(l => l.id === id)?.name_en || '—'
+
+function renderLevelPicker() {
+  const sel = $('#c-level')
+  const keep = sel.value
+  sel.innerHTML = levels.map(l =>
+    `<option value="${esc(l.id)}">${esc(l.name_en)}</option>`
+  ).join('')
+  if (keep && levels.some(l => l.id === keep)) sel.value = keep
+}
+
+function renderClasses() {
+  // The whole feature is invisible until the migration has been run.
+  $('#classes-section').hidden = levels.length === 0
+  if (!levels.length) return
+
+  const tb = $('#classes')
+  const schoolId = $('#school').value
+  const school = schools.find(s => s.id === schoolId)
+  $('#class-scope').textContent = school ? `· ${school.name}` : ''
+  $('#c-add').disabled = !canAddClass()
+
+  if (!schoolId) {
+    tb.innerHTML = '<tr><td colspan="4" class="muted">Choose a school above.</td></tr>'
+    return
+  }
+  const mine = classesHere()
+  if (!mine.length) {
+    tb.innerHTML = '<tr><td colspan="4" class="muted">No classes yet at this school.</td></tr>'
+    return
+  }
+
+  tb.innerHTML = mine.map(c => {
+    const n = devices.filter(d => d.class_id === c.id).length
+    return `<tr>
+      <td>${esc(c.label)}</td>
+      <td class="muted">${esc(levelName(c.level_id))}</td>
+      <td class="muted">${n || '—'}</td>
+      <td class="right"><button class="ghost" data-del-class="${esc(c.id)}">Remove</button></td>
+    </tr>`
+  }).join('')
+
+  tb.querySelectorAll('[data-del-class]').forEach(b => b.onclick = () => {
+    const c = classes.find(x => x.id === b.dataset.delClass)
+    const n = devices.filter(d => d.class_id === b.dataset.delClass).length
+    // Same warning as removing a teacher, and for the same reason: "Remove"
+    // beside a count of live televisions reads as though it might switch them
+    // off, and it does not.
+    const warn = n
+      ? `\n\nIts ${n} television(s) stay activated and go back to browsing every grade.`
+      : ''
+    if (!confirm(`Remove ${c?.label || 'this class'}?${warn}`)) return
+    removeClass(b.dataset.delClass)
+  })
+}
+
+async function removeClass(classId) {
+  try {
+    await api('delete-class', { classId })
+    setStatus('class removed', 'ok')
+    refresh()
+  } catch (e) {
+    setStatus(e.message, 'err')
+  }
+}
+
 // ---------------------------------------------------------------- devices
 
 async function refresh() {
@@ -440,10 +572,14 @@ async function refresh() {
     const data = await api('list')
     schools = data.schools
     teachers = data.teachers || []
+    levels = data.levels || []
+    classes = data.classes || []
     devices = data.devices
     renderSchools()
     renderTeacherPicker()
     renderTeachers()
+    renderLevelPicker()
+    renderClasses()
     renderDevices(devices)
     const waiting = devices.filter(d => !d.claimed_at).length
     setStatus(`${devices.length} television(s), ${waiting} waiting`)
@@ -468,7 +604,7 @@ const codeOf = uuid => String(uuid || '').split('-')[0].toUpperCase()
 function renderDevices(devices) {
   const tb = $('#devices')
   if (!devices.length) {
-    tb.innerHTML = '<tr><td colspan="7" class="muted">No televisions yet. Boot the TV app.</td></tr>'
+    tb.innerHTML = '<tr><td colspan="8" class="muted">No televisions yet. Boot the TV app.</td></tr>'
     return
   }
 
@@ -478,6 +614,7 @@ function renderDevices(devices) {
       <td><code>${esc(codeOf(d.hardware_uuid))}</code></td>
       <td>${claimed ? esc(d.schools?.name || '—') : '<span class="muted">—</span>'}</td>
       <td>${claimed ? teacherCell(d) : '<span class="muted">—</span>'}</td>
+      <td>${claimed ? classCell(d) : '<span class="muted">—</span>'}</td>
       <td><span class="pill ${claimed ? 'claimed' : 'unclaimed'}">${claimed ? 'activated' : 'waiting'}</span></td>
       <td class="muted">${d.last_seen ? new Date(d.last_seen).toLocaleString() : '—'}</td>
       <td class="muted">${esc(d.app_version || '—')}</td>
@@ -489,6 +626,8 @@ function renderDevices(devices) {
 
   tb.querySelectorAll('[data-assign]').forEach(s => s.onchange = () =>
     assign(s.dataset.assign, s.value || null))
+  tb.querySelectorAll('[data-assign-class]').forEach(s => s.onchange = () =>
+    assignToClass(s.dataset.assignClass, s.value || null))
   tb.querySelectorAll('[data-revoke]').forEach(b => b.onclick = () => revoke(b.dataset.revoke))
   // Saves reading a code off a television when it is already on screen here.
   tb.querySelectorAll('[data-use]').forEach(b => b.onclick = () => {
@@ -516,6 +655,39 @@ function teacherCell(d) {
     ${mine.map(t => `<option value="${esc(t.id)}" ${t.id === d.teacher_id ? 'selected' : ''}>${
       esc(t.name)}${t.role ? ' — ' + esc(t.role) : ''}</option>`).join('')}
   </select>`
+}
+
+/**
+ * The class column, same editable-dropdown treatment as the teacher column.
+ *
+ * This is the control that decides which grade a television opens on, so it is
+ * the one piece of the grade expansion an operator actually touches. Only the
+ * device's own school's classes are offered; the function rejects a cross-school
+ * assignment anyway, because this page can be several seconds stale.
+ */
+function classCell(d) {
+  if (!levels.length) return '<span class="muted">—</span>'
+  const mine = classes.filter(c => c.school_id === d.school_id)
+  if (!mine.length) {
+    return '<span class="muted">no classes yet</span>'
+  }
+  return `<select class="assign" data-assign-class="${esc(d.id)}">
+    <option value="">Every grade</option>
+    ${mine.map(c => `<option value="${esc(c.id)}" ${c.id === d.class_id ? 'selected' : ''}>${
+      esc(c.label)} — ${esc(levelName(c.level_id))}</option>`).join('')}
+  </select>`
+}
+
+async function assignToClass(deviceId, classId) {
+  try {
+    await api('assign-class', { deviceId, classId })
+    const c = classes.find(x => x.id === classId)
+    setStatus(c ? `assigned to ${c.label}` : 'assigned to every grade', 'ok')
+    refresh()
+  } catch (e) {
+    setStatus(e.message, 'err')
+    refresh()   // put the dropdown back to what the server actually holds
+  }
 }
 
 async function assign(deviceId, teacherId) {
