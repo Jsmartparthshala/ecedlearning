@@ -17,10 +17,23 @@
     android:focusableInTouchMode="true">
 
     <!-- Artwork. Background is set at runtime from the subject's two colours. -->
+    <!-- Inset, like the artwork on every other card in the app.
+
+         The focus stroke is drawn by the root's own background, so it lands
+         behind the children. With the artwork flush to the edge it painted over
+         the top of that stroke and both upper sides, and a focused Continue
+         watching card came up wearing three quarters of a gold ring - which
+         reads as a rendering fault rather than as focus. tile_unit, card_subject
+         and poster_lesson all inset their artwork for this reason; this one did
+         not. No bottom margin, so the progress scrubber still sits flush under
+         the picture. -->
     <FrameLayout
         android:id="@+id/card_art"
         android:layout_width="match_parent"
-        android:layout_height="104dp">
+        android:layout_height="104dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginEnd="4dp">
 
         <!-- Poster frame, when the lesson has one. First child so it sits behind
              the glyph and badges; empty and invisible otherwise, which leaves the
@@ -84,6 +97,8 @@
         android:id="@+id/card_progress_track"
         android:layout_width="match_parent"
         android:layout_height="4dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginEnd="4dp"
         android:background="@color/hairline"
         android:visibility="gone">
 
