@@ -37,6 +37,7 @@ class PageActivity : FragmentActivity() {
             when (page) {
                 PAGE_SETTINGS -> R.string.nav_settings
                 PAGE_PROFILE  -> R.string.nav_profile
+                PAGE_LEGAL    -> R.string.nav_legal
                 else          -> R.string.nav_downloads
             }
         )
@@ -48,6 +49,7 @@ class PageActivity : FragmentActivity() {
             val fragment: Fragment = when (page) {
                 PAGE_SETTINGS -> SettingsFragment()
                 PAGE_PROFILE  -> ProfileFragment()
+                PAGE_LEGAL    -> LegalFragment()
                 else          -> DownloadsFragment()
             }
             supportFragmentManager.beginTransaction()
@@ -72,6 +74,15 @@ class PageActivity : FragmentActivity() {
         if (GuidedStepSupportFragment.getCurrentGuidedStepSupportFragment(supportFragmentManager) != null) {
             return super.dispatchKeyEvent(event)
         }
+
+        // BACK inside an open legal document closes the document, not the screen.
+        // The reader and the list are two states of one fragment rather than two
+        // entries on a back stack, so without this the first BACK would leave the
+        // screen from halfway down a privacy policy.
+        if (event.keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
+            val legal = supportFragmentManager.findFragmentById(R.id.page_container)
+            if (legal is LegalFragment && legal.onBack()) return true
+        }
         return rail.handleKey(event) || super.dispatchKeyEvent(event)
     }
 
@@ -80,5 +91,6 @@ class PageActivity : FragmentActivity() {
         const val PAGE_DOWNLOADS = "downloads"
         const val PAGE_SETTINGS = "settings"
         const val PAGE_PROFILE = "profile"
+        const val PAGE_LEGAL = "legal"
     }
 }

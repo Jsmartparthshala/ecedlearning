@@ -113,6 +113,15 @@
     <string name="upd_downloading_indeterminate">Downloading…</string>
     <string name="upd_download_failed">Download failed — check the connection and try again</string>
     <string name="upd_handoff">Confirm the install on the next screen</string>
+
+    <!-- ======================================================= legal
+         The documents themselves live in app_documents on the server, so a
+         wording change does not need a new APK on every television. These are
+         only the labels around them, plus what to say when the fetch has not
+         landed. -->
+    <string name="nav_legal">Privacy &amp; terms</string>
+    <string name="set_action_legal">Privacy, terms and notices</string>
+    <string name="legal_offline">These documents are held centrally and this television has not been able to reach them yet. They will appear here once it is back on the network.</string>
     <string name="player_error_kicker">Could not play</string>
     <string name="player_error_title_network">This lesson would not load</string>
     <string name="player_error_title_other">This lesson would not play</string>

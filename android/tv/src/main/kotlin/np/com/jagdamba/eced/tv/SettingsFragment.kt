@@ -128,6 +128,13 @@ class SettingsFragment : Fragment() {
             }
         }
 
+        view.findViewById<TextView>(R.id.set_action_legal).setOnClickListener {
+            startActivity(
+                Intent(requireContext(), PageActivity::class.java)
+                    .putExtra(PageActivity.EXTRA_PAGE, PageActivity.PAGE_LEGAL)
+            )
+        }
+
         view.findViewById<TextView>(R.id.set_action_unpair).setOnClickListener {
             confirmUnpair()
         }

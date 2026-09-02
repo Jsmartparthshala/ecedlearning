@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One document in the list. Same plate-and-inversion as every other focusable
+     row in the app, so nothing here has to be learned separately. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="10dp"
+    android:orientation="vertical"
+    android:background="@drawable/row_bg"
+    android:paddingHorizontal="20dp"
+    android:paddingVertical="14dp"
+    android:focusable="true"
+    android:focusableInTouchMode="true">
+
+    <TextView
+        android:id="@+id/rl_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:duplicateParentState="true"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:textColor="@color/text_on_surface"
+        android:textSize="@dimen/text_body"
+        android:textStyle="bold" />
+
+    <!-- The version and date, on the row rather than only inside the document.
+         A placeholder that has not been replaced yet reads "placeholder" here,
+         which is considerably harder to ship by accident than filler that looks
+         finished. -->
+    <TextView
+        android:id="@+id/rl_meta"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:duplicateParentState="true"
+        android:maxLines="1"
+        android:textColor="@color/text_on_surface_muted"
+        android:textSize="@dimen/text_label" />
+</LinearLayout>

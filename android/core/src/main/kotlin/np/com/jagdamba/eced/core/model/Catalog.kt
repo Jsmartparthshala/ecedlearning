@@ -152,6 +152,28 @@ data class AppRelease(
     val mandatory: Boolean = false,
 )
 
+/**
+ * A document the application displays but does not compile: privacy policy,
+ * terms, data handling, open source notices.
+ *
+ * Held in the database so the wording can be corrected without shipping an APK
+ * to forty sideloaded televisions - which for a privacy policy is the difference
+ * between fixing it today and fixing it whenever the last box accepts an update.
+ *
+ * The body is plain text with blank-line paragraphs and ALL-CAPS headings, not
+ * HTML and not markdown. A renderer is a dependency and an attack surface, and
+ * this is text a television draws into a TextView.
+ */
+@Serializable
+data class AppDocument(
+    val slug: String,
+    @SerialName("title_en") val titleEn: String,
+    @SerialName("title_np") val titleNp: String? = null,
+    @SerialName("body_en") val bodyEn: String,
+    val version: String = "",
+    @SerialName("effective_on") val effectiveOn: String? = null,
+)
+
 /** Shape of the joined `devices -> schools(name)` select used for the header chip. */
 @Serializable
 data class SchoolName(val name: String? = null)

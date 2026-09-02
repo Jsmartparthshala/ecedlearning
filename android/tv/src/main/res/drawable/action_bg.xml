@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A button at rest, as distinct from a panel at rest.
+
+     The settings actions used to share row_bg with the information cards below
+     them: cream fill, one hairline. Six identical cream rectangles on one page,
+     four of which do something and two of which do not, and nothing on screen
+     saying which is which until the focus ring happens to land there. From the
+     back of a classroom that is unreadable, and the teacher's own television is
+     the one place they should never have to guess.
+
+     So a control carries a navy edge and a panel carries a hairline. Two
+     millimetres of navy on cream is 8.61:1 and states the difference at any
+     distance, without a second fill colour, a shadow, or anything the Mali-450
+     has to composite.
+
+     Focus is unchanged and still wins outright - navy plate, gold edge, the same
+     inversion every other focusable thing in the app performs. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/surface_focus" />
+            <stroke android:width="3dp" android:color="@color/focus_gold" />
+            <corners android:radius="14dp" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/tv_panel" />
+            <stroke android:width="2dp" android:color="@color/brand_navy" />
+            <corners android:radius="14dp" />
+        </shape>
+    </item>
+</selector>

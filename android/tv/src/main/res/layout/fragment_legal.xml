@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Two states in one screen: a list of documents, and a reader.
+
+     They swap rather than stacking, so BACK out of a document returns to the
+     list without a fragment transaction - which is what stops a teacher pressing
+     BACK twice and finding themselves off the screen entirely. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingStart="@dimen/page_content_start"
+    android:paddingEnd="@dimen/overscan_horizontal"
+    android:paddingTop="@dimen/page_lead">
+
+    <LinearLayout
+        android:id="@+id/legal_list"
+        android:layout_width="@dimen/page_measure"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" />
+
+    <!-- The scroller holds focus itself so DOWN pages the document. Nothing
+         inside it is focusable and nothing should be: a wall of text broken into
+         focusable paragraphs is harder to read with a remote, not easier. -->
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/legal_reader"
+        android:layout_width="@dimen/page_measure"
+        android:layout_height="match_parent"
+        android:focusable="true"
+        android:scrollbars="vertical"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="@dimen/overscan_vertical">
+
+            <TextView
+                android:id="@+id/legal_reader_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/tv_ink"
+                android:textSize="@dimen/text_title"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/legal_reader_meta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="@color/text_on_surface_accent"
+                android:textSize="@dimen/text_label"
+                android:textStyle="bold"
+                android:letterSpacing="0.08" />
+
+            <TextView
+                android:id="@+id/legal_reader_body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:lineSpacingMultiplier="1.35"
+                android:textColor="@color/tv_ink"
+                android:textSize="@dimen/text_body" />
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <TextView
+        android:id="@+id/legal_empty"
+        android:layout_width="@dimen/page_measure"
+        android:layout_height="wrap_content"
+        android:text="@string/legal_offline"
+        android:lineSpacingMultiplier="1.3"
+        android:textColor="@color/tv_muted"
+        android:textSize="@dimen/text_body"
+        android:visibility="gone" />
+</FrameLayout>

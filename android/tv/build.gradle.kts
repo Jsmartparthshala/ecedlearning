@@ -52,6 +52,10 @@ dependencies {
     implementation(libs.androidx.lifecycle.vm)
     implementation(libs.androidx.work)
     implementation(libs.kotlinx.coroutines)
+    // LegalFragment caches the remote policy documents to preferences, so the TV
+    // module encodes a :core model itself. :core keeps this as implementation, so
+    // it does not come through the project dependency.
+    implementation(libs.kotlinx.serialization)
 
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.ui)

@@ -3,6 +3,7 @@ package np.com.jagdamba.eced.core.data
 import io.github.jan.supabase.postgrest.from
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import np.com.jagdamba.eced.core.model.AppDocument
 import np.com.jagdamba.eced.core.model.AppRelease
 import np.com.jagdamba.eced.core.model.Lesson
 import np.com.jagdamba.eced.core.model.Level
@@ -74,6 +75,25 @@ class CatalogRepository(private val client: io.github.jan.supabase.SupabaseClien
     }
 
     /** Current published version, for the Settings screen and the OTA check. */
+    /**
+     * The legal documents, in the order the console put them in.
+     *
+     * No filter on `published` here: the RLS policy on the table only ever
+     * returns published rows to the anon key, so a filter in the client would be
+     * a second copy of a rule that is already enforced where it cannot be
+     * bypassed - and one that would silently go stale if the policy changed.
+     */
+    suspend fun documents(kind: String = "legal"): List<AppDocument> = withContext(Dispatchers.IO) {
+        quietly("catalog.documents") {
+            client.from("app_documents")
+                .select {
+                    filter { eq("kind", kind) }
+                    order("sort_order", io.github.jan.supabase.postgrest.query.Order.ASCENDING)
+                }
+                .decodeList<AppDocument>()
+        } ?: emptyList()
+    }
+
     suspend fun latestRelease(): AppRelease? = withContext(Dispatchers.IO) {
         quietly("catalog.release") {
             client.from("app_release")

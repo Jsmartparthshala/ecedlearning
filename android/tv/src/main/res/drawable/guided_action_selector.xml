@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Focus on a confirmation panel's actions.
+
+     Leanback's default here is ?android:attr/selectableItemBackground, which on
+     a platform dark theme is a pale grey plate - the app's one destructive
+     question was rendering in stock Android chrome while every other screen was
+     cream, navy and gold.
+
+     Drawn as a foreground, over the label rather than behind it, so the fill has
+     to stay translucent or it would paint out the word it is pointing at. Cream
+     at 15% over navy plus the same 3dp gold edge the rail and the cards use:
+     recognisably the same focus rule, expressed in the one place the framework
+     insists on drawing on top. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#26FAF6EC" />
+            <stroke android:width="3dp" android:color="@color/focus_gold" />
+            <corners android:radius="14dp" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@android:color/transparent" />
+        </shape>
+    </item>
+</selector>

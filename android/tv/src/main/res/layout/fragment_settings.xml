@@ -5,7 +5,7 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingStart="@dimen/page_content_start"
+    android:paddingStart="@dimen/settings_grid_start"
     android:paddingTop="@dimen/page_content_top"
     android:paddingEnd="@dimen/overscan_horizontal"
     android:paddingBottom="@dimen/overscan_vertical"
@@ -21,12 +21,25 @@
 
         <!-- Real actions, not status. Android does not let an app change the
              Wi-Fi band or even switch Wi-Fi on, so the honest version of a
-             network control is to hand the teacher the system screen that can. -->
+             network control is to hand the teacher the system screen that can.
+
+             Two rows of two, each half the width, rather than four buttons at
+             their natural size on one line. Four wrap_content labels at the 20sp
+             floor came to more than the panel is wide, and a horizontal
+             LinearLayout does not wrap - it gives the last child whatever is
+             left. "Unpair this television" got 55px of it, wrapped one character
+             per line, grew nine hundred pixels tall, and pushed all four
+             information cards off the bottom of the screen. Settings rendered as
+             three buttons and an empty page.
+
+             Fixed widths would only move the failure to the first long string in
+             values-ne, so the columns take half each and the labels centre in
+             them. That also matches the 2x2 card grid below, which is the shape
+             the page was always meant to have. -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="4dp"
             android:paddingStart="10dp"
             android:paddingEnd="10dp">
 
@@ -35,18 +48,47 @@
             <TextView
                 android:id="@+id/set_action_update"
                 style="@style/SettingsAction"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:gravity="center"
                 android:text="@string/set_action_update" />
 
             <TextView
                 android:id="@+id/set_action_wifi"
                 style="@style/SettingsAction"
-                android:layout_marginStart="14dp"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_marginStart="20dp"
+                android:gravity="center"
                 android:text="@string/set_action_wifi" />
+        </LinearLayout>
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="14dp"
+            android:layout_marginBottom="6dp"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp">
+
+            <TextView
+                android:id="@+id/set_action_legal"
+                style="@style/SettingsAction"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="@string/set_action_legal" />
+
+            <!-- Last of the four, and deliberately the furthest from the button
+                 focus lands on. It takes a television off its school. -->
             <TextView
                 android:id="@+id/set_action_unpair"
                 style="@style/SettingsAction"
-                android:layout_marginStart="14dp"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_marginStart="20dp"
+                android:gravity="center"
                 android:text="@string/set_action_unpair" />
         </LinearLayout>
 
