@@ -71,6 +71,29 @@ class UnitActivity : FragmentActivity() {
      */
     private var lessonJob: Job? = null
 
+    /**
+     * Where the teacher actually is, as opposed to where they came in.
+     *
+     * onResume reloads this screen on every return from the player, to pick up
+     * the progress bar the lesson just moved. That reload used to rebuild from
+     * the intent, which names the unit the screen was *opened* with - so a
+     * teacher who walked the rail to unit 5 and played a lesson was put back on
+     * unit 1 by the act of watching it, every time, with no way to stop it
+     * happening. On a remote that is four presses to undo, once per video.
+     */
+    private var currentUnitId: String? = null
+
+    /** The lesson last focused in the grid, so a reload can put it back. */
+    private var lastLessonId: String? = null
+
+    /**
+     * Set while returning from the player, so the reload restores the grid
+     * instead of pulling focus up to the rail. Arriving fresh from the home
+     * screen should still land on the rail - that is a different journey with a
+     * different right answer.
+     */
+    private var returningToGrid = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_unit)
@@ -108,7 +131,12 @@ class UnitActivity : FragmentActivity() {
     override fun onResume() {
         super.onResume()
         // Progress changes while the player is open; refresh on the way back.
-        if (units.isNotEmpty()) load()
+        // `units` is empty only on the very first pass, when onCreate's load is
+        // already running - so a non-empty list is what marks this as a return.
+        if (units.isNotEmpty()) {
+            returningToGrid = lastLessonId != null
+            load()
+        }
     }
 
     /**
@@ -128,7 +156,9 @@ class UnitActivity : FragmentActivity() {
 
     private fun load() {
         val subjectId = intent.getStringExtra(EXTRA_SUBJECT_ID) ?: return
-        val focusUnitId = intent.getStringExtra(EXTRA_UNIT_ID)
+        // The unit in hand wins over the one in the intent; the intent is only
+        // the way in.
+        val focusUnitId = currentUnitId ?: intent.getStringExtra(EXTRA_UNIT_ID)
 
         lifecycleScope.launch {
             val repo = EcedApp.instance.catalog
@@ -152,8 +182,13 @@ class UnitActivity : FragmentActivity() {
             // Focus the unit that was opened, not the first one, so arriving from a
             // card on the home screen lands where the teacher pointed.
             unitRail.scrollToPosition(startIndex)
-            unitRail.post {
-                unitRail.findViewHolderForAdapterPosition(startIndex)?.itemView?.requestFocus()
+            // Only take focus when the teacher is arriving, not when they are
+            // coming back. Coming back, focus belongs on the card they just
+            // watched, which showLessons restores.
+            if (!returningToGrid) {
+                unitRail.post {
+                    unitRail.findViewHolderForAdapterPosition(startIndex)?.itemView?.requestFocus()
+                }
             }
         }
     }
@@ -165,6 +200,12 @@ class UnitActivity : FragmentActivity() {
      *        query per tile, but the first load has nothing to debounce against.
      */
     private fun showLessons(unit: CatalogUnit, immediate: Boolean = false) {
+        // Captured before the field moves: sweeping the rail lands on a new unit
+        // and should start its grid at the top, but a reload of the unit already
+        // on screen must not throw away where the teacher had scrolled to.
+        val sameUnit = unit.id == currentUnitId
+        currentUnitId = unit.id
+
         findViewById<TextView>(R.id.lesson_kicker).text =
             "${getString(R.string.card_unit_kicker)} ${unit.sortOrder}"
         findViewById<TextView>(R.id.lesson_title).text = unit.titleEn.clean()
@@ -184,7 +225,20 @@ class UnitActivity : FragmentActivity() {
                 getString(R.string.unit_progress, pct)
 
             lessonGrid.adapter = LessonGridAdapter(lessons)
-            lessonGrid.scrollToPosition(0)
+
+            val at = if (sameUnit) {
+                lessons.indexOfFirst { it.id == lastLessonId }.coerceAtLeast(0)
+            } else 0
+            lessonGrid.scrollToPosition(at)
+
+            if (sameUnit && returningToGrid) {
+                returningToGrid = false
+                // post() because the holder for `at` does not exist until the
+                // scroll has been laid out.
+                lessonGrid.post {
+                    lessonGrid.findViewHolderForAdapterPosition(at)?.itemView?.requestFocus()
+                }
+            }
         }
     }
 
@@ -366,6 +420,9 @@ class UnitActivity : FragmentActivity() {
 
             holder.itemView.setOnFocusChangeListener { view, hasFocus ->
                 lift(view, hasFocus)
+                // Remembered on focus rather than on play, so backing out of a
+                // lesson list also comes back to the right card.
+                if (hasFocus) lastLessonId = l.id
                 // The play mark appears only under focus. On every poster it is
                 // noise; on the focused one it says what OK will do.
                 val showPlay = hasFocus && l.isPlayable
