@@ -151,7 +151,36 @@ holds the line — six seconds for a confirmation, twelve for an error — and
 the line back when the message has had its time. A stale "Revoked." sitting over
 a fleet that has changed twice since would be worse than no message at all.
 
-### 9. Visual polish (not a defect, but it is in the same commit)
+### 9. Statistics, from the original list — a fleet counted by school
+
+The counters across the top say how many televisions exist. They cannot answer
+the question the office actually has, which is not "how many boxes do we own"
+but "is Butwal using theirs" — and a flat list of twenty-two televisions makes
+the reader do the grouping by hand.
+
+A **By school** table now sits under the television list: school, where it is,
+how many televisions, how many activated, and when one of them last played
+something. Busiest first, so a school with a lesson running right now is the row
+you land on. A school with fewer activated than it has televisions shows that
+number in amber, because a box waiting to be activated is normal on an install
+visit but worth seeing.
+
+Two things it deliberately does not do:
+
+- **It costs nothing.** Every figure is derived from the schools, televisions and
+  playing set the page has already loaded. It asks the server for nothing, so it
+  adds no invocations against the monthly ceiling — the same arrangement as the
+  map, for the same reason.
+- **It never calls a school inactive.** A television writes a progress row while
+  a lesson plays and writes nothing at all sitting on the browse screen, so
+  silence is not evidence. The column is headed "Last played", a quiet school is
+  dimmed rather than flagged, and the note under the table says in as many words
+  that this cannot tell you a box is switched off.
+
+This is also why there is still no chart anywhere. With eleven schools, anything
+shaped like a trend line is decoration over a sample too small to have one.
+
+### 10. Visual polish (not a defect, but it is in the same commit)
 
 Elevation and motion, both as tokens rather than one-offs:
 

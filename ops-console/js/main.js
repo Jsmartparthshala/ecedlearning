@@ -13,6 +13,7 @@ import { refreshActivity } from './activity.js'
 import { wireLessons, openLessons } from './lessons.js'
 import { wireDocuments, openDocuments } from './documents.js'
 import { openMap, refreshMap } from './map.js'
+import { refreshSchoolStats } from './schools.js'
 
 /**
  * Twenty-five seconds, not five.
@@ -134,9 +135,10 @@ async function refresh() {
     const live = await refreshActivity()
     await counters()
 
-    // After both, because the map is drawn from the two of them together: the
-    // schools and televisions from the fleet, and which of them are playing
-    // from the activity. It returns immediately when its tab is not showing.
+    // After both, because these two are drawn from the pair together: the
+    // schools and televisions from the fleet, and which of them are playing from
+    // the activity. The map returns immediately when its tab is not showing.
+    refreshSchoolStats()
     refreshMap()
 
     // One sentence, in the page's one live region. A bare number that silently

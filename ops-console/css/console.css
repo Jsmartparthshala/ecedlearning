@@ -952,3 +952,29 @@ input[aria-invalid="true"], textarea[aria-invalid="true"] { border-color: var(--
   }
   button:hover:not(:disabled), button:active:not(:disabled) { transform: none }
 }
+
+/* -------------------------------------------------------------- by school
+
+   The fleet counted by school, on the Fleet tab under the television list.
+   Same table furniture as everything else on that tab; the only additions are
+   a right-aligned numeric column and two quiet marks that say which rows are
+   worth a second look.
+   -------------------------------------------------------------------------- */
+
+.num { text-align: right }
+th.num { text-align: right }
+
+/* Activated is fewer than the school has. Not an error - a box waiting to be
+   activated is a normal state on an install visit - so warn rather than bad,
+   and only on the number that is short. */
+td.num.short { color: var(--warn); font-weight: 650 }
+
+/* A week with nothing played. Dimmed rather than flagged, because a quiet
+   school in the holidays looks exactly like a school with a box in a cupboard
+   and this page cannot tell the two apart. */
+.quiet { color: var(--muted); font-style: italic }
+
+/* The same green the activity panel uses for a television that is playing, so
+   that "live" means one thing everywhere on the page. */
+#school-stats tr.live { background: var(--ok-wash) }
+#school-stats tr.live:hover { background: #DCEBE2 }
