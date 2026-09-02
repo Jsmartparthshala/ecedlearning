@@ -42,7 +42,15 @@
          the app and it set the ceiling for everything else. -->
     <dimen name="poster_art_height">116dp</dimen>
     <dimen name="grid_gap">12dp</dimen>
-    <dimen name="focus_bleed">6dp</dimen>
+    <!-- Room for a focused card to scale into without being clipped.
+
+         This is padding, and clipToPadding is what lets a card use it; the
+         lists themselves clip to their bounds so a scrolled row can never
+         paint over the rail above it. So it has to be at least half the growth
+         of the tallest focusable thing: a lesson poster is 186dp tall, 1.06
+         adds 11dp, and half of that is 5.6dp. 8dp leaves a margin rather than
+         sitting a fraction of a pixel from clipping the ring. -->
+    <dimen name="focus_bleed">8dp</dimen>
 
     <!-- Insets for the Downloads and Settings screens. Plain overscan now that
          they are activities rather than fragments inside Leanback's scale_frame. -->

@@ -91,6 +91,14 @@ class UnitActivity : FragmentActivity() {
      * instead of pulling focus up to the rail. Arriving fresh from the home
      * screen should still land on the rail - that is a different journey with a
      * different right answer.
+     *
+     * Simply *not* taking focus is not enough, which is what the first attempt at
+     * this got wrong. The reload swaps both adapters, so the view that had focus
+     * is destroyed; if nothing then claims focus, the framework awards it to the
+     * first focusable thing in the window, which is rail tile one - and that
+     * tile's focus listener rewrites the header and reloads the grid for unit
+     * one. The teacher was put back on unit one by the framework instead of by
+     * the intent, and the screen looked exactly as broken as before.
      */
     private var returningToGrid = false
 
@@ -135,27 +143,55 @@ class UnitActivity : FragmentActivity() {
         // already running - so a non-empty list is what marks this as a return.
         if (units.isNotEmpty()) {
             returningToGrid = lastLessonId != null
+            // Take the rail out of the running for focus until the grid has a
+            // card to hand it to. Blocking it is what stops the framework
+            // choosing tile one and undoing the whole journey; showLessons hands
+            // it back the moment the card it wanted actually has focus.
+            if (returningToGrid) {
+                unitRail.descendantFocusability = ViewGroup.FOCUS_BLOCK_DESCENDANTS
+            }
             load()
         }
     }
 
     /**
-     * Back out of the grid to the rail before back leaves the screen. One press
-     * should undo one step, and dropping into the grid was a step.
+     * Both ways out of the grid land on the unit the grid is showing.
+     *
+     * Back first: one press should undo one step, and dropping into the grid was
+     * a step, so back returns to the rail rather than leaving the screen.
+     *
+     * Up is the same journey and used to end somewhere else entirely. Focus
+     * search is geometric, so up from the fourth card went to whichever tile
+     * happened to be overhead - and the rail is focus driven, so landing there
+     * silently swapped the header and the whole grid to that unit. Walk to unit
+     * two, drop in, press up: unit seven. The tile the grid belongs to is the
+     * only correct answer, and it is already being tracked for back.
+     *
+     * Only from the top row. Anywhere else up means the row above, which is what
+     * the grid itself already does.
      */
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        if (event.keyCode == KeyEvent.KEYCODE_BACK &&
-            event.action == KeyEvent.ACTION_UP &&
-            lessonGrid.hasFocus()
-        ) {
+        val leavingGrid =
+            (event.keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) ||
+            (event.keyCode == KeyEvent.KEYCODE_DPAD_UP &&
+                event.action == KeyEvent.ACTION_DOWN && inTopRow())
+
+        if (leavingGrid && lessonGrid.hasFocus()) {
             selectedTile?.requestFocus()
             return true
         }
         return super.dispatchKeyEvent(event)
     }
 
+    /** Is focus on the first row of the grid, with nothing above it but the rail? */
+    private fun inTopRow(): Boolean {
+        val focused = lessonGrid.findFocus() ?: return false
+        val item = lessonGrid.findContainingItemView(focused) ?: return false
+        return lessonGrid.getChildAdapterPosition(item) in 0 until GRID_COLUMNS
+    }
+
     private fun load() {
-        val subjectId = intent.getStringExtra(EXTRA_SUBJECT_ID) ?: return
+        val subjectId = intent.getStringExtra(EXTRA_SUBJECT_ID) ?: return releaseRail()
         // The unit in hand wins over the one in the intent; the intent is only
         // the way in.
         val focusUnitId = currentUnitId ?: intent.getStringExtra(EXTRA_UNIT_ID)
@@ -176,19 +212,23 @@ class UnitActivity : FragmentActivity() {
             val startIndex = units.indexOfFirst { it.id == focusUnitId }.coerceAtLeast(0)
             unitRail.adapter = UnitRailAdapter(units)
 
-            val first = units.getOrNull(startIndex) ?: return@launch
+            val first = units.getOrNull(startIndex) ?: return@launch releaseRail()
+
+            // Read before showLessons, which clears it as soon as the grid has
+            // taken focus - and can get there first when the lessons are cached.
+            val comingBack = returningToGrid
             showLessons(first, immediate = true)
 
             // Focus the unit that was opened, not the first one, so arriving from a
             // card on the home screen lands where the teacher pointed.
             unitRail.scrollToPosition(startIndex)
-            // Only take focus when the teacher is arriving, not when they are
-            // coming back. Coming back, focus belongs on the card they just
-            // watched, which showLessons restores.
-            if (!returningToGrid) {
-                unitRail.post {
-                    unitRail.findViewHolderForAdapterPosition(startIndex)?.itemView?.requestFocus()
-                }
+            unitRail.post {
+                val tile = unitRail.findViewHolderForAdapterPosition(startIndex)?.itemView
+                    ?: return@post releaseRail()
+                // Arriving: the rail is the right place to be standing. Coming
+                // back: the tile is only marked, because focus belongs on the
+                // card that was just watched and showLessons is putting it there.
+                if (comingBack) select(tile) else tile.requestFocus()
             }
         }
     }
@@ -236,10 +276,37 @@ class UnitActivity : FragmentActivity() {
                 // post() because the holder for `at` does not exist until the
                 // scroll has been laid out.
                 lessonGrid.post {
-                    lessonGrid.findViewHolderForAdapterPosition(at)?.itemView?.requestFocus()
+                    val card = lessonGrid.findViewHolderForAdapterPosition(at)?.itemView
+                    card?.requestFocus()
+                    // Always, and only now. Handing the rail back any earlier
+                    // lets it win the focus it was blocked from; never handing it
+                    // back at all would leave a unit with no lessons unusable,
+                    // so the tile takes focus when there is no card to take it.
+                    releaseRail()
+                    if (card == null) selectedTile?.requestFocus()
                 }
+            } else if (!returningToGrid) {
+                releaseRail()
             }
         }
+    }
+
+    /**
+     * Paint a rail tile as the chosen one.
+     *
+     * Selection and focus are not the same thing here. Coming back from the
+     * player the right tile has to look chosen - and has to be the tile back
+     * returns to - while focus sits on the card down in the grid.
+     */
+    private fun select(tile: View) {
+        selectedTile?.takeIf { it !== tile }?.isSelected = false
+        tile.isSelected = true
+        selectedTile = tile
+    }
+
+    /** Let the rail hold focus again once somewhere better has it. */
+    private fun releaseRail() {
+        unitRail.descendantFocusability = ViewGroup.FOCUS_BEFORE_DESCENDANTS
     }
 
     private fun play(lesson: Lesson) {
@@ -285,9 +352,7 @@ class UnitActivity : FragmentActivity() {
                 lift(view, hasFocus)
                 paint(holder, hasFocus)
                 if (!hasFocus) return@setOnFocusChangeListener
-                selectedTile?.takeIf { it !== view }?.isSelected = false
-                view.isSelected = true
-                selectedTile = view
+                select(view)
                 items.getOrNull(holder.bindingAdapterPosition)?.let { showLessons(it) }
             }
 
