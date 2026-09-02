@@ -1,140 +1,65 @@
 <!doctype html>
+<!--
+  Jagdamba Smart Pathshala — ops console.
+
+  Markup only. The styling lives in css/console.css and every behaviour lives in
+  the modules under js/, loaded natively by the browser: there is no build step
+  here and there should not be one. Netlify publishes this directory as static
+  files, and a bundler would put a toolchain between an operator's bug report and
+  the fix for it.
+
+  Nothing on this page holds a Supabase key. Every privileged call goes to /api,
+  the Netlify function that holds the service_role key server side.
+-->
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="robots" content="noindex,nofollow">
-<title>Jagdamba Smart Pathshala — Ops Console</title>
-<style>
-  :root{
-    --bg:#0e1116; --panel:#161b23; --raise:#1c222c; --line:#252c37; --ink:#e6edf3;
-    --muted:#8b98a8; --gold:#e8b64c; --ok:#3fb950; --warn:#d29922; --bad:#f85149;
-    --blue:#1f6feb;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);
-       font:15px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-
-  header{padding:18px 28px;border-bottom:1px solid var(--line);
-         display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-  h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.2px}
-  h1 .sub{font-weight:450;color:var(--muted)}
-  .tag{font-size:11px;color:var(--muted);border:1px solid var(--line);
-       padding:2px 8px;border-radius:99px}
-  #status{font-size:13px;color:var(--muted);margin-left:auto}
-  #status.err{color:var(--bad)}
-  #status.ok{color:var(--ok)}
-
-  main{padding:26px 28px 60px;max-width:1080px}
-  section{margin-bottom:34px}
-  h2{font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);
-     margin:0 0 12px;font-weight:600}
-
-  input,select,button{font:inherit;border-radius:8px;border:1px solid var(--line);
-       background:var(--panel);color:var(--ink);padding:10px 13px}
-  input:focus,select:focus{outline:2px solid var(--blue);outline-offset:1px}
-  button{cursor:pointer;background:var(--blue);border-color:var(--blue);font-weight:600}
-  button.ghost{background:var(--panel);border-color:var(--line);font-weight:500}
-  button:disabled{opacity:.45;cursor:not-allowed}
-  button:hover:not(:disabled){background:#2b7bf3;border-color:#2b7bf3}
-  button.ghost:hover:not(:disabled){background:var(--raise);border-color:#39424f}
-  button:active:not(:disabled){transform:translateY(1px)}
-  button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
-
-  /* Activation: the one thing this console exists to do, so it gets the top of
-     the page, the largest control, and keyboard focus on load. */
-  .activate{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 24px}
-  .activate .row{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap}
-  .field{display:flex;flex-direction:column;gap:6px}
-  .field label{font-size:12px;color:var(--muted);font-weight:550}
-  #code{font:600 30px/1.1 ui-monospace,SFMono-Regular,Consolas,monospace;
-        letter-spacing:.18em;text-transform:uppercase;width:270px;padding:12px 14px;
-        background:var(--raise)}
-  #school{min-width:270px;padding:13px}
-  #go{padding:14px 26px;font-size:15px}
-  .hint{font-size:13px;color:var(--muted);margin-top:12px}
-  .found{margin-top:14px;font-size:13px;padding:11px 14px;border-radius:9px;
-         border:1px solid var(--line);background:var(--raise);display:none}
-  .found.show{display:block}
-  .found.bad{border-color:#5c2018;background:#2a1210;color:#f8b3ad}
-  .found.good{border-color:#1c4a26;background:#0f2415;color:#8fe0a4}
-
-  .opt{font-weight:400;text-transform:none;letter-spacing:0;opacity:.7}
-
-  /* Teachers reuses the activation panel's shape so the two read as one job:
-     set the school up, then hang devices off it. */
-  .teachers{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 24px 8px}
-  .teachers .row{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:6px}
-  .teachers input{min-width:220px}
-  /* An assignment dropdown sits inside a table cell, so it must not be as tall
-     as the form controls above or every row grows to match. */
-  select.assign{padding:5px 8px;font-size:13px;max-width:190px;background:var(--raise)}
-  select.assign:disabled{opacity:.4}
-
-  table{width:100%;border-collapse:collapse;margin-top:4px}
-  th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);font-size:14px}
-  td{font-variant-numeric:tabular-nums}
-  tbody tr:hover{background:#12171f}
-  tbody tr:last-child td{border-bottom:none}
-  th{color:var(--muted);font-weight:550;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
-  code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;color:var(--gold)}
-  .pill{font-size:11px;padding:2px 9px;border-radius:99px;border:1px solid;white-space:nowrap}
-  .pill.unclaimed{color:var(--warn);border-color:#5c4415;background:#2a1f0d}
-  .pill.claimed{color:var(--ok);border-color:#1c4a26;background:#0f2415}
-  .muted{color:var(--muted)}
-  .right{text-align:right}
-
-  /* Passcode gate. Covers the page until the operator is through it. */
-  #gate{position:fixed;inset:0;background:var(--bg);display:grid;place-items:center;z-index:20}
-  #gate .box{width:340px;text-align:center}
-  #gate h2{margin-bottom:18px}
-  #gate input{width:100%;text-align:center;margin-bottom:12px}
-  #gate button{width:100%}
-  #gate .err{color:var(--bad);font-size:13px;min-height:20px;margin-top:10px}
-  [hidden]{display:none !important}
-
-  /* The parts of the page nobody draws but that still ship with the design. */
-  ::selection{background:#1f4b8f;color:#fff}
-  input,select{caret-color:var(--blue)}
-  html{scrollbar-color:var(--line) transparent;scrollbar-width:thin}
-  ::-webkit-scrollbar{width:10px;height:10px}
-  ::-webkit-scrollbar-track{background:transparent}
-  ::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
-  ::-webkit-scrollbar-thumb:hover{background:#39424f}
-
-  /* Eight columns do not fit a phone. Let the table scroll inside its own box
-     rather than dragging the whole page sideways - the office works from a
-     laptop, but a phone is what is to hand when someone is stood next to the
-     television reading the code off its screen. */
-  .scroller{overflow-x:auto;overscroll-behavior-x:contain}
-  .scroller table{min-width:460px}
-  .scroller.wide table{min-width:840px}
-  /* The scroller exists so rows stay one line. Without this a long school name
-     wraps to four lines and every row in the table grows to match it, which is
-     the failure the horizontal scroll was added to avoid. */
-  .scroller th,.scroller td{white-space:nowrap}
-
-  @media (max-width:720px){
-    header{padding:14px 16px;gap:8px}
-    main{padding:18px 16px 48px}
-    #status{margin-left:0;flex-basis:100%}
-    .activate{padding:16px;border-radius:12px}
-    .teachers{padding:16px 16px 6px;border-radius:12px}
-    .activate .row,.teachers .row{flex-direction:column;align-items:stretch}
-    .field{width:100%}
-    #code,#school,.teachers input,.teachers select{width:100%;min-width:0}
-    #go,#t-add,#c-add,#add-school{width:100%}
-    /* Comfortable to hit with a thumb; the desktop rule keeps it small so a
-       dropdown in a cell does not stretch every row. */
-    select.assign{max-width:none;padding:9px 10px;font-size:14px}
-  }
-</style>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Ops Console · Jagdamba Smart Pathshala</title>
+<link rel="icon" href="assets/mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/console.css">
 </head>
 <body>
 
+<a class="skip" href="#app">Skip to the console</a>
+
+<!-- The mark, defined once and used wherever it is needed. Inline rather than an
+     <img> because the drawing is recoloured by CSS custom properties - cream on
+     navy in the header, navy on cream on the gate - and a linked image cannot
+     see this page's variables. Geometry identical to assets/mark.svg and to the
+     television's ic_brand_mark.xml. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="jsp-mark" viewBox="0 0 48 48">
+    <g fill="none" stroke="var(--mark-ink, #14508C)" stroke-width="2.6" stroke-linecap="round">
+      <path d="M19.5 12.84 A5.5 5.5 0 0 1 28.5 12.84" />
+      <path d="M16.22 10.55 A9.5 9.5 0 0 1 31.78 10.55" />
+      <path d="M12.94 8.25 A13.5 13.5 0 0 1 35.06 8.25" />
+    </g>
+    <g fill="var(--mark-ink, #14508C)">
+      <path d="M23 22.5 C18.5 19.6 11 18.8 4.5 19.4 L4.5 38.4 C11 37.8 18.5 38.6 23 41.5 Z" />
+      <path d="M25 22.5 C29.5 19.6 37 18.8 43.5 19.4 L43.5 38.4 C37 37.8 29.5 38.6 25 41.5 Z" />
+    </g>
+    <path fill="var(--mark-ground, #FAF6EC)" d="M11.6 26.3 L17.4 29.5 L11.6 32.7 Z" />
+    <path fill="var(--mark-ground, #FAF6EC)"
+          d="M29.7 29.5 A4.6 4.6 0 1 0 38.9 29.5 A4.6 4.6 0 1 0 29.7 29.5 Z" />
+    <path fill="var(--mark-ink, #14508C)"
+          d="M32.4 29.5 A1.9 4.6 0 1 0 36.2 29.5 A1.9 4.6 0 1 0 32.4 29.5 Z" />
+    <path fill="var(--mark-ground, #FAF6EC)"
+          d="M33.4 29.5 A0.9 3.9 0 1 0 35.2 29.5 A0.9 3.9 0 1 0 33.4 29.5 Z" />
+    <path fill="var(--mark-ink, #14508C)"
+          d="M29.7 29.5 A4.6 0.55 0 1 0 38.9 29.5 A4.6 0.55 0 1 0 29.7 29.5 Z" />
+  </symbol>
+</svg>
+
+<!-- The gate is also the loading screen: it is what is on the glass while the
+     first /api call is in flight, so it carries the mark and the product's name
+     rather than a spinner on an empty page. -->
 <div id="gate">
   <div class="box">
+    <svg class="mark" id="gate-mark" role="img" aria-label="Jagdamba Smart Pathshala"><use href="#jsp-mark"/></svg>
     <h2>Jagdamba Smart Pathshala</h2>
+    <p class="kicker">Ops console</p>
     <input id="pass" type="password" placeholder="Passcode" autocomplete="current-password">
     <button id="unlock">Unlock</button>
     <div class="err" id="gate-err"></div>
@@ -143,16 +68,57 @@
 </div>
 
 <header>
-  <h1>Jagdamba Smart Pathshala <span class="sub">Ops Console</span></h1>
-  <span class="tag">reverse provisioning</span>
-  <span id="status">idle</span>
+  <div class="brand">
+    <svg class="mark" aria-hidden="true" focusable="false"><use href="#jsp-mark"/></svg>
+    <h1>Jagdamba Smart Pathshala <span class="sub">Ops console</span></h1>
+  </div>
+  <!-- One live region for the whole page. Everything the console wants to
+       say back goes through here as a sentence - "3 televisions, 1 waiting"
+       rather than a number that silently changes - so a screen reader gets
+       the same news as the eye, once, without stealing focus. -->
+  <span id="status" role="status" aria-atomic="true">idle</span>
 </header>
+
+<!-- Left and right arrows move between the tabs and only the selected one is
+     in the tab order, which is what a screen reader user expects of a tablist
+     and what stops three dead stops appearing before the table they came for. -->
+<nav class="tabs" role="tablist" hidden id="tabs" aria-label="Sections">
+  <button role="tab" id="tab-btn-fleet" data-tab="fleet" aria-controls="tab-fleet" aria-selected="true" tabindex="0">Fleet</button>
+  <button role="tab" id="tab-btn-catalogue" data-tab="catalogue" aria-controls="tab-catalogue" aria-selected="false" tabindex="-1">Catalogue</button>
+  <button role="tab" id="tab-btn-documents" data-tab="documents" aria-controls="tab-documents" aria-selected="false" tabindex="-1">Documents</button>
+</nav>
 
 <main hidden id="app">
 
+<!-- ======================================================== fleet ========= -->
+<div id="tab-fleet" role="tabpanel" aria-labelledby="tab-btn-fleet" tabindex="-1">
+
+  <div class="counters" id="counters">
+    <div class="counter"><div class="n" id="c-schools">—</div><div class="k">Schools</div></div>
+    <div class="counter"><div class="n" id="c-devices">—</div><div class="k">Televisions</div></div>
+    <div class="counter"><div class="n" id="c-activated">—</div><div class="k">Activated</div></div>
+    <div class="counter"><div class="n" id="c-active">—</div><div class="k">Played today</div></div>
+    <div class="counter"><div class="n" id="c-video">—</div><div class="k">Lessons with video</div></div>
+  </div>
+
+  <section>
+    <h2>On now <span class="muted" id="activity-scope"></span></h2>
+    <div class="activity" id="activity">
+      <div class="empty">Loading…</div>
+    </div>
+    <!-- Stated on the page, not just in the code, because an operator will
+         otherwise read silence as "switched off" and drive to a school. -->
+    <p class="hint">
+      A television appears here when it plays a lesson — the player saves its
+      position every ten seconds, and that is what this list reads. A television
+      sitting on the browse screen writes nothing, so it shows its last lesson
+      instead. Nothing here can tell you a television is switched off.
+    </p>
+  </section>
+
   <section>
     <h2>Add a device</h2>
-    <div class="activate">
+    <div class="panel">
       <div class="row">
         <div class="field">
           <label for="school">1 &middot; School</label>
@@ -167,6 +133,11 @@
           <label for="teacher">3 &middot; Teacher <span class="opt">optional</span></label>
           <select id="teacher" disabled><option value="">Whole school</option></select>
         </div>
+        <div class="field">
+          <label for="expiry">4 &middot; Expires <span class="opt">optional</span></label>
+          <input id="expiry" type="date" aria-describedby="expiry-error">
+          <p class="field-error" id="expiry-error"></p>
+        </div>
         <button id="go" disabled>Add &amp; activate</button>
       </div>
       <div class="found" id="found"></div>
@@ -178,6 +149,11 @@
         device.
       </p>
       <p class="hint">
+        Leave the expiry blank for a permanent installation. Set it for a loaner or
+        a term's trial and the television returns to its pairing screen on its own
+        that evening, without anybody having to remember to come back here.
+      </p>
+      <p class="hint">
         Assigning a teacher is optional and can be changed later from the table
         below. A television with no teacher belongs to the school and shows the
         school name, which is right for a hall or a shared room.
@@ -187,7 +163,7 @@
 
   <section>
     <h2>Teachers <span class="muted" id="teacher-scope"></span></h2>
-    <div class="teachers">
+    <div class="panel tight">
       <div class="row">
         <div class="field">
           <label for="t-name">Name</label>
@@ -218,7 +194,7 @@
        - and a class panel whose every control errors is worse than no panel. -->
   <section id="classes-section" hidden>
     <h2>Classes <span class="muted" id="class-scope"></span></h2>
-    <div class="teachers">
+    <div class="panel tight">
       <div class="row">
         <div class="field">
           <label for="c-level">Grade</label>
@@ -240,7 +216,7 @@
           </tbody>
         </table>
       </div>
-      <p class="muted" style="margin:14px 0 6px">
+      <p class="hint">
         A class is what gives a television its grade. A television with no class
         stays activated and browses the whole ladder, which is right for a hall
         or a shared room.
@@ -255,7 +231,7 @@
         <thead>
           <tr>
             <th>Code</th><th>School</th><th>Teacher</th><th>Class</th><th>Status</th>
-            <th>Last seen</th><th>App</th><th class="right"></th>
+            <th>Expires</th><th>App</th><th class="right"></th>
           </tr>
         </thead>
         <tbody id="devices">
@@ -265,514 +241,105 @@
     </div>
   </section>
 
+</div>
+
+<!-- ==================================================== catalogue ========= -->
+<div id="tab-catalogue" role="tabpanel" aria-labelledby="tab-btn-catalogue" tabindex="-1" hidden>
+
+  <section>
+    <h2>Lesson titles</h2>
+    <div class="searchbar">
+      <input id="l-search" type="search" placeholder="Search titles…" autocomplete="off" spellcheck="false">
+      <label><input type="checkbox" id="l-all"> Include lessons with no video</label>
+      <span class="muted" id="l-count"></span>
+    </div>
+    <div class="scroller wide">
+      <table>
+        <thead>
+          <tr>
+            <th>Subject</th><th>Unit</th>
+            <th class="wrap">Title (English)</th>
+            <th class="wrap">शीर्षक (नेपाली)</th>
+            <th>Length</th>
+          </tr>
+        </thead>
+        <tbody id="lessons">
+          <tr><td colspan="5" class="muted">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="hint">
+      Type a title and press Enter, or click away — each one saves on its own. The
+      list is the lessons that have a video, because those are the ones a child
+      actually sees a name for; tick the box above to reach the rest.
+    </p>
+    <p class="hint">
+      The Nepali column can be left empty. A television shows the Nepali title
+      when there is one and the English title when there is not, so a half-filled
+      column is a usable state, not a broken one.
+    </p>
+  </section>
+
+</div>
+
+<!-- ==================================================== documents ========= -->
+<div id="tab-documents" role="tabpanel" aria-labelledby="tab-btn-documents" tabindex="-1" hidden>
+
+  <section>
+    <h2>Privacy &amp; terms</h2>
+    <div id="doc-missing" class="warn-strip" hidden>
+      These are stored in a table that does not exist yet. Run
+      <code>0010_app_documents.sql</code> against the database, then reload this page.
+    </div>
+
+    <div class="doc-list" id="doc-list"></div>
+
+    <div class="panel" id="doc-editor" hidden>
+      <div class="doc-grid">
+        <div class="field">
+          <label for="d-title-en">Title (English)</label>
+          <input id="d-title-en" aria-describedby="d-title-en-error">
+          <p class="field-error" id="d-title-en-error"></p>
+        </div>
+        <div class="field">
+          <label for="d-title-np">शीर्षक (नेपाली)</label>
+          <input id="d-title-np" class="np">
+        </div>
+        <div class="field full">
+          <label for="d-body-en">Text (English)</label>
+          <textarea id="d-body-en" spellcheck="true" aria-describedby="d-body-en-error"></textarea>
+          <p class="field-error" id="d-body-en-error"></p>
+        </div>
+        <div class="field full">
+          <label for="d-body-np">पाठ (नेपाली) <span class="opt">optional</span></label>
+          <textarea id="d-body-np" class="np" spellcheck="false"></textarea>
+        </div>
+        <div class="field">
+          <label for="d-version">Version</label>
+          <input id="d-version" placeholder="1.0">
+        </div>
+        <div class="field">
+          <label for="d-effective">Effective from <span class="opt">optional</span></label>
+          <input id="d-effective" type="date">
+        </div>
+      </div>
+      <div class="publish-row">
+        <label><input type="checkbox" id="d-published"> Show this on the televisions</label>
+        <span class="muted" id="d-state"></span>
+        <button id="d-save" style="margin-left:auto">Save</button>
+      </div>
+      <p class="hint">
+        Saving publishes within a refresh: the next television to open Privacy
+        &amp; terms shows exactly what is in these boxes. Every save is recorded
+        with its previous text, so a bad edit can be read back and undone.
+      </p>
+    </div>
+  </section>
+
+</div>
+
 </main>
 
-<script type="module">
-const $ = s => document.querySelector(s)
-
-/* The passcode is the only credential this page holds, and it is not a Supabase
-   key: it authenticates to our own function, which holds the service_role key
-   server side. Persisting it in localStorage is what makes the console usable
-   without retyping anything on every visit. */
-const PASS_KEY = 'jsp_ops_pass'
-let passcode = localStorage.getItem(PASS_KEY) || ''
-
-let schools = []
-let teachers = []
-let devices = []
-let levels = []
-let classes = []
-let pollTimer = null
-
-async function api(action, payload = {}) {
-  const res = await fetch('/api', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-ops-passcode': passcode },
-    body: JSON.stringify({ action, ...payload }),
-  })
-  const body = await res.json().catch(() => ({ error: `HTTP ${res.status}` }))
-  if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`)
-  return body
-}
-
-function setStatus(text, kind = '') {
-  const el = $('#status')
-  el.textContent = text
-  el.className = kind
-}
-
-// ---------------------------------------------------------------- gate
-
-$('#unlock').onclick = unlock
-$('#pass').onkeydown = e => { if (e.key === 'Enter') unlock() }
-
-async function unlock() {
-  const typed = $('#pass').value.trim()
-  if (!typed) return
-  passcode = typed
-  $('#gate-err').textContent = ''
-  try {
-    await api('list')
-    localStorage.setItem(PASS_KEY, passcode)
-    openApp()
-  } catch (e) {
-    passcode = ''
-    $('#gate-err').textContent = e.message
-  }
-}
-
-function openApp() {
-  $('#gate').hidden = true
-  $('#app').hidden = false
-  // School first, matching the order of the form and of the job: an operator on
-  // an install visit picks the school once and then works through a stack of
-  // televisions, so the school is the field that should already be waiting.
-  $('#school').focus()
-  refresh()
-  // Polling rather than Realtime: Realtime from the browser would need a Supabase
-  // key in the page, which is the whole thing this rewrite removes. A five second
-  // poll is indistinguishable at demo speed.
-  clearInterval(pollTimer)
-  pollTimer = setInterval(refresh, 5000)
-}
-
-// Skip the gate when the passcode is already known and still valid.
-if (passcode) {
-  api('list').then(openApp).catch(() => { localStorage.removeItem(PASS_KEY); passcode = '' })
-}
-
-// ---------------------------------------------------------------- activate
-
-const codeEl = $('#code')
-let lookupTimer = null
-
-codeEl.oninput = () => {
-  const clean = codeEl.value.replace(/[^0-9a-fA-F]/g, '').toUpperCase().slice(0, 8)
-  codeEl.value = clean
-  $('#found').className = 'found'
-  syncGo()
-
-  clearTimeout(lookupTimer)
-  if (clean.length === 8) lookupTimer = setTimeout(() => preview(clean), 250)
-}
-
-codeEl.onkeydown = e => { if (e.key === 'Enter') $('#go').click() }
-
-// The school drives both the teacher picker and the teachers table, so
-// everything downstream of it is rebuilt whenever it changes.
-$('#school').onchange = () => { syncGo(); renderTeacherPicker(); renderTeachers(); renderClasses() }
-
-function syncGo() {
-  $('#go').disabled = codeEl.value.length !== 8 || !$('#school').value
-  $('#t-add').disabled = !$('#school').value || !$('#t-name').value.trim()
-}
-
-/* Look the code up before committing. Typing one wrong character otherwise
-   activates nothing and says nothing, which during a live demo reads as the
-   product being broken. */
-async function preview(code) {
-  const box = $('#found')
-  try {
-    const { device } = await api('lookup', { code })
-    if (device.claimed_at) {
-      box.className = 'found show bad'
-      box.textContent = `Already activated for ${device.schools?.name || 'a school'}. Revoke it below to move it.`
-    } else {
-      box.className = 'found show good'
-      const seen = device.last_seen ? new Date(device.last_seen).toLocaleString() : 'not yet'
-      box.textContent = `Found a television waiting to be activated. Last seen: ${seen}.`
-    }
-  } catch (e) {
-    box.className = 'found show bad'
-    box.textContent = e.message
-  }
-}
-
-$('#go').onclick = async () => {
-  const code = codeEl.value
-  const schoolId = $('#school').value
-  const teacherId = $('#teacher').value || null
-  $('#go').disabled = true
-  setStatus('activating…')
-  try {
-    await api('activate', { code, schoolId, teacherId })
-    setStatus(`${code} activated`, 'ok')
-    codeEl.value = ''
-    $('#found').className = 'found'
-    await refresh()
-    codeEl.focus()
-  } catch (e) {
-    setStatus(e.message, 'err')
-    $('#found').className = 'found show bad'
-    $('#found').textContent = e.message
-  }
-  syncGo()
-}
-
-$('#add-school').onclick = async () => {
-  const name = prompt('School name')
-  if (!name || !name.trim()) return
-  const municipality = prompt('Municipality (optional)') || ''
-  try {
-    const { school } = await api('create-school', { name, municipality })
-    setStatus(`added ${school.name}`, 'ok')
-    await refresh()
-    $('#school').value = school.id
-    syncGo()
-  } catch (e) {
-    setStatus(e.message, 'err')
-  }
-}
-
-// --------------------------------------------------------------- teachers
-
-$('#t-name').oninput = syncGo
-$('#t-name').onkeydown = e => { if (e.key === 'Enter') $('#t-add').click() }
-$('#t-role').onkeydown = e => { if (e.key === 'Enter') $('#t-add').click() }
-
-$('#t-add').onclick = async () => {
-  const schoolId = $('#school').value
-  const name = $('#t-name').value.trim()
-  if (!schoolId || !name) return
-  $('#t-add').disabled = true
-  try {
-    const { teacher } = await api('create-teacher', {
-      schoolId, name, role: $('#t-role').value.trim(),
-    })
-    setStatus(`added ${teacher.name}`, 'ok')
-    $('#t-name').value = ''
-    $('#t-role').value = ''
-    await refresh()
-    $('#t-name').focus()
-  } catch (e) {
-    setStatus(e.message, 'err')
-  }
-  syncGo()
-}
-
-/** Teachers at the school currently selected above. */
-const teachersHere = () => teachers.filter(t => t.school_id === $('#school').value)
-
-function renderTeacherPicker() {
-  const sel = $('#teacher')
-  const keep = sel.value
-  const mine = teachersHere()
-  sel.disabled = mine.length === 0
-  sel.innerHTML = '<option value="">Whole school</option>' + mine.map(t =>
-    `<option value="${esc(t.id)}">${esc(t.name)}${t.role ? ' — ' + esc(t.role) : ''}</option>`
-  ).join('')
-  if (keep && mine.some(t => t.id === keep)) sel.value = keep
-}
-
-function renderTeachers() {
-  const tb = $('#teachers')
-  const schoolId = $('#school').value
-  const school = schools.find(s => s.id === schoolId)
-  $('#teacher-scope').textContent = school ? `· ${school.name}` : ''
-
-  if (!schoolId) {
-    tb.innerHTML = '<tr><td colspan="4" class="muted">Choose a school above.</td></tr>'
-    return
-  }
-  const mine = teachersHere()
-  if (!mine.length) {
-    tb.innerHTML = '<tr><td colspan="4" class="muted">No teachers yet at this school.</td></tr>'
-    return
-  }
-
-  tb.innerHTML = mine.map(t => {
-    const n = devices.filter(d => d.teacher_id === t.id).length
-    return `<tr>
-      <td>${esc(t.name)}</td>
-      <td class="muted">${t.role ? esc(t.role) : '—'}</td>
-      <td class="muted">${n || '—'}</td>
-      <td class="right"><button class="ghost" data-del-teacher="${esc(t.id)}">Remove</button></td>
-    </tr>`
-  }).join('')
-
-  tb.querySelectorAll('[data-del-teacher]').forEach(b => b.onclick = () => {
-    const t = teachers.find(x => x.id === b.dataset.delTeacher)
-    const n = devices.filter(d => d.teacher_id === b.dataset.delTeacher).length
-    // Say what happens to their televisions. "Remove" next to a count of live
-    // devices reads as though it might unactivate them, and it does not.
-    const warn = n
-      ? `\n\nTheir ${n} television(s) stay activated and go back to showing the school name.`
-      : ''
-    if (!confirm(`Remove ${t?.name || 'this teacher'}?${warn}`)) return
-    removeTeacher(b.dataset.delTeacher)
-  })
-}
-
-async function removeTeacher(teacherId) {
-  try {
-    await api('delete-teacher', { teacherId })
-    setStatus('teacher removed', 'ok')
-    refresh()
-  } catch (e) {
-    setStatus(e.message, 'err')
-  }
-}
-
-// ---------------------------------------------------------------- classes
-
-$('#c-label').oninput = () => { $('#c-add').disabled = !canAddClass() }
-$('#c-label').onkeydown = e => { if (e.key === 'Enter') $('#c-add').click() }
-$('#c-level').onchange = () => { $('#c-add').disabled = !canAddClass() }
-
-const canAddClass = () => !!$('#school').value && !!$('#c-level').value && !!$('#c-label').value.trim()
-
-$('#c-add').onclick = async () => {
-  if (!canAddClass()) return
-  $('#c-add').disabled = true
-  try {
-    const { class: created } = await api('create-class', {
-      schoolId: $('#school').value,
-      levelId: $('#c-level').value,
-      label: $('#c-label').value.trim(),
-    })
-    setStatus(`added ${created.label}`, 'ok')
-    $('#c-label').value = ''
-    await refresh()
-    $('#c-label').focus()
-  } catch (e) {
-    setStatus(e.message, 'err')
-  }
-  $('#c-add').disabled = !canAddClass()
-}
-
-/** Classes at the school currently selected above. */
-const classesHere = () => classes.filter(c => c.school_id === $('#school').value)
-
-const levelName = id => levels.find(l => l.id === id)?.name_en || '—'
-
-function renderLevelPicker() {
-  const sel = $('#c-level')
-  const keep = sel.value
-  sel.innerHTML = levels.map(l =>
-    `<option value="${esc(l.id)}">${esc(l.name_en)}</option>`
-  ).join('')
-  if (keep && levels.some(l => l.id === keep)) sel.value = keep
-}
-
-function renderClasses() {
-  // The whole feature is invisible until the migration has been run.
-  $('#classes-section').hidden = levels.length === 0
-  if (!levels.length) return
-
-  const tb = $('#classes')
-  const schoolId = $('#school').value
-  const school = schools.find(s => s.id === schoolId)
-  $('#class-scope').textContent = school ? `· ${school.name}` : ''
-  $('#c-add').disabled = !canAddClass()
-
-  if (!schoolId) {
-    tb.innerHTML = '<tr><td colspan="4" class="muted">Choose a school above.</td></tr>'
-    return
-  }
-  const mine = classesHere()
-  if (!mine.length) {
-    tb.innerHTML = '<tr><td colspan="4" class="muted">No classes yet at this school.</td></tr>'
-    return
-  }
-
-  tb.innerHTML = mine.map(c => {
-    const n = devices.filter(d => d.class_id === c.id).length
-    return `<tr>
-      <td>${esc(c.label)}</td>
-      <td class="muted">${esc(levelName(c.level_id))}</td>
-      <td class="muted">${n || '—'}</td>
-      <td class="right"><button class="ghost" data-del-class="${esc(c.id)}">Remove</button></td>
-    </tr>`
-  }).join('')
-
-  tb.querySelectorAll('[data-del-class]').forEach(b => b.onclick = () => {
-    const c = classes.find(x => x.id === b.dataset.delClass)
-    const n = devices.filter(d => d.class_id === b.dataset.delClass).length
-    // Same warning as removing a teacher, and for the same reason: "Remove"
-    // beside a count of live televisions reads as though it might switch them
-    // off, and it does not.
-    const warn = n
-      ? `\n\nIts ${n} television(s) stay activated and go back to browsing every grade.`
-      : ''
-    if (!confirm(`Remove ${c?.label || 'this class'}?${warn}`)) return
-    removeClass(b.dataset.delClass)
-  })
-}
-
-async function removeClass(classId) {
-  try {
-    await api('delete-class', { classId })
-    setStatus('class removed', 'ok')
-    refresh()
-  } catch (e) {
-    setStatus(e.message, 'err')
-  }
-}
-
-// ---------------------------------------------------------------- devices
-
-async function refresh() {
-  // The five second poll must not rebuild a dropdown the operator is currently
-  // inside — it would snap the list shut mid-choice and look like a crash.
-  // Their own actions call refresh() after the select has lost focus, so this
-  // only ever defers the background poll.
-  if (document.activeElement?.classList.contains('assign')) return
-
-  try {
-    const data = await api('list')
-    schools = data.schools
-    teachers = data.teachers || []
-    levels = data.levels || []
-    classes = data.classes || []
-    devices = data.devices
-    renderSchools()
-    renderTeacherPicker()
-    renderTeachers()
-    renderLevelPicker()
-    renderClasses()
-    renderDevices(devices)
-    const waiting = devices.filter(d => !d.claimed_at).length
-    setStatus(`${devices.length} television(s), ${waiting} waiting`)
-    $('#live').textContent = `· updated ${new Date().toLocaleTimeString()}`
-  } catch (e) {
-    setStatus(e.message, 'err')
-  }
-}
-
-function renderSchools() {
-  const sel = $('#school')
-  const keep = sel.value
-  sel.innerHTML = '<option value="">Select school…</option>' + schools.map(s =>
-    `<option value="${esc(s.id)}">${esc(s.name)}${s.municipality ? ' — ' + esc(s.municipality) : ''}</option>`
-  ).join('')
-  if (keep) sel.value = keep
-}
-
-/** The code the TV displays is the first UUID segment, uppercased. */
-const codeOf = uuid => String(uuid || '').split('-')[0].toUpperCase()
-
-function renderDevices(devices) {
-  const tb = $('#devices')
-  if (!devices.length) {
-    tb.innerHTML = '<tr><td colspan="8" class="muted">No televisions yet. Boot the TV app.</td></tr>'
-    return
-  }
-
-  tb.innerHTML = devices.map(d => {
-    const claimed = !!d.claimed_at
-    return `<tr>
-      <td><code>${esc(codeOf(d.hardware_uuid))}</code></td>
-      <td>${claimed ? esc(d.schools?.name || '—') : '<span class="muted">—</span>'}</td>
-      <td>${claimed ? teacherCell(d) : '<span class="muted">—</span>'}</td>
-      <td>${claimed ? classCell(d) : '<span class="muted">—</span>'}</td>
-      <td><span class="pill ${claimed ? 'claimed' : 'unclaimed'}">${claimed ? 'activated' : 'waiting'}</span></td>
-      <td class="muted">${d.last_seen ? new Date(d.last_seen).toLocaleString() : '—'}</td>
-      <td class="muted">${esc(d.app_version || '—')}</td>
-      <td class="right">${claimed
-          ? `<button class="ghost" data-revoke="${esc(d.id)}">Revoke</button>`
-          : `<button class="ghost" data-use="${esc(codeOf(d.hardware_uuid))}">Use this code</button>`}</td>
-    </tr>`
-  }).join('')
-
-  tb.querySelectorAll('[data-assign]').forEach(s => s.onchange = () =>
-    assign(s.dataset.assign, s.value || null))
-  tb.querySelectorAll('[data-assign-class]').forEach(s => s.onchange = () =>
-    assignToClass(s.dataset.assignClass, s.value || null))
-  tb.querySelectorAll('[data-revoke]').forEach(b => b.onclick = () => revoke(b.dataset.revoke))
-  // Saves reading a code off a television when it is already on screen here.
-  tb.querySelectorAll('[data-use]').forEach(b => b.onclick = () => {
-    codeEl.value = b.dataset.use
-    codeEl.dispatchEvent(new Event('input'))
-    codeEl.focus()
-  })
-}
-
-/**
- * The teacher column is an editable dropdown rather than a label plus an edit
- * button. Reassigning a television happens every time a teacher changes class,
- * which is often enough that it should not cost a dialog.
- *
- * Only that device's own school's teachers are offered — a teacher belongs to
- * one school, and the function rejects a cross-school assignment anyway.
- */
-function teacherCell(d) {
-  const mine = teachers.filter(t => t.school_id === d.school_id)
-  if (!mine.length) {
-    return '<span class="muted">no teachers yet</span>'
-  }
-  return `<select class="assign" data-assign="${esc(d.id)}">
-    <option value="">Whole school</option>
-    ${mine.map(t => `<option value="${esc(t.id)}" ${t.id === d.teacher_id ? 'selected' : ''}>${
-      esc(t.name)}${t.role ? ' — ' + esc(t.role) : ''}</option>`).join('')}
-  </select>`
-}
-
-/**
- * The class column, same editable-dropdown treatment as the teacher column.
- *
- * This is the control that decides which grade a television opens on, so it is
- * the one piece of the grade expansion an operator actually touches. Only the
- * device's own school's classes are offered; the function rejects a cross-school
- * assignment anyway, because this page can be several seconds stale.
- */
-function classCell(d) {
-  if (!levels.length) return '<span class="muted">—</span>'
-  const mine = classes.filter(c => c.school_id === d.school_id)
-  if (!mine.length) {
-    return '<span class="muted">no classes yet</span>'
-  }
-  return `<select class="assign" data-assign-class="${esc(d.id)}">
-    <option value="">Every grade</option>
-    ${mine.map(c => `<option value="${esc(c.id)}" ${c.id === d.class_id ? 'selected' : ''}>${
-      esc(c.label)} — ${esc(levelName(c.level_id))}</option>`).join('')}
-  </select>`
-}
-
-async function assignToClass(deviceId, classId) {
-  try {
-    await api('assign-class', { deviceId, classId })
-    const c = classes.find(x => x.id === classId)
-    setStatus(c ? `assigned to ${c.label}` : 'assigned to every grade', 'ok')
-    refresh()
-  } catch (e) {
-    setStatus(e.message, 'err')
-    refresh()   // put the dropdown back to what the server actually holds
-  }
-}
-
-async function assign(deviceId, teacherId) {
-  try {
-    await api('assign-teacher', { deviceId, teacherId })
-    const t = teachers.find(x => x.id === teacherId)
-    setStatus(t ? `assigned to ${t.name}` : 'assigned to the school', 'ok')
-    refresh()
-  } catch (e) {
-    setStatus(e.message, 'err')
-    refresh()   // put the dropdown back to what the server actually holds
-  }
-}
-
-async function revoke(deviceId) {
-  // The newlines have to be escaped. A real line break inside a quoted string is
-  // a syntax error, and because this is one module, that error took the whole
-  // page down with it - every handler on the page, including Unlock, silently
-  // never bound and the console looked dead rather than broken.
-  if (!confirm(
-    'Revoke this television?\n\n' +
-    'It returns to the pairing screen the next time it checks in — within ' +
-    'about ten minutes, or straight away if someone restarts it.'
-  )) return
-  try {
-    await api('revoke', { deviceId })
-    setStatus('revoked', 'ok')
-    refresh()
-  } catch (e) {
-    setStatus(e.message, 'err')
-  }
-}
-
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
-  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
-</script>
+<script type="module" src="js/main.js"></script>
 </body>
 </html>

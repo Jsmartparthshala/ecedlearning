@@ -1,0 +1,566 @@
+/* =============================================================================
+   Jagdamba Smart Pathshala — ops console
+
+   One palette, shared with the television app. The values below are lifted from
+   android/tv/src/main/res/values/colors.xml and must stay in step with it: an
+   operator moves between this page and a classroom screen all day, and two
+   different blues would read as two different products.
+
+   The console is deliberately a light, warm surface rather than the dark
+   dashboard it used to be. It is looked at in a bright office, next to a
+   television showing the same cream, and a near-black page next to a cream
+   screen made the two look unrelated.
+
+   Contrast, measured against the cream ground (WCAG AA needs 4.5:1 for body
+   text, 3:1 for large text and interface edges):
+
+     ink    #12233B  14.64:1     navy   #14508C   7.61:1
+     muted  #5A6B84   5.03:1     ok     #17683A   6.32:1
+     warn   #7A4F00   6.61:1     bad    #9B2617   7.25:1
+
+   Gold is the exception and the reason this block exists. #F5C518 on cream is
+   1.51:1 - it is not a text colour here and never can be. It reads at 5.04:1 on
+   navy and 7.65:1 on the deep navy, so on this page gold appears only on a navy
+   ground, or as a rule and an edge where it carries no words. Focus rings are
+   navy for the same reason: a gold ring on cream is a ring nobody can see.
+   ============================================================================ */
+
+:root {
+  --cream:      #FAF6EC;
+  --panel:      #FDFBF5;
+  --panel-alt:  #F3EFE3;
+  --navy:       #14508C;
+  --navy-deep:  #0C3462;
+  --gold:       #F5C518;
+  --ink:        #12233B;
+  --muted:      #5A6B84;
+  --line:       #E4DECE;
+  --line-firm:  #C6BCA4;
+  --ok:         #17683A;
+  --warn:       #7A4F00;
+  --bad:        #9B2617;
+
+  --ok-wash:    #E6F1E9;
+  --warn-wash:  #F6EEDC;
+  --bad-wash:   #F6E5E2;
+  --navy-wash:  #E3EBF4;
+
+  --radius:     14px;
+  --radius-sm:  9px;
+
+  color-scheme: light;
+}
+
+* { box-sizing: border-box }
+
+body {
+  margin: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Devanagari is a first-class script in this product, not a fallback. Naming
+     the Noto face ahead of the UI stack means a Nepali title renders with
+     proper conjunct shaping instead of whatever the OS improvises. */
+  font-synthesis-weight: none;
+}
+
+.np, [lang="ne"] {
+  font-family: "Noto Sans Devanagari", "Mangal", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* -------------------------------------------------------------------- header */
+
+header {
+  background: var(--navy-deep);
+  color: var(--cream);
+  /* The gold appears here, on navy, where it is legible and where it does the
+     one job it is good at: saying which product this is, in one line, without
+     spending any of the page's colour budget on the content below. */
+  border-bottom: 3px solid var(--gold);
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0 }
+
+/* The mark is drawn cream-on-navy up here, which is the same inversion the
+   television's own nav rail uses. One drawing, two grounds, no second file. */
+.brand .mark { width: 34px; height: 34px; flex: none; --mark-ink: var(--cream); --mark-ground: var(--navy-deep) }
+
+h1 { font-size: 16px; margin: 0; font-weight: 650; letter-spacing: .2px; white-space: nowrap }
+h1 .sub { font-weight: 450; color: #B9C7DA; margin-left: 6px }
+
+#status { font-size: 13px; color: #B9C7DA; margin-left: auto; text-align: right }
+#status.err { color: #FFC9C2 }
+#status.ok  { color: #A9E6BE }
+
+/* ---------------------------------------------------------------------- tabs */
+
+nav.tabs {
+  display: flex;
+  gap: 2px;
+  padding: 0 28px;
+  background: var(--cream);
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+nav.tabs button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 13px 16px;
+  cursor: pointer;
+  /* The selected tab is marked by a navy rule that replaces a transparent one
+     of the same height, so nothing moves when the selection changes. Square,
+     because the shared control radius turns a 3px underline into a rounded stub
+     that reads as a stray shape rather than as a rule under a word. */
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  margin-bottom: -1px;
+}
+/* The background has to be restated. The generic button rule below fills a
+   button with navy on hover, which is right for "Add & activate" and wrong for
+   a tab - without this, pointing at a tab paints it like a pressed button and
+   the strip stops reading as a strip. */
+nav.tabs button:hover { color: var(--ink); background: var(--panel-alt) }
+nav.tabs button:active { transform: none }
+nav.tabs button[aria-selected="true"] {
+  color: var(--navy);
+  background: transparent;
+  border-bottom-color: var(--navy);
+}
+nav.tabs button[aria-selected="true"]:hover { background: var(--panel-alt) }
+
+main { padding: 24px 28px 64px; max-width: 1180px }
+section { margin-bottom: 32px }
+section[hidden] { display: none !important }
+
+h2 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .7px;
+  color: var(--muted);
+  margin: 0 0 12px;
+  font-weight: 650;
+}
+
+/* ------------------------------------------------------------------ counters */
+
+.counters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 30px;
+}
+
+.counter {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.counter .n { font-size: 26px; font-weight: 700; letter-spacing: -.5px; font-variant-numeric: tabular-nums }
+.counter .k { font-size: 12px; color: var(--muted); font-weight: 550; margin-top: 2px }
+/* A counter that could not be read is blank, not zero. Zero is a fact about
+   the fleet; a failed count is a fact about the network, and they must not
+   look the same to somebody deciding whether to drive to a school. */
+.counter .n.unknown { color: var(--muted); font-weight: 500; font-size: 20px }
+
+/* ------------------------------------------------------------------- panels */
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 22px 24px;
+}
+.panel.tight { padding: 18px 22px 8px }
+
+.row { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap }
+.field { display: flex; flex-direction: column; gap: 6px }
+.field label { font-size: 12px; color: var(--muted); font-weight: 550 }
+.opt { font-weight: 400; text-transform: none; letter-spacing: 0; opacity: .75 }
+
+.hint { font-size: 13px; color: var(--muted); margin-top: 12px; max-width: 68ch }
+
+/* ------------------------------------------------------------------ controls */
+
+input, select, textarea, button {
+  font: inherit;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line-firm);
+  background: var(--panel);
+  color: var(--ink);
+  padding: 10px 13px;
+}
+textarea { line-height: 1.55; resize: vertical; width: 100% }
+
+/* Navy, never gold — see the note at the top of this file. Offset so the ring
+   sits outside the control's own border instead of on top of it. */
+:is(input, select, textarea, button, [tabindex]):focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: 2px;
+}
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--navy); outline-offset: 1px }
+
+button {
+  cursor: pointer;
+  background: var(--navy);
+  border-color: var(--navy);
+  color: var(--cream);
+  font-weight: 600;
+}
+button:hover:not(:disabled) { background: #17599B; border-color: #17599B }
+button:active:not(:disabled) { transform: translateY(1px) }
+button:disabled { opacity: .45; cursor: not-allowed }
+
+/* A button at rest, as distinct from a panel at rest: outlined in navy so it
+   reads as something you can press before anybody hovers it. The television app
+   makes the same distinction for the same reason. */
+button.ghost {
+  background: var(--panel);
+  border: 2px solid var(--navy);
+  color: var(--navy);
+  font-weight: 600;
+}
+button.ghost:hover:not(:disabled) { background: var(--navy-wash) }
+
+button.quiet {
+  background: transparent;
+  border: 1px solid var(--line-firm);
+  color: var(--muted);
+  font-weight: 550;
+  padding: 7px 11px;
+  font-size: 13px;
+}
+button.quiet:hover:not(:disabled) { background: var(--panel-alt); color: var(--ink) }
+
+button.danger { background: var(--bad); border-color: var(--bad) }
+button.danger:hover:not(:disabled) { background: #B02D1D; border-color: #B02D1D }
+
+/* ------------------------------------------------------------- activation */
+
+#code {
+  font: 600 30px/1.1 ui-monospace, SFMono-Regular, Consolas, monospace;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  width: 270px;
+  padding: 12px 14px;
+  background: var(--panel-alt);
+}
+#school { min-width: 270px; padding: 13px }
+#expiry { padding: 12px 13px }
+#go { padding: 14px 26px; font-size: 15px }
+
+.found {
+  margin-top: 14px;
+  font-size: 13px;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--panel-alt);
+  display: none;
+}
+.found.show { display: block }
+.found.bad  { border-color: #E3B7B0; background: var(--bad-wash); color: var(--bad) }
+.found.good { border-color: #B4D6C1; background: var(--ok-wash);  color: var(--ok) }
+
+/* ---------------------------------------------------------------- activity */
+
+.activity { display: grid; gap: 10px }
+
+.play-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  flex-wrap: wrap;
+}
+/* A playing television gets a left edge in the ok colour rather than a badge:
+   the panel is a list an operator scans down, and an edge is readable in
+   peripheral vision in a way a word is not. */
+.play-row.live { border-left: 4px solid var(--ok); background: var(--ok-wash) }
+.play-row .who { font-weight: 650; min-width: 0 }
+.play-row .what { color: var(--ink) }
+.play-row .when { color: var(--muted); font-size: 13px; margin-left: auto; white-space: nowrap }
+.play-row .where { color: var(--muted); font-size: 13px }
+
+.empty {
+  color: var(--muted);
+  font-size: 14px;
+  padding: 16px;
+  border: 1px dashed var(--line-firm);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+}
+
+/* ------------------------------------------------------------------ tables */
+
+table { width: 100%; border-collapse: collapse; margin-top: 4px }
+th, td { text-align: left; padding: 11px 12px; border-bottom: 1px solid var(--line); font-size: 14px }
+td { font-variant-numeric: tabular-nums }
+tbody tr:hover { background: var(--panel-alt) }
+tbody tr:last-child td { border-bottom: none }
+th {
+  color: var(--muted);
+  font-weight: 650;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.right { text-align: right }
+.muted { color: var(--muted) }
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 12.5px;
+  color: var(--navy);
+  font-weight: 600;
+  letter-spacing: .04em;
+}
+
+.pill {
+  font-size: 11px;
+  padding: 2px 9px;
+  border-radius: 99px;
+  border: 1px solid;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.pill.claimed   { color: var(--ok);   border-color: #B4D6C1; background: var(--ok-wash) }
+.pill.unclaimed { color: var(--warn); border-color: #DDCBA2; background: var(--warn-wash) }
+.pill.live      { color: var(--ok);   border-color: var(--ok); background: var(--ok-wash) }
+.pill.soon      { color: var(--warn); border-color: #DDCBA2; background: var(--warn-wash) }
+
+/* An assignment dropdown sits inside a table cell, so it must not be as tall as
+   the form controls above or every row grows to match. */
+select.assign { padding: 5px 8px; font-size: 13px; max-width: 190px; background: var(--panel-alt) }
+select.assign:disabled { opacity: .4 }
+
+/* Eight columns do not fit a phone. Let the table scroll inside its own box
+   rather than dragging the whole page sideways — the office works from a
+   laptop, but a phone is what is to hand when someone is stood next to the
+   television reading the code off its screen. */
+.scroller { overflow-x: auto; overscroll-behavior-x: contain }
+.scroller table { min-width: 460px }
+.scroller.wide table { min-width: 900px }
+/* The scroller exists so rows stay one line. Without this a long school name
+   wraps to four lines and every row in the table grows to match it, which is
+   the failure the horizontal scroll was added to avoid. */
+.scroller th, .scroller td { white-space: nowrap }
+/* Except the title columns, which are the content and must be readable. */
+.scroller td.wrap, .scroller th.wrap { white-space: normal; min-width: 220px }
+
+/* --------------------------------------------------------------- catalogue */
+
+.searchbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px }
+.searchbar input[type="search"] { min-width: 260px }
+.searchbar label { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 7px }
+
+td input.title {
+  width: 100%;
+  min-width: 200px;
+  padding: 7px 10px;
+  font-size: 14px;
+  background: var(--panel);
+  border-color: var(--line);
+}
+td input.title:hover { border-color: var(--line-firm) }
+/* Unsaved edits are marked on the field itself rather than by a row of Save
+   buttons: the operator is typing down a column, and a button per row is a
+   second thing to hit for every title they fix. */
+td input.title.dirty { border-color: var(--navy); background: var(--navy-wash) }
+td input.title.saved { border-color: var(--ok); background: var(--ok-wash) }
+
+.placeholder-flag { color: var(--warn); font-size: 12px; font-weight: 600 }
+
+/* --------------------------------------------------------------- documents */
+
+.doc-list { display: grid; gap: 10px; margin-bottom: 20px }
+.doc-tab {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  cursor: pointer;
+  text-align: left;
+  color: var(--ink);
+  font-weight: 600;
+  width: 100%;
+}
+.doc-tab[aria-selected="true"] { border-color: var(--navy); background: var(--navy-wash) }
+.doc-tab .meta { margin-left: auto; font-weight: 450; font-size: 13px; color: var(--muted) }
+
+.doc-grid { display: grid; gap: 16px; grid-template-columns: 1fr 1fr }
+.doc-grid .full { grid-column: 1 / -1 }
+.doc-grid textarea { min-height: 260px; font-size: 14px }
+
+.publish-row {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line);
+}
+.publish-row label { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 550 }
+
+.warn-strip {
+  border: 1px solid #DDCBA2;
+  background: var(--warn-wash);
+  color: var(--warn);
+  border-radius: var(--radius-sm);
+  padding: 12px 15px;
+  font-size: 13.5px;
+  margin-bottom: 18px;
+}
+
+/* -------------------------------------------------------------------- gate */
+
+#gate {
+  position: fixed;
+  inset: 0;
+  background: var(--cream);
+  display: grid;
+  place-items: center;
+  z-index: 20;
+  padding: 20px;
+}
+#gate .box { width: 360px; max-width: 100%; text-align: center }
+#gate .mark { width: 72px; height: 72px; margin: 0 auto 18px; display: block }
+#gate h2 {
+  font-size: 19px;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--ink);
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+#gate .kicker {
+  font-size: 12px; text-transform: uppercase; letter-spacing: 1.2px;
+  color: var(--navy); font-weight: 650; margin: 0 0 22px;
+}
+#gate input { width: 100%; text-align: center; margin-bottom: 12px; padding: 12px }
+#gate button { width: 100%; padding: 12px }
+#gate .err { color: var(--bad); font-size: 13px; min-height: 20px; margin-top: 10px }
+#gate .hint { margin-top: 14px; text-align: center }
+
+/* The mark breathes while a request is in flight. Two seconds, opacity only —
+   it is a sign of life on a page that is otherwise still, not an animation. */
+.mark.working { animation: breathe 2s ease-in-out infinite }
+@keyframes breathe { 0%, 100% { opacity: 1 } 50% { opacity: .45 } }
+@media (prefers-reduced-motion: reduce) {
+  .mark.working { animation: none; opacity: .7 }
+  button:active:not(:disabled) { transform: none }
+}
+
+[hidden] { display: none !important }
+
+/* The parts of the page nobody draws but that still ship with the design. */
+::selection { background: var(--navy-wash); color: var(--ink) }
+input, select, textarea { caret-color: var(--navy) }
+html { scrollbar-color: var(--line-firm) transparent; scrollbar-width: thin }
+::-webkit-scrollbar { width: 10px; height: 10px }
+::-webkit-scrollbar-track { background: transparent }
+::-webkit-scrollbar-thumb { background: var(--line-firm); border-radius: 99px }
+::-webkit-scrollbar-thumb:hover { background: var(--muted) }
+
+/* -------------------------------------------------------------------- small */
+
+@media (max-width: 860px) {
+  .doc-grid { grid-template-columns: 1fr }
+}
+
+@media (max-width: 720px) {
+  header { padding: 12px 16px; gap: 10px }
+  nav.tabs { padding: 0 8px; overflow-x: auto }
+  nav.tabs button { padding: 12px 12px; font-size: 13.5px }
+  main { padding: 18px 16px 48px }
+  #status { margin-left: 0; flex-basis: 100%; text-align: left }
+  .panel { padding: 16px; border-radius: 12px }
+  .panel.tight { padding: 16px 16px 6px }
+  .row { flex-direction: column; align-items: stretch }
+  .field { width: 100% }
+  #code, #school, #expiry, .panel input, .panel select { width: 100%; min-width: 0 }
+  #go, #t-add, #c-add, #add-school { width: 100% }
+  /* Comfortable to hit with a thumb; the desktop rule keeps it small so a
+     dropdown in a cell does not stretch every row. */
+  select.assign { max-width: none; padding: 9px 10px; font-size: 14px }
+  .play-row .when { margin-left: 0; flex-basis: 100% }
+}
+
+/* -------------------------------------------------- accessibility affordances
+
+   Added against the UX guidance for this surface. Three of the findings that
+   applied here were about not letting colour carry a message on its own, and
+   about saying what changed rather than showing a number that changed.
+   ---------------------------------------------------------------------------- */
+
+/* Keyboard users land on the tab strip before the table they came for. */
+.skip {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--navy-deep);
+  color: var(--cream);
+  padding: 10px 16px;
+  border-radius: 0 0 var(--radius-sm) 0;
+  z-index: 40;
+  font-weight: 600;
+}
+.skip:focus { left: 0 }
+
+/* A screen reader announces the field's own state, so the mark beside it is for
+   the eyes only. */
+.state-mark {
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: 6px;
+  white-space: nowrap;
+  letter-spacing: .3px;
+}
+.state-mark.dirty { color: var(--navy) }
+.state-mark.saved { color: var(--ok) }
+.state-mark.failed { color: var(--bad) }
+
+/* The cell wraps the input and its marker, so the marker cannot push the input
+   into a second line. */
+.cell-edit { display: flex; align-items: center; gap: 2px }
+.cell-edit input { flex: 1; min-width: 0 }
+
+/* Saving is a third state and looks like one: neither the unsaved navy nor the
+   saved green, so a slow connection does not read as a failure. */
+td input.title.saving { border-color: var(--line-firm); background: var(--panel-alt); opacity: .7 }
+
+/* An error belongs beside the field that caused it. The status line at the top
+   of the page is for what the console is doing, not for which box is wrong. */
+.field-error {
+  color: var(--bad);
+  font-size: 12.5px;
+  margin-top: 5px;
+  font-weight: 550;
+}
+.field-error:empty { display: none }
+input[aria-invalid="true"], textarea[aria-invalid="true"] { border-color: var(--bad) }
+
+/* Off-screen but readable by a screen reader: used for the one live region that
+   announces what the console just did. */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}

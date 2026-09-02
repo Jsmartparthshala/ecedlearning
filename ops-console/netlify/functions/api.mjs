@@ -25,8 +25,64 @@ const SUPABASE_URL = process.env.SUPABASE_URL
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const PASSCODE = process.env.OPS_PASSCODE
 
-/** Ten years. The TV is meant to never ask a teacher to sign in. */
+/**
+ * Ten years, and still the default. The TV is meant to never ask a teacher to
+ * sign in, and a session that expires is a television that goes back to the
+ * pairing screen in the middle of a school day.
+ *
+ * An operator can now override it per device. The reason is loaner hardware: a
+ * box left at a school for a term's trial should stop working at the end of the
+ * term by itself, rather than relying on somebody remembering to revoke it.
+ */
 const SESSION_YEARS = 10
+
+/**
+ * Turn an operator-supplied expiry into a timestamp, or fall back to ten years.
+ *
+ * Rejects the past rather than accepting it: an expiry already gone is a device
+ * that pairs and immediately drops, which reads as the pairing having failed
+ * and sends somebody up a ladder to check a television that is working fine.
+ */
+function expiryFrom(raw) {
+  if (!raw) {
+    const d = new Date()
+    d.setFullYear(d.getFullYear() + SESSION_YEARS)
+    return { at: d }
+  }
+  const at = new Date(raw)
+  if (Number.isNaN(at.getTime())) return { error: 'That expiry date could not be read.' }
+  // End of the chosen day, local to nobody in particular but generous in the
+  // right direction: a date typed as "the 30th" should include the 30th.
+  if (/^\d{4}-\d{2}-\d{2}$/.test(String(raw))) at.setUTCHours(23, 59, 59, 0)
+  if (at.getTime() < Date.now()) return { error: 'That expiry date has already passed.' }
+  return { at }
+}
+
+/**
+ * Record what the console just did, in a table that survives the row it
+ * describes.
+ *
+ * Deliberately cannot fail the request. An audit trail is worth having and is
+ * not worth refusing an activation over, so every error here is swallowed - and
+ * that includes the table not existing at all, because 0011_ops_audit.sql is
+ * run by hand and Netlify deploys on push, so this code is always live before
+ * the table is.
+ *
+ * It records no identity, because there is none to record: one shared passcode
+ * cannot tell two operators apart. What it records is the before and the after,
+ * which is what actually gets a mistake undone.
+ */
+function auditor(sb, req) {
+  const hint = [
+    req.headers.get('x-nf-client-connection-ip') || req.headers.get('x-forwarded-for') || '',
+    req.headers.get('user-agent') || '',
+  ].filter(Boolean).join(' · ').slice(0, 400) || null
+
+  return (action, target, before = null, after = null) =>
+    sb.from('ops_audit')
+      .insert({ action, target: target ? String(target).slice(0, 400) : null, before, after, actor_hint: hint })
+      .then(() => {}, () => {})
+}
 
 const json = (body, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -81,17 +137,32 @@ export default async (req) => {
   }
 
   const sb = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } })
+  const audit = auditor(sb, req)
 
   try {
     switch (body.action) {
       case 'list':
         return await list(sb)
+      case 'summary':
+        return await summary(sb)
+      case 'now-playing':
+        return await nowPlaying(sb)
+      case 'set-expiry':
+        return await setExpiry(sb, body, audit)
+      case 'list-lessons':
+        return await listLessons(sb, body)
+      case 'rename-lesson':
+        return await renameLesson(sb, body, audit)
+      case 'list-documents':
+        return await listDocuments(sb)
+      case 'save-document':
+        return await saveDocument(sb, body, audit)
       case 'lookup':
         return await lookup(sb, body)
       case 'activate':
-        return await activate(sb, body)
+        return await activate(sb, body, audit)
       case 'revoke':
-        return await revoke(sb, body)
+        return await revoke(sb, body, audit)
       case 'create-school':
         return await createSchool(sb, body)
       case 'create-teacher':
@@ -209,6 +280,26 @@ async function list(sb) {
     .select('id, school_id, level_id, label')
     .order('label')
 
+  // When each television's session runs out. Read here rather than per row so
+  // that the expiry column costs one query for the whole fleet, and merged onto
+  // the device because that is the object the page already draws.
+  //
+  // Only the token is secret; the date is not, and withholding it is what let a
+  // loaner sit in a school for a term with nobody able to see it was about to
+  // stop working.
+  const { data: sessions } = await sb
+    .from('sessions')
+    .select('device_id, expires_at')
+    .eq('revoked', false)
+    .order('issued_at', { ascending: false })
+
+  const expiry = new Map()
+  for (const row of sessions || []) {
+    // Newest first, so the first one seen for a device is the live one.
+    if (!expiry.has(row.device_id)) expiry.set(row.device_id, row.expires_at)
+  }
+  for (const d of devices || []) d.expires_at = expiry.get(d.id) || null
+
   return json({
     devices: devices || [],
     schools: schools || [],
@@ -253,7 +344,7 @@ async function lookup(sb, { code }) {
  * The demo's opening beat. The operator types the code the television is showing,
  * picks the school, and the TV wakes up by itself.
  */
-async function activate(sb, { code, schoolId, teacherId }) {
+async function activate(sb, { code, schoolId, teacherId, expiresAt }, audit) {
   if (!schoolId) return json({ error: 'Choose a school first.' }, 400)
 
   const found = await findByCode(sb, code)
@@ -274,9 +365,11 @@ async function activate(sb, { code, schoolId, teacherId }) {
     if (wrong) return json({ error: wrong }, 400)
   }
 
+  const expiry = expiryFrom(expiresAt)
+  if (expiry.error) return json({ error: expiry.error }, 400)
+
   const token = `${crypto.randomUUID()}.${crypto.randomUUID()}`
-  const expires = new Date()
-  expires.setFullYear(expires.getFullYear() + SESSION_YEARS)
+  const expires = expiry.at
 
   const { error: e1 } = await sb
     .from('devices')
@@ -295,11 +388,62 @@ async function activate(sb, { code, schoolId, teacherId }) {
     .insert({ device_id: device.id, token, expires_at: expires.toISOString() })
   if (e2) return json({ error: reason(e2) }, 500)
 
-  return json({ ok: true, deviceId: device.id, code: found.code })
+  audit('activate', found.code, null, {
+    school_id: schoolId, teacher_id: teacherId || null, expires_at: expires.toISOString(),
+  })
+  return json({ ok: true, deviceId: device.id, code: found.code, expiresAt: expires.toISOString() })
 }
 
-async function revoke(sb, { deviceId }) {
+/**
+ * Change when an already-activated television's session runs out.
+ *
+ * Separate from activate() because the case that needs it is a device that is
+ * already in a classroom: a trial that has been extended, or a loaner being
+ * turned into a permanent installation. Making the operator revoke and
+ * re-activate to change a date would take a working television off the wall and
+ * back to the pairing screen to do it.
+ */
+async function setExpiry(sb, { deviceId, expiresAt }, audit) {
   if (!deviceId) return json({ error: 'deviceId is required' }, 400)
+
+  const expiry = expiryFrom(expiresAt)
+  if (expiry.error) return json({ error: expiry.error }, 400)
+
+  const { data: before, error: e0 } = await sb
+    .from('sessions')
+    .select('id, expires_at')
+    .eq('device_id', deviceId)
+    .eq('revoked', false)
+    .order('issued_at', { ascending: false })
+    .limit(1)
+  if (e0) return json({ error: reason(e0) }, 500)
+  if (!before || !before.length) {
+    return json({ error: 'That television has no live session. Activate it first.' }, 404)
+  }
+
+  const { error } = await sb
+    .from('sessions')
+    .update({ expires_at: expiry.at.toISOString() })
+    .eq('id', before[0].id)
+  if (error) return json({ error: reason(error) }, 500)
+
+  audit('set-expiry', deviceId,
+    { expires_at: before[0].expires_at }, { expires_at: expiry.at.toISOString() })
+  return json({ ok: true, expiresAt: expiry.at.toISOString() })
+}
+
+async function revoke(sb, { deviceId }, audit) {
+  if (!deviceId) return json({ error: 'deviceId is required' }, 400)
+
+  // Read it before it is gone. Revoking clears the school, the teacher and the
+  // class, none of which can be recovered from the row afterwards - so without
+  // this an operator who revokes the wrong television has no way of finding out
+  // what it used to be assigned to.
+  const { data: before } = await sb
+    .from('devices')
+    .select('hardware_uuid, school_id, teacher_id, class_id, claimed_at')
+    .eq('id', deviceId)
+    .maybeSingle()
 
   const { error: e1 } = await sb
     .from('sessions')
@@ -307,12 +451,29 @@ async function revoke(sb, { deviceId }) {
     .eq('device_id', deviceId)
   if (e1) return json({ error: reason(e1) }, 500)
 
+  // class_id has to be cleared too. It was not, which left a revoked television
+  // pointing at a class belonging to the school it no longer belongs to: on the
+  // next activation for a different school the device kept the old grade, and
+  // the console showed a class the new school has never heard of. The
+  // release_device RPC in 0009 already clears all four - this is the console
+  // path catching up with it.
   const { error: e2 } = await sb
     .from('devices')
-    .update({ claimed_at: null, school_id: null, teacher_id: null })
+    .update({ claimed_at: null, school_id: null, teacher_id: null, class_id: null })
     .eq('id', deviceId)
-  if (e2) return json({ error: reason(e2) }, 500)
+  if (e2 && !isMissingSchema(e2)) return json({ error: reason(e2) }, 500)
 
+  // A database without 0007 has no class_id column at all; fall back to the
+  // three that have always existed rather than failing the revoke.
+  if (e2) {
+    const { error: e3 } = await sb
+      .from('devices')
+      .update({ claimed_at: null, school_id: null, teacher_id: null })
+      .eq('id', deviceId)
+    if (e3) return json({ error: reason(e3) }, 500)
+  }
+
+  audit('revoke', before?.hardware_uuid || deviceId, before, null)
   return json({ ok: true })
 }
 
@@ -497,5 +658,292 @@ async function assignClass(sb, { deviceId, classId }) {
     .eq('id', deviceId)
   if (error) return json({ error: reason(error) }, 500)
 
+  return json({ ok: true })
+}
+/* ==========================================================================
+   Reading the fleet back
+
+   Everything below is read-only apart from renameLesson and saveDocument, and
+   every one of these runs on the operator's poll. They are written to be cheap
+   and to be honest about what they cannot know, which for this product is the
+   harder of the two.
+   ========================================================================== */
+
+/** Rows written by a television in the last few minutes count as it playing. */
+const PLAYING_WINDOW_MIN = 3
+
+/** How far back the activity panel looks before it says "no activity". */
+const ACTIVITY_WINDOW_H = 24
+
+const minutesAgo = m => new Date(Date.now() - m * 60_000).toISOString()
+
+/**
+ * What each television is doing, derived from the progress rows it already
+ * writes.
+ *
+ * There is no telemetry in this product and this does not add any. The player
+ * upserts a progress row every ten seconds while a lesson is on screen, so a
+ * progress row younger than three minutes is proof - not inference - that a
+ * television is powered, online, and playing that lesson.
+ *
+ * What it cannot prove is the negative. A television sitting on the browse
+ * screen writes nothing at all, and so is indistinguishable here from one that
+ * is switched off or has been carried out of the building. That is why nothing
+ * in this response is ever called "offline": the page gets "playing", "last
+ * active", or silence, and an operator is left to draw their own conclusion
+ * rather than being told a confident lie about a classroom they cannot see.
+ *
+ * The honest fix for presence is a heartbeat from the TV on resume, which is an
+ * Android change. Until that ships this is the whole truth available.
+ */
+async function nowPlaying(sb) {
+  const { data, error } = await sb
+    .from('progress')
+    .select('device_id, lesson_id, position_sec, completed, updated_at, ' +
+            'lessons(title_en, title_np, duration_sec, units(title_en, subjects(name_en)))')
+    .not('device_id', 'is', null)
+    .gte('updated_at', minutesAgo(ACTIVITY_WINDOW_H * 60))
+    .order('updated_at', { ascending: false })
+    .limit(600)
+
+  // A database that has not been touched by a television yet is not an error.
+  if (error) return json({ error: reason(error) }, 500)
+
+  // One entry per device: the first row wins because the query is already
+  // ordered newest first.
+  const latest = new Map()
+  for (const row of data || []) {
+    if (!latest.has(row.device_id)) latest.set(row.device_id, row)
+  }
+
+  const playingSince = minutesAgo(PLAYING_WINDOW_MIN)
+  const activity = [...latest.values()].map(r => ({
+    deviceId: r.device_id,
+    lessonId: r.lesson_id,
+    title: r.lessons?.title_en || null,
+    unit: r.lessons?.units?.title_en || null,
+    subject: r.lessons?.units?.subjects?.name_en || null,
+    positionSec: r.position_sec,
+    durationSec: r.lessons?.duration_sec ?? null,
+    completed: r.completed,
+    at: r.updated_at,
+    playing: r.updated_at >= playingSince,
+  }))
+
+  return json({ activity, windowMinutes: PLAYING_WINDOW_MIN })
+}
+
+/**
+ * The counters across the top of the page.
+ *
+ * Counts only, and deliberately. With two schools live, anything shaped like a
+ * chart is decoration over a sample of two, and a "coverage" percentage
+ * computed against 968 lessons of which 113 have video would be a number that
+ * flatters nobody and informs nobody.
+ *
+ * `head: true` means Postgres returns the count without the rows, so this whole
+ * function is four cheap counts rather than four table reads.
+ */
+async function summary(sb) {
+  const count = async (table, build = q => q) => {
+    const { count: n, error } = await build(
+      sb.from(table).select('*', { count: 'exact', head: true })
+    )
+    return error ? null : n
+  }
+
+  const [schools, devices, activated, lessons, withVideo] = await Promise.all([
+    count('schools'),
+    count('devices'),
+    count('devices', q => q.not('claimed_at', 'is', null)),
+    count('lessons'),
+    count('lessons', q => q.not('video_url', 'is', null)),
+  ])
+
+  // Distinct televisions that have played anything today. Counted in JS over a
+  // capped read rather than in SQL, because `count(distinct)` is not something
+  // PostgREST exposes and a view for it is a migration this does not need yet.
+  const { data: active } = await sb
+    .from('progress')
+    .select('device_id')
+    .not('device_id', 'is', null)
+    .gte('updated_at', minutesAgo(ACTIVITY_WINDOW_H * 60))
+    .limit(2000)
+
+  return json({
+    schools, devices, activated, lessons, withVideo,
+    activeToday: active ? new Set(active.map(r => r.device_id)).size : null,
+  })
+}
+
+/* ==========================================================================
+   The catalogue
+   ========================================================================== */
+
+/**
+ * Lessons, for renaming.
+ *
+ * Defaults to the ones that have a video, and that default is the whole design.
+ * There are 968 lessons and 113 of them can actually be watched; the other 855
+ * are generated scaffolding for units nobody has filmed. Renaming those is
+ * typing into a table for no reader. Renaming the 113 is what makes every
+ * screen in the product stop saying PLACEHOLDER, and it is an afternoon's work
+ * rather than a content project.
+ *
+ * The full list is still reachable - `onlyVideo: false` - because the operator
+ * is the one who gets to decide that, not this function.
+ */
+async function listLessons(sb, { search, onlyVideo = true, limit = 400 }) {
+  let q = sb
+    .from('lessons')
+    .select('id, title_en, title_np, sort_order, duration_sec, video_url, ' +
+            'units(title_en, sort_order, subjects(name_en, sort_order))')
+    .order('title_en')
+    .limit(Math.min(Number(limit) || 400, 1000))
+
+  if (onlyVideo) q = q.not('video_url', 'is', null)
+
+  const clean = String(search || '').trim()
+  if (clean) q = q.ilike('title_en', `%${clean}%`)
+
+  const { data, error } = await q
+  if (error) return json({ error: reason(error) }, 500)
+
+  const lessons = (data || []).map(l => ({
+    id: l.id,
+    titleEn: l.title_en,
+    titleNp: l.title_np,
+    sortOrder: l.sort_order,
+    durationSec: l.duration_sec,
+    hasVideo: !!l.video_url,
+    unit: l.units?.title_en || null,
+    subject: l.units?.subjects?.name_en || null,
+    subjectOrder: l.units?.subjects?.sort_order ?? 999,
+    unitOrder: l.units?.sort_order ?? 999,
+  })).sort((a, b) =>
+    a.subjectOrder - b.subjectOrder ||
+    a.unitOrder - b.unitOrder ||
+    a.sortOrder - b.sortOrder)
+
+  return json({ lessons })
+}
+
+/**
+ * Rename one lesson.
+ *
+ * One row at a time on purpose. A grid that saves 968 rows in a batch is a
+ * different and much sharper thing: a single wrong paste rewrites the whole
+ * catalogue, and `progress.lesson_id` is `on delete cascade`, so any bulk path
+ * that ever deletes and reinserts rather than updating would take every child's
+ * resume position with it. Renaming in place, one row, cannot do that.
+ *
+ * An empty Nepali title clears it. That is safe here because this is a
+ * deliberate edit of a named row - unlike a spreadsheet import, where a blank
+ * cell means "I did not fill this in" and must never be read as "delete it".
+ */
+async function renameLesson(sb, { lessonId, titleEn, titleNp }, audit) {
+  if (!lessonId) return json({ error: 'lessonId is required' }, 400)
+
+  const clean = String(titleEn ?? '').trim()
+  if (!clean) return json({ error: 'A lesson needs an English title.' }, 400)
+
+  const { data: before, error: e0 } = await sb
+    .from('lessons')
+    .select('id, title_en, title_np')
+    .eq('id', lessonId)
+    .maybeSingle()
+  if (e0) return json({ error: reason(e0) }, 500)
+  if (!before) return json({ error: 'That lesson no longer exists. Reload the page.' }, 404)
+
+  // Devanagari from a browser can arrive decomposed depending on the input
+  // method; normalising on write keeps a title typed on one machine equal to
+  // the same title typed on another, which matters the first time anyone
+  // searches for one.
+  const np = String(titleNp ?? '').trim().normalize('NFC') || null
+
+  const { error } = await sb
+    .from('lessons')
+    .update({ title_en: clean.normalize('NFC'), title_np: np })
+    .eq('id', lessonId)
+  if (error) return json({ error: reason(error) }, 500)
+
+  audit('rename-lesson', lessonId,
+    { title_en: before.title_en, title_np: before.title_np },
+    { title_en: clean, title_np: np })
+  return json({ ok: true })
+}
+
+/* ==========================================================================
+   Legal documents
+   ========================================================================== */
+
+/**
+ * The privacy policy and terms the televisions display.
+ *
+ * Returns `available: false` rather than an error when 0010_app_documents.sql
+ * has not been run. Netlify deploys on push and migrations are run by hand, so
+ * this page is always live before its table is, and a panel whose every control
+ * errors is worse than a panel that says what is missing.
+ */
+async function listDocuments(sb) {
+  const { data, error } = await sb
+    .from('app_documents')
+    .select('slug, kind, title_en, title_np, body_en, body_np, version, effective_on, published, sort_order, updated_at')
+    .order('sort_order')
+
+  if (error) {
+    if (isMissingSchema(error)) return json({ available: false, documents: [] })
+    return json({ error: reason(error) }, 500)
+  }
+  return json({ available: true, documents: data || [] })
+}
+
+/**
+ * Write one document back.
+ *
+ * Publishing is the sharp edge here, not saving: an unpublished row is a draft
+ * the televisions cannot see, and a published one is on the screen of every
+ * classroom within a refresh. So the before value goes to the audit table on
+ * every save, and the page asks again before the published flag goes on.
+ */
+async function saveDocument(sb, { slug, titleEn, titleNp, bodyEn, bodyNp, version, effectiveOn, published }, audit) {
+  const key = String(slug || '').trim()
+  if (!key) return json({ error: 'slug is required' }, 400)
+
+  const titleClean = String(titleEn ?? '').trim()
+  const bodyClean = String(bodyEn ?? '').trim()
+  if (!titleClean) return json({ error: 'A document needs an English title.' }, 400)
+  if (!bodyClean) return json({ error: 'A document with no text would show a blank screen on every television.' }, 400)
+
+  const { data: before, error: e0 } = await sb
+    .from('app_documents')
+    .select('slug, title_en, body_en, version, published, effective_on')
+    .eq('slug', key)
+    .maybeSingle()
+  if (e0) {
+    if (isMissingSchema(e0)) {
+      return json({ error: 'Run 0010_app_documents.sql first — this table does not exist yet.' }, 409)
+    }
+    return json({ error: reason(e0) }, 500)
+  }
+  if (!before) return json({ error: `There is no document called "${key}".` }, 404)
+
+  const patch = {
+    title_en: titleClean.normalize('NFC'),
+    title_np: String(titleNp ?? '').trim().normalize('NFC') || null,
+    body_en: bodyClean.normalize('NFC'),
+    body_np: String(bodyNp ?? '').trim().normalize('NFC') || null,
+    version: String(version ?? '').trim() || 'draft',
+    effective_on: String(effectiveOn ?? '').trim() || null,
+    published: !!published,
+    updated_at: new Date().toISOString(),
+  }
+
+  const { error } = await sb.from('app_documents').update(patch).eq('slug', key)
+  if (error) return json({ error: reason(error) }, 500)
+
+  audit('save-document', key,
+    { version: before.version, published: before.published, body_en: before.body_en },
+    { version: patch.version, published: patch.published, body_en: patch.body_en })
   return json({ ok: true })
 }
