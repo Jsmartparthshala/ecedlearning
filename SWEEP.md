@@ -355,13 +355,19 @@ At 22 televisions neither is close. At a few hundred, both silently start
 under-reporting rather than failing, which is the worse of the two ways to break.
 Not urgent; worth a note against the day the fleet grows.
 
-### F. Map dots are under the 44px touch guideline on a phone
+### F. Map dots are still under the 44px touch guideline on a phone
 
-Already known from last night, repeated here so it is in one place. A
-single-television dot reaches about 23–34px on a 375px screen after the responsive
-scale-up, against a 44px guideline. The map is a desk tool and this is a real but
-minor shortfall; making the dots larger starts to hide the country underneath
-them.
+Every *control* on the page is fixed: below 720px wide, buttons, dropdowns and
+text fields now get a 44px minimum height, so nothing on a phone is a
+pointer-sized target any more. The desktop layout is untouched — 44px controls
+in a table row would push the fleet list to twice its height on the screen it is
+actually used on.
+
+The map dots are the exception and stay flagged. A single-television dot reaches
+about 23–34px on a 375px screen after its responsive scale-up. Making them
+larger starts to hide the country underneath them, which is the one thing that
+panel is for, so that is a taste call rather than a fix — and the map is a desk
+tool. Say if you want them bigger anyway.
 
 ---
 

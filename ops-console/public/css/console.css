@@ -783,6 +783,16 @@ ul.plain .muted { font-size: 12.5px }
      centre, so the country keeps its proportions and the marks on it stay
      aimable. It is the marks that are being read here, not the geography. */
   .nepal .dot { transform: scale(2.2); transform-box: fill-box; transform-origin: center }
+
+  /* Thumb-sized targets, below this width only.
+     Every control on the desktop layout is 36px tall, which is right for a
+     pointer and too small for a finger - the 44px guideline is about fingers,
+     and this is the one width where fingers are what is on the screen. The
+     checkbox is left alone because the label beside it is the target, and it
+     is already a line of text tall. */
+  button,
+  select,
+  input:not([type="checkbox"]) { min-height: 44px }
 }
 
 /* -------------------------------------------------- accessibility affordances
