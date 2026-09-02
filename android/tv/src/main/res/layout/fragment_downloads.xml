@@ -22,5 +22,5 @@
         android:text="@string/downloads_empty_body"
         android:textColor="@color/tv_muted"
         android:textSize="@dimen/text_label"
-        android:lineSpacingMultiplier="1.3" />
+        android:lineSpacingMultiplier="1.45" />
 </LinearLayout>

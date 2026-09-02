@@ -31,9 +31,14 @@
     <color name="tv_ink">#EEF4FF</color>
     <color name="tv_muted">#8EA2C6</color>
 
-    <color name="subject_english">#2AA9D8</color>
-    <color name="subject_nepali">#E8863B</color>
-    <color name="subject_maths">#4FAE54</color>
+    <!-- Card fills. Deep enough that the white title on them clears 3:1, which
+         is the floor for large text and the difference between a card a teacher
+         reads from the back of the room and one they walk towards. The three
+         light ones measured 2.66, 2.70 and 2.79 before this; the hue and the
+         saturation are unchanged, only the lightness moved. -->
+    <color name="subject_english">#249AC6</color>
+    <color name="subject_nepali">#E1701A</color>
+    <color name="subject_maths">#49A24E</color>
     <color name="subject_serofero">#A94BC9</color>
     <color name="subject_arts">#D94F7A</color>
 
@@ -58,7 +63,9 @@
     <!-- Grade-ladder tiles, coloured by stage rather than by grade: thirteen
          distinct hues would be noise, four stages is the grouping teachers use. -->
     <color name="stage_eced">#E0648A</color>
-    <color name="stage_basic">#4FB3DC</color>
-    <color name="stage_secondary">#5FBF67</color>
+    <!-- Same 3:1 floor as the subject fills. Basic and Secondary were the two
+         lightest tiles on the ladder at 2.38 and 2.30. -->
+    <color name="stage_basic">#289AC9</color>
+    <color name="stage_secondary">#41A349</color>
     <color name="stage_higher">#B071D6</color>
 </resources>
