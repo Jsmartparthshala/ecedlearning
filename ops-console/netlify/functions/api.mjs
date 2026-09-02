@@ -165,6 +165,8 @@ export default async (req) => {
         return await revoke(sb, body, audit)
       case 'create-school':
         return await createSchool(sb, body)
+      case 'set-location':
+        return await setLocation(sb, body, audit)
       case 'create-teacher':
         return await createTeacher(sb, body)
       case 'delete-teacher':
@@ -253,10 +255,26 @@ async function list(sb) {
   }
   if (error) return json({ error: reason(error) }, 500)
 
-  const { data: schools, error: e2 } = await sb
+  // Same tolerance again, for the map's coordinates. `province` has been on
+  // this table since the first migration and was simply never selected; lat and
+  // lon arrive with 0012, so before that migration is run the map still works
+  // from the municipality and the province, and afterwards it can place a
+  // pinned school exactly. Neither ordering of deploy and migration breaks the
+  // page, which is the only ordering guarantee this project actually has.
+  let schools = null
+  let e2 = null
+
+  ;({ data: schools, error: e2 } = await sb
     .from('schools')
-    .select('id, name, municipality')
-    .order('name')
+    .select('id, name, municipality, province, lat, lon')
+    .order('name'))
+
+  if (e2 && isMissingSchema(e2)) {
+    ;({ data: schools, error: e2 } = await sb
+      .from('schools')
+      .select('id, name, municipality, province')
+      .order('name'))
+  }
   if (e2) return json({ error: reason(e2) }, 500)
 
   // Every teacher in one go rather than per school. There are tens of these, not
@@ -558,17 +576,81 @@ async function assignTeacher(sb, { deviceId, teacherId }) {
  * Nothing seeds the schools table, so without this the very first activation has
  * nowhere to point and the console is a dead end on day one.
  */
-async function createSchool(sb, { name, municipality }) {
+async function createSchool(sb, { name, municipality, province }) {
   const clean = String(name || '').trim()
   if (!clean) return json({ error: 'A school needs a name.' }, 400)
 
   const { data, error } = await sb
     .from('schools')
-    .insert({ name: clean, municipality: String(municipality || '').trim() || null })
-    .select('id, name, municipality')
+    .insert({
+      name: clean,
+      municipality: String(municipality || '').trim() || null,
+      province: String(province || '').trim() || null,
+    })
+    .select('id, name, municipality, province')
     .single()
   if (error) return json({ error: reason(error) }, 500)
 
+  return json({ ok: true, school: data })
+}
+
+/**
+ * Pin a school to a point, or take the pin off again.
+ *
+ * The map places most schools by reading the municipality written on them,
+ * which lands them in the right district and nowhere nearer. This is the
+ * override: a coordinate read off a phone at the school gate, which the map
+ * then prefers over its own guess.
+ *
+ * Sending null for both clears the pin and hands the school back to the
+ * guess - the only way to undo a coordinate typed in wrong, and the reason
+ * this takes null rather than treating a missing value as "leave alone".
+ */
+async function setLocation(sb, { schoolId, lat, lon }, audit) {
+  if (!schoolId) return json({ error: 'Which school?' }, 400)
+
+  const clearing = (lat === null || lat === undefined || lat === '') &&
+                   (lon === null || lon === undefined || lon === '')
+
+  let next = { lat: null, lon: null }
+  if (!clearing) {
+    const y = Number(lat)
+    const x = Number(lon)
+    if (!Number.isFinite(y) || !Number.isFinite(x)) {
+      return json({ error: 'A pin needs two numbers, or nothing at all to clear it.' }, 400)
+    }
+    // Nepal, generously bounded. This is here to catch a swapped pair or a
+    // dropped minus - the mistakes a person makes typing coordinates off a
+    // phone - and not to have an opinion about a border. A point outside it
+    // would stretch the map's own bounds until the country was a smudge.
+    if (y < 26 || y > 31 || x < 79.5 || x > 89) {
+      return json({
+        error: 'That point is not in Nepal. Latitude comes first, between 26 and 31; ' +
+               'longitude second, between 80 and 89.',
+      }, 400)
+    }
+    next = { lat: y, lon: x }
+  }
+
+  const { data, error } = await sb
+    .from('schools')
+    .update(next)
+    .eq('id', schoolId)
+    .select('id, name, municipality, province, lat, lon')
+    .single()
+
+  if (error) {
+    if (isMissingSchema(error)) {
+      return json({
+        error: 'Pinning needs 0012_school_location.sql to be run against the database first.',
+      }, 409)
+    }
+    return json({ error: reason(error) }, 500)
+  }
+
+  await audit(clearing ? 'clear-location' : 'set-location', {
+    schoolId, name: data?.name, lat: next.lat, lon: next.lon,
+  })
   return json({ ok: true, school: data })
 }
 

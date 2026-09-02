@@ -17,6 +17,16 @@ import { $, esc, ago, exact, clock, codeOf } from './util.js'
 import { api } from './api.js'
 import { deviceById } from './fleet.js'
 
+/**
+ * Which televisions are playing right now, by device id.
+ *
+ * Kept here so the map can shade its dots without asking the server a second
+ * time. The map and this panel are two readings of one fact, and paying for
+ * that fact twice per poll would double the console's whole invocation budget.
+ */
+let playing = new Set()
+export const playingNow = () => playing
+
 export async function refreshActivity() {
   const box = $('#activity')
   let data
@@ -27,10 +37,15 @@ export async function refreshActivity() {
     // quietly tells an operator the fleet is idle when it is the network that
     // is down.
     box.innerHTML = `<div class="empty">Could not read activity: ${esc(e.message)}</div>`
+    // Leave the previous set alone. A failed read is not the news that every
+    // television stopped, and blanking it would make the map flicker every
+    // time the office wifi hiccups.
     return null
   }
 
   const rows = data.activity || []
+  playing = new Set(rows.filter(r => r.playing).map(r => r.deviceId))
+
   if (!rows.length) {
     box.innerHTML = '<div class="empty">No lesson has been played in the last 24 hours.</div>'
     $('#activity-scope').textContent = ''

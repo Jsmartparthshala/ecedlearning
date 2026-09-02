@@ -85,6 +85,7 @@
 <nav class="tabs" role="tablist" hidden id="tabs" aria-label="Sections">
   <button role="tab" id="tab-btn-fleet" data-tab="fleet" aria-controls="tab-fleet" aria-selected="true" tabindex="0">Fleet</button>
   <button role="tab" id="tab-btn-catalogue" data-tab="catalogue" aria-controls="tab-catalogue" aria-selected="false" tabindex="-1">Catalogue</button>
+  <button role="tab" id="tab-btn-map" data-tab="map" aria-controls="tab-map" aria-selected="false" tabindex="-1">Map</button>
   <button role="tab" id="tab-btn-documents" data-tab="documents" aria-controls="tab-documents" aria-selected="false" tabindex="-1">Documents</button>
 </nav>
 
@@ -277,6 +278,51 @@
       The Nepali column can be left empty. A television shows the Nepali title
       when there is one and the English title when there is not, so a half-filled
       column is a usable state, not a broken one.
+    </p>
+  </section>
+
+</div>
+
+<!-- ========================================================== map ========= -->
+<div id="tab-map" role="tabpanel" aria-labelledby="tab-btn-map" tabindex="-1" hidden>
+
+  <section>
+    <div class="map-head">
+      <h2>Where the televisions are</h2>
+      <p class="map-summary" id="map-summary"></p>
+    </div>
+
+    <div class="map-frame">
+      <div id="map" class="map-canvas"></div>
+
+      <!-- The detail sits beside the map on a wide screen and under it on a
+           narrow one. It is a region rather than a dialog because it never
+           traps focus: clicking another dot is a normal next thing to do. -->
+      <aside id="map-detail" class="map-detail" role="region"
+             aria-label="Selected place" tabindex="-1" hidden></aside>
+    </div>
+
+    <ul class="map-legend" id="map-legend" aria-label="How each school was placed"></ul>
+
+    <p class="hint">
+      A dot is a place, not a school — several schools in one district share
+      one. Most are placed from the municipality written on the school, which
+      puts them in the right district but not on the right street. A school with
+      its own coordinates is placed exactly.
+    </p>
+    <p class="hint">
+      A dot pulses while a lesson is playing on one of its televisions. A still
+      dot means no lesson is playing there right now; it does not mean the
+      television is switched off, because a television sitting on the browse
+      screen reports nothing at all.
+    </p>
+
+    <div id="map-unplaced" class="map-unplaced" hidden></div>
+
+    <p class="credit">
+      District and province boundaries from
+      <a href="https://www.geoboundaries.org" rel="noreferrer noopener" target="_blank">geoBoundaries</a>
+      (gbOpen). Provinces © geoBoundaries, CC BY 3.0 IGO; districts public domain.
     </p>
   </section>
 

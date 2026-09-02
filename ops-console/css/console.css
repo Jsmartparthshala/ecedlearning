@@ -462,6 +462,9 @@ td input.title.saved { border-color: var(--ok); background: var(--ok-wash) }
 @media (prefers-reduced-motion: reduce) {
   .mark.working { animation: none; opacity: .7 }
   button:active:not(:disabled) { transform: none }
+  /* The pulse is one of the ways the map says "playing", so it stops rather
+     than disappears. Turning motion off must not turn information off too. */
+  .nepal .pulse { animation: none; opacity: .5; transform: scale(1.5) }
 }
 
 [hidden] { display: none !important }
@@ -475,10 +478,202 @@ html { scrollbar-color: var(--line-firm) transparent; scrollbar-width: thin }
 ::-webkit-scrollbar-thumb { background: var(--line-firm); border-radius: 99px }
 ::-webkit-scrollbar-thumb:hover { background: var(--muted) }
 
+/* ---------------------------------------------------------------------- map */
+
+/* The map is the one place on this page allowed to be a picture as well as a
+   table. It still earns its keep the same way everything else does: every mark
+   on it stands for something an operator can act on, and the things the data
+   cannot support - a school with no usable address - are printed underneath in
+   words rather than placed somewhere plausible. */
+
+.map-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap }
+.map-head h2 { margin-bottom: 0 }
+.map-summary {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.map-summary b { color: var(--ink); font-weight: 700 }
+
+.map-frame {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+  align-items: start;
+  margin-top: 12px;
+}
+/* With nothing selected the map has the row to itself rather than holding a
+   column open for a panel that is not there. */
+.map-frame:has(> .map-detail[hidden]) { grid-template-columns: minmax(0, 1fr) }
+
+.map-canvas {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px;
+  min-width: 0;
+}
+svg.nepal { display: block; width: 100%; height: auto }
+
+/* The country itself: a warm fill barely off the panel it sits on, with a firm
+   edge. The provinces are drawn as separate shapes so their shared borders
+   show as fine seams - enough to place a district by eye, not enough to
+   compete with the dots, which are the actual content. */
+.nepal .province {
+  fill: var(--panel-alt);
+  stroke: var(--line-firm);
+  stroke-width: 1;
+  stroke-linejoin: round;
+}
+
+/* -------- dots */
+
+.nepal .dot { cursor: pointer; outline: none }
+
+.nepal .disc {
+  fill: var(--navy);
+  stroke: var(--panel);
+  stroke-width: 2;
+  transition: fill .18s ease;
+}
+/* A dot placed from the province alone is drawn hollow. It is a real school in
+   an approximately known place, and it should not carry the same visual weight
+   as one whose district is actually known. */
+.nepal .dot.province .disc {
+  fill: var(--panel);
+  stroke: var(--navy);
+  stroke-width: 2.5;
+  stroke-dasharray: 4 3;
+}
+/* Pinned: a gold rim on the navy disc, which reads as a target rather than a
+   blob and is the one edge on this page gold is legible against. */
+.nepal .dot.exact .disc { stroke: var(--gold); stroke-width: 2.5 }
+
+/* Gold appears only here, sitting on the navy of the disc behind it, where it
+   is 5.04:1. On the cream ground it would be 1.51:1 - a state nobody could
+   see - which is why "playing" is never a gold dot, only a gold core inside a
+   navy one, backed by the pulse and by the word in the panel. */
+.nepal .core { fill: var(--gold); pointer-events: none }
+
+/* The halo is both the hover and selection ring and the dot's hit area. It is
+   drawn as an unfilled circle five units wider than the disc, and pointer-events
+   makes that whole width catch a click rather than only the hairline of the
+   stroke - which is what makes the smallest dots aimable with a finger. */
+.nepal .halo {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 2.5;
+  pointer-events: all;
+  transition: stroke .18s ease;
+}
+.nepal .dot:hover .halo { stroke: var(--line-firm) }
+.nepal .dot.on .halo { stroke: var(--navy); stroke-width: 3 }
+/* Keyboard focus has to be visible against both the cream and the fill, so it
+   is a navy ring with a cream one inside it. */
+.nepal .dot:focus-visible .halo { stroke: var(--navy); stroke-width: 3 }
+.nepal .dot:focus-visible .disc { stroke: var(--cream); stroke-width: 3 }
+
+/* One slow ring, only while a lesson is actually playing. The map is still
+   when the fleet is still, so movement on it always means something. */
+.nepal .pulse {
+  fill: none;
+  stroke: var(--navy);
+  stroke-width: 2;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: map-pulse 2.6s ease-out infinite;
+  pointer-events: none;
+}
+@keyframes map-pulse {
+  0%   { transform: scale(1);   opacity: .55 }
+  70%  { transform: scale(2.3); opacity: 0 }
+  100% { transform: scale(2.3); opacity: 0 }
+}
+
+/* -------- the panel beside it */
+
+.map-detail {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--navy);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  outline: none;
+}
+.map-detail:focus-visible { box-shadow: 0 0 0 3px var(--navy-wash) }
+.map-detail-head { display: flex; align-items: center; gap: 12px; margin-bottom: 4px }
+.map-detail-head h3 { margin: 0; font-size: 16px; letter-spacing: -.2px }
+.map-detail-head button { margin-left: auto; padding: 4px 10px; font-size: 12px }
+
+.place-note { font-size: 12px; color: var(--muted); margin: 0 0 14px }
+.place-note.province { color: var(--warn) }
+
+.map-school + .map-school { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 14px }
+.map-school h4 { margin: 0 0 2px; font-size: 14px; font-weight: 650 }
+.map-school p { margin: 0 0 8px; font-size: 12.5px }
+
+.map-tvs { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px }
+.map-tvs li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--muted);
+  background: var(--panel-alt);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+}
+
+/* -------- legend, and the schools that are not on it */
+
+ul.map-legend {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin: 14px 0 0;
+  padding: 0;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+ul.map-legend li { display: flex; align-items: center; gap: 7px }
+ul.map-legend b { color: var(--ink); font-variant-numeric: tabular-nums }
+ul.map-legend .key {
+  width: 11px;
+  height: 11px;
+  border-radius: 99px;
+  background: var(--navy);
+  border: 1px solid var(--navy);
+}
+ul.map-legend .exact .key { border-color: var(--gold); border-width: 2px }
+ul.map-legend .province .key { background: var(--panel); border-style: dashed }
+ul.map-legend .none .key { background: transparent; border: 1px dashed var(--line-firm) }
+
+.map-unplaced {
+  margin-top: 22px;
+  border: 1px solid var(--line-firm);
+  border-radius: var(--radius);
+  background: var(--panel);
+  padding: 16px 18px;
+}
+.map-unplaced h3 { margin: 0 0 6px; font-size: 14px }
+.map-unplaced .muted { font-size: 13px; max-width: 68ch }
+ul.plain { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 5px; font-size: 13.5px }
+ul.plain .muted { font-size: 12.5px }
+
+.credit { font-size: 11.5px; color: var(--muted); margin-top: 18px }
+.credit a { color: var(--navy) }
+
 /* -------------------------------------------------------------------- small */
 
 @media (max-width: 860px) {
   .doc-grid { grid-template-columns: 1fr }
+  /* Below this the map has no column to give away, so the detail drops
+     underneath it at full width instead of squeezing both. */
+  .map-frame, .map-frame:has(> .map-detail[hidden]) { grid-template-columns: minmax(0, 1fr) }
+  .nepal .dot { transform: scale(1.35); transform-box: fill-box; transform-origin: center }
 }
 
 @media (max-width: 720px) {
@@ -497,6 +692,15 @@ html { scrollbar-color: var(--line-firm) transparent; scrollbar-width: thin }
      dropdown in a cell does not stretch every row. */
   select.assign { max-width: none; padding: 9px 10px; font-size: 14px }
   .play-row .when { margin-left: 0; flex-basis: 100% }
+  .map-canvas { padding: 4px }
+  .map-detail, .map-unplaced { padding: 14px }
+
+  /* The whole map scales down with the column, dots included, and a
+     single-television dot ends up about three pixels across on a phone - too
+     small to see, let alone tap. Each dot is scaled back up about its own
+     centre, so the country keeps its proportions and the marks on it stay
+     aimable. It is the marks that are being read here, not the geography. */
+  .nepal .dot { transform: scale(2.2); transform-box: fill-box; transform-origin: center }
 }
 
 /* -------------------------------------------------- accessibility affordances

@@ -48,3 +48,7 @@ dev/video-server/cloudflared.exe
 
 # Generated from the operator's own video library by make-thumbs.js.
 dev/video-server/thumbs/
+
+# --- Python (the one-off build scripts in tools/) ---
+__pycache__/
+*.pyc

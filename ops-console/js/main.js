@@ -12,6 +12,7 @@ import { refreshFleet, wireFleet } from './fleet.js'
 import { refreshActivity } from './activity.js'
 import { wireLessons, openLessons } from './lessons.js'
 import { wireDocuments, openDocuments } from './documents.js'
+import { openMap, refreshMap } from './map.js'
 
 /**
  * Twenty-five seconds, not five.
@@ -112,9 +113,18 @@ function show(name) {
   // ever provisions televisions should not pay for either.
   if (name === 'catalogue') openLessons()
   if (name === 'documents') openDocuments()
+  if (name === 'map') openMap()
 }
 
-const onFleetTab = () => $('#tab-fleet') && !$('#tab-fleet').hidden
+/**
+ * Is a panel on screen that the poll actually feeds?
+ *
+ * Fleet and Map are two readings of the same live data, so both are worth
+ * refreshing. The catalogue and the documents are edited, not watched, and a
+ * poll underneath either of them would only risk pulling the ground out from
+ * under somebody who is typing.
+ */
+const onLiveTab = () => ['#tab-fleet', '#tab-map'].some(id => $(id) && !$(id).hidden)
 
 /* --------------------------------------------------------- the refresh loop */
 
@@ -123,6 +133,11 @@ async function refresh() {
     const fleet = await refreshFleet()
     const live = await refreshActivity()
     await counters()
+
+    // After both, because the map is drawn from the two of them together: the
+    // schools and televisions from the fleet, and which of them are playing
+    // from the activity. It returns immediately when its tab is not showing.
+    refreshMap()
 
     // One sentence, in the page's one live region. A bare number that silently
     // changes tells a screen reader nothing and tells the eye almost as little.
@@ -180,11 +195,11 @@ function put(sel, n) {
  * refreshes once on the way back so the first thing seen is current.
  */
 function startPolling() {
-  const tick = () => { if (!document.hidden && onFleetTab()) refresh() }
+  const tick = () => { if (!document.hidden && onLiveTab()) refresh() }
   clearInterval(pollTimer)
   pollTimer = setInterval(tick, POLL_MS)
 
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && onFleetTab()) refresh()
+    if (!document.hidden && onLiveTab()) refresh()
   })
 }
