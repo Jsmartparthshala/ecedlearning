@@ -461,6 +461,9 @@ function buildSql(base, items) {
     '--\n' +
     reach +
     '--\n' +
+    '-- Needs migration 0007 - it addresses subjects by grade, so that ECED\n' +
+    '-- footage cannot be handed to another grade that shares a subject slug.\n' +
+    '--\n' +
     '-- ' + playable.length + ' videos, real durations read from each file\'s mvhd atom.\n' +
     '-- Assigned per subject so a subject opens on footage that matches it:\n' +
     summary + '\n' +
@@ -473,6 +476,14 @@ function buildSql(base, items) {
     '),\n' +
     '-- Whole units, never a scattering: a teacher opening a unit should find\n' +
     '-- every tile live, because a grid that is half dead reads as broken.\n' +
+    // Scoped to ECED by level, not by slug.
+    //
+    // 0007 dropped the unique constraint on subjects.slug and replaced it with
+    // unique (level_id, slug), because every grade on the ladder has its own
+    // English and its own Maths. This statement matches subjects by slug, so
+    // the first time a Basic 1 English is added it would silently be handed
+    // nursery footage as well. Naming the level keeps demo video inside the
+    // grade it was recorded for.
     'target as (\n' +
     '  select l.id, s.slug,\n' +
     '         row_number() over (partition by s.slug\n' +
@@ -480,7 +491,9 @@ function buildSql(base, items) {
     '  from lessons l\n' +
     '  join units u on u.id = l.unit_id\n' +
     '  join subjects s on s.id = u.subject_id\n' +
-    '  where u.sort_order <= 3\n' +
+    '  join levels lv on lv.id = s.level_id\n' +
+    "  where u.sort_order <= 3\n" +
+    "    and lv.slug = 'eced'\n" +
     ')\n' +
     'update lessons\n' +
     "set video_url = p.url, duration_sec = p.secs, codec = 'h264', poster_url = p.poster\n" +
@@ -489,11 +502,12 @@ function buildSql(base, items) {
     'join pool p on p.slug = t.slug and p.n = t.rn % z.cnt\n' +
     'where lessons.id = t.id;\n' +
     '\n' +
-    'select s.name_en, count(*) as playable,\n' +
+    'select lv.name_en as level, s.name_en as subject, count(*) as playable,\n' +
     '       count(l.poster_url) as with_poster\n' +
     'from lessons l\n' +
     'join units u on u.id = l.unit_id\n' +
     'join subjects s on s.id = u.subject_id\n' +
+    'join levels lv on lv.id = s.level_id\n' +
     'where l.video_url is not null\n' +
-    'group by s.name_en order by s.name_en;\n';
+    'group by lv.name_en, s.name_en order by lv.name_en, s.name_en;\n';
 }
