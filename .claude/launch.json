@@ -4,7 +4,7 @@
     {
       "name": "ops-console",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["--yes", "serve", "-l", "4173", "ops-console"],
+      "runtimeArgs": ["--yes", "serve", "-l", "4173", "ops-console/public"],
       "port": 4173
     }
   ]
