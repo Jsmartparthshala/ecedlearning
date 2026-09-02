@@ -40,8 +40,17 @@
     <!-- Ground. Warm enough to kill the glare, not warm enough to be beige. -->
     <color name="tv_bg">#FAF6EC</color>
     <!-- Cards and panels sit above the ground as plain paper. -->
-    <color name="tv_panel">#FFFFFF</color>
-    <color name="surface">#FFFFFF</color>
+    <!-- Warm white, not #FFFFFF.
+
+         The ground was already cream on the argument that a full-white panel at
+         classroom scale is tiring, and then every card on it was set to pure
+         white anyway - which is maximum luminance on a screen filling a wall,
+         the one thing the TV colour guidance names outright. Two points off the
+         top keeps the cards clearly lighter than the page they sit on (they read
+         as raised, which is their whole job) without any of them being the
+         brightest thing a five year old looks at for forty minutes. -->
+    <color name="tv_panel">#FDFBF5</color>
+    <color name="surface">#FDFBF5</color>
     <color name="surface_alt">#F3EFE3</color>
 
     <!-- ============================================================ text -->

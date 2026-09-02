@@ -1,8 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Custom Leanback title bar. Leanback's default gives you a title and a search
-     orb; the prototype's header carries a brand mark on the left and live device
-     status on the right, which is most of what makes the screen feel like a
-     product rather than a list. -->
+<!-- Custom Leanback title bar: live device status, right aligned.
+
+     Leanback's default gives you a title and a search orb. This app has no search
+     and does not need its own name read back to it on every screen, so the row
+     carries the four things a teacher or an operator actually wants from the
+     door - which school this box is claimed by, whether it is online, whether an
+     update is waiting, and the time.
+
+     The brand used to sit on the left here. It moved into the rail, because the
+     header starts at the overscan inset while the rail starts at the screen edge,
+     so the mark and the glyphs below it stood on two different vertical lines. -->
 <np.com.jagdamba.eced.tv.BrowseTitleView
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -15,36 +22,12 @@
     android:paddingTop="20dp"
     android:paddingBottom="12dp">
 
-    <!-- The real mark, not a Unicode stand-in.
-
-         This was ✦ - U+2726, set as text in gold. Two problems, and the second
-         is the serious one. It is 1.51:1 on cream, so it had stopped being
-         visible at all; and U+2726 is one of the characters routinely missing
-         from the system font on cheap Amlogic and Allwinner boxes, which is
-         exactly the hardware this ships on. On those, the brand mark rendered
-         as a tofu box. A vector cannot be missing from a font. -->
-    <ImageView
-        android:id="@+id/title_mark"
-        android:layout_width="30dp"
-        android:layout_height="30dp"
-        android:src="@drawable/ic_brand_mark"
-        android:importantForAccessibility="no" />
-
-    <TextView
-        android:id="@+id/title_brand"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="10dp"
-        android:text="@string/app_name"
-        android:textColor="@color/tv_ink"
-        android:textSize="@dimen/text_heading"
-        android:textStyle="bold"
-        android:letterSpacing="0.01" />
-
-    <!-- Pushes the status chips to the right edge. -->
+    <!-- Holds the row's height steady and pushes the chips to the right edge.
+         Without it the strip would collapse to the tallest chip and the first row
+         beneath would shift as chips appear and disappear. -->
     <Space
         android:layout_width="0dp"
-        android:layout_height="1dp"
+        android:layout_height="30dp"
         android:layout_weight="1" />
 
     <TextView

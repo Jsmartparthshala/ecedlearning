@@ -1,18 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Opaque, with a hairline down the right edge.
+<!-- Navy, opaque, with a gold hairline down the right edge.
 
-     Opaque because the rail expands over the content rather than pushing it, and
-     the hairline is what stops the expanded panel from looking like text floating
-     on top of the subject tiles. -->
+     The rail used to be the same cream as the page it expands over, which left a
+     1dp line doing all the work of saying a panel had opened - and on a screen
+     that is otherwise pale from edge to edge, it was most of why the whole
+     layout read as bright. Navy gives the page a spine to sit against and gives
+     the eye somewhere to rest that is not white.
+
+     Opaque, because the rail expands over the content rather than pushing it. A
+     gold edge rather than a shadow: strokes are free on a Mali-450 and blurs are
+     not, and gold is legible against navy in a way it is not against cream. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
         <shape android:shape="rectangle">
-            <solid android:color="@color/hairline_strong" />
+            <solid android:color="@color/brand_gold" />
         </shape>
     </item>
     <item android:right="2dp">
         <shape android:shape="rectangle">
-            <solid android:color="@color/tv_panel" />
+            <solid android:color="@color/brand_navy_deep" />
         </shape>
     </item>
 </layer-list>

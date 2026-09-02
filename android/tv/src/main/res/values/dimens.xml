@@ -77,12 +77,47 @@
          so the subject tiles sit near the top where a teacher looks first. -->
     <dimen name="lb_browse_rows_margin_top">96dp</dimen>
 
+    <!-- Rows and row headers start on the same vertical line as the status strip
+         above them.
+
+         This is the value behind Leanback's browsePaddingStart attribute, which
+         indents both the row header and the row's grid view. It ships at 56dp,
+         inside a content frame this app has already inset by the 88dp collapsed
+         rail - so rows began at 144dp while the header began at 88 + 48 = 136dp.
+         Eight pixels is not much to describe and is immediately obvious as two
+         things that were meant to line up and do not. Every column on the browse
+         screen now starts at 136dp, the same as every other screen in the app.
+
+         Not lb_browse_rows_margin_start, which is the gutter reserved for the
+         header dock and is unused here because headers are disabled. -->
+    <dimen name="lb_browse_padding_start">@dimen/overscan_horizontal</dimen>
+    <dimen name="lb_browse_padding_end">@dimen/overscan_horizontal</dimen>
+
+    <!-- Row headers at rest. Leanback fades the unselected ones to 50%, which was
+         built for white-on-black; on cream it took an already light label down to
+         somewhere between the page and nothing, and the row titles effectively
+         vanished. The type carries its own hierarchy - it does not need to be
+         faded to say it is not the focused row.
+
+         A fraction, not a dimension: that is the type Leanback declares it as,
+         and an override under the wrong type is a silent no-op rather than an
+         error. -->
+    <item name="lb_browse_header_unselect_alpha" type="fraction">100%</item>
+
     <!-- Utility rail. Collapsed shows glyphs only; focusing it expands over the
          content to reveal labels at a size that reads across a classroom. The
          glyph column is the collapsed width less the rail padding, so the icons
          do not shift when the labels appear. -->
-    <dimen name="sidebar_collapsed_width">88dp</dimen>
-    <dimen name="sidebar_expanded_width">252dp</dimen>
+    <!-- 108 = 28 lead + 72 glyph column + 8 trail.
+
+         The lead is what puts the icons past the overscan line. A 28dp icon
+         centred in the 72dp column starts 22dp into it, so at the old 8dp lead
+         the glyphs began at 30dp - inside the 48dp a cheap panel is entitled to
+         crop. The rail's navy still bleeds to x=0, which is right; it was only
+         ever the icons that could not afford to be there. -->
+    <dimen name="sidebar_collapsed_width">108dp</dimen>
+    <dimen name="sidebar_lead">28dp</dimen>
+    <dimen name="sidebar_expanded_width">272dp</dimen>
     <dimen name="sidebar_item_height">62dp</dimen>
     <dimen name="sidebar_glyph_column">72dp</dimen>
     <!-- Drawn icons, not font glyphs. The old rail set four Unicode characters
@@ -91,6 +126,22 @@
          tofu box instead of an icon. -->
     <dimen name="sidebar_glyph_size">28dp</dimen>
 
-    <!-- Clears the title bar, so the expanded rail never covers the brand. -->
-    <dimen name="sidebar_top_inset">64dp</dimen>
+    <!-- The rail runs full height now and carries the brand at the top, so
+         there is no header left to clear. These size that mark: it sits in the
+         same 72dp glyph column as the four icons below it, so nothing on the
+         left edge moves when the rail opens. -->
+    <dimen name="sidebar_brand_top">22dp</dimen>
+    <dimen name="sidebar_brand_size">44dp</dimen>
+
+    <!-- The prose pages start their content on one line, under the title, rather
+         than each centring its own block in whatever height it happens to have.
+         Profile and Downloads were centred and Settings was not, so moving
+         between three screens that are otherwise identical moved the first line
+         four hundred pixels up the panel. -->
+    <dimen name="page_lead">34dp</dimen>
+
+    <!-- Settings draws a card grid, and SettingsCard carries a 10dp margin of
+         its own. Taking that back out of the page inset is what puts the outer
+         edge of the first card on the same line as the page title above it. -->
+    <dimen name="settings_grid_start">38dp</dimen>
 </resources>

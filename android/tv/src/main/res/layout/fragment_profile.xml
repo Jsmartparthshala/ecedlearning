@@ -16,10 +16,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:gravity="center_vertical"
-    android:paddingStart="@dimen/overscan_horizontal"
+    android:paddingStart="@dimen/page_content_start"
     android:paddingEnd="@dimen/overscan_horizontal"
-    android:paddingBottom="90dp">
+    android:paddingTop="@dimen/page_lead">
 
     <TextView
         android:id="@+id/profile_school"

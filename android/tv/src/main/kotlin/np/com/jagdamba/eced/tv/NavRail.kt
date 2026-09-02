@@ -62,8 +62,23 @@ class NavRail(
         Entry(R.id.nav_settings, R.drawable.ic_nav_settings, R.string.nav_settings, PageActivity.PAGE_SETTINGS),
     )
 
-    /** The entry matching this screen, which stays marked while the rail is closed. */
-    private val currentEntry get() = entries.first { it.page == current }
+    /**
+     * The entry marked while the rail is closed.
+     *
+     * Not every screen is one of the four. Privacy & terms is opened from
+     * Settings and has no rail entry of its own, and `first { }` on a predicate
+     * nothing satisfies throws - so pressing left on that screen, which is the
+     * documented way to reach the menu, took the whole app down with a
+     * NoSuchElementException. It was the only page in the product that could do
+     * it, and it is also the page a teacher is least likely to know how to get
+     * back out of.
+     *
+     * Settings is the honest fallback rather than merely a safe one: Privacy &
+     * terms sits underneath Settings, so marking Settings says where you are.
+     */
+    private val currentEntry
+        get() = entries.firstOrNull { it.page == current }
+            ?: entries.first { it.page == PageActivity.PAGE_SETTINGS }
 
     /**
      * Whether the rail holds focus because a teacher asked for it.
@@ -91,7 +106,16 @@ class NavRail(
             val row = activity.findViewById<View>(entry.viewId)
             row.findViewById<ImageView>(R.id.si_glyph).setImageResource(entry.icon)
             row.findViewById<TextView>(R.id.si_label).text = activity.getString(entry.label)
-            row.isSelected = entry.page == current
+            // Against currentEntry, not against `current` directly, so a screen
+            // that is not itself in the rail still marks the one it lives under.
+            row.isSelected = entry == currentEntry
+
+            // The row carries the name, not the label inside it. Collapsed - which
+            // is how the rail spends almost all of its life - the label is GONE, so
+            // a screen reader walking the rail had four unnamed buttons to offer.
+            // The glyph cannot supply the name either: it is marked as decoration
+            // precisely so it is not read twice when the rail is open.
+            row.contentDescription = activity.getString(entry.label)
 
             row.setOnClickListener { go(entry) }
             // Expansion belongs to the rail, not to one row, so every row reports
@@ -221,6 +245,12 @@ class NavRail(
                 .findViewById<TextView>(R.id.si_label).visibility =
                 if (expanded) View.VISIBLE else View.GONE
         }
+
+        // The wordmark arrives with the labels and leaves with them. Collapsed,
+        // the mark alone holds the glyph column, and there is no room beside it
+        // for twenty-four characters nor any reason to make room.
+        root.findViewById<TextView>(R.id.nav_brand_label).visibility =
+            if (expanded) View.VISIBLE else View.GONE
 
         val target = activity.resources.getDimensionPixelSize(
             if (expanded) R.dimen.sidebar_expanded_width else R.dimen.sidebar_collapsed_width

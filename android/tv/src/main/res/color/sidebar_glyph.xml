@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The rail glyph. Gold marked the current page on the dark palette; on a white
-     rail gold measures 1.5:1 and simply is not there, so the current page is
-     marked in brand navy instead, and the focused row - which fills navy - takes
-     a cream glyph so it does not disappear into its own background. -->
+<!-- Glyph and label on the navy rail, from one list so the two can never
+     disagree with each other.
+
+     Focused, the row is a cream plate, so the mark goes navy at 8.61:1.
+     Selected but not focused, the row is a dim cream wash and gold reads on it
+     at 8.90:1 - which says "this is the screen you are on" in the brand colour
+     rather than in a second shade of white. At rest, cream held slightly back,
+     so the four glyphs sit quietly until somebody goes looking for them. -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:state_focused="true" android:color="@color/on_focus" />
-    <item android:state_selected="true" android:color="@color/brand_navy" />
-    <item android:color="@color/tv_muted" />
+    <item android:state_focused="true" android:color="@color/brand_navy" />
+    <item android:state_selected="true" android:color="@color/brand_gold" />
+    <item android:color="#D6FAF6EC" />
 </selector>

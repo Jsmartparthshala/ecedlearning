@@ -1,18 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Sidebar row. Transparent at rest so the rail reads as one surface, filled and
-     ringed on focus. Same stroke-not-glow rule as every other focusable thing
-     here: strokes are free on a Mali-450, blurs and elevation are not. -->
+<!-- The rail inverts the app's inversion.
+
+     Everywhere else, focus means a navy plate on a cream page. The rail is navy
+     already, so the same rule there would be invisible: focus fills cream and
+     the glyph goes navy instead. One mechanism, mirrored - which is why the
+     glyph and the label both read from a single state list that flips with it.
+
+     Selected-but-not-focused keeps a dim cream wash with a gold edge. That is
+     the entry for the screen you are already on, and it has to stay readable
+     while the rail is closed, because those four glyphs are the only thing
+     telling a teacher where they are. -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:state_focused="true">
         <shape android:shape="rectangle">
-            <solid android:color="@color/surface_focus" />
-            <stroke android:width="3dp" android:color="@color/focus_gold" />
+            <solid android:color="@color/tv_bg" />
             <corners android:radius="14dp" />
         </shape>
     </item>
     <item android:state_selected="true">
         <shape android:shape="rectangle">
-            <solid android:color="@color/surface_selected" />
+            <solid android:color="#26FAF6EC" />
+            <stroke android:width="2dp" android:color="@color/brand_gold" />
             <corners android:radius="14dp" />
         </shape>
     </item>

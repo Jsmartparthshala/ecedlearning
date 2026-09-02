@@ -4,17 +4,64 @@
      Kept as its own layout so Videos, Profile, Downloads and Settings are peers
      on every screen rather than a stack. Before this, opening Profile was a dead
      end: the only way out was the system back button, with nothing on screen
-     saying so. -->
+     saying so.
+
+     The brand sits at the top of the rail now, not in the page header. Two
+     reasons. The header started at the overscan inset while the rail started at
+     the screen edge, so the mark and the glyphs beneath it stood on two
+     different vertical lines and nothing down the left of the screen agreed with
+     anything else. And the rail already has exactly the behaviour a wordmark
+     wants: a fixed glyph column that never moves, and a label column that
+     appears when it opens. So the mark holds the column, and the name arrives
+     with the other labels. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/sidebar"
     android:layout_width="@dimen/sidebar_collapsed_width"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:gravity="center_vertical"
     android:background="@drawable/sidebar_bg"
-    android:layout_marginTop="@dimen/sidebar_top_inset"
-    android:paddingStart="8dp"
-    android:paddingEnd="8dp">
+    android:paddingStart="@dimen/sidebar_lead"
+    android:paddingEnd="8dp"
+    android:paddingTop="@dimen/sidebar_brand_top">
+
+    <!-- Not focusable. It is a mark, not a destination, and a row the D-pad
+         stops on but cannot open is a dead press. -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <ImageView
+            android:layout_width="@dimen/sidebar_glyph_column"
+            android:layout_height="@dimen/sidebar_brand_size"
+            android:src="@drawable/ic_brand_mark_inverse"
+            android:scaleType="fitCenter"
+            android:importantForAccessibility="no" />
+
+        <TextView
+            android:id="@+id/nav_brand_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:text="@string/app_name"
+            android:textColor="@color/tv_bg"
+            android:textSize="@dimen/text_body"
+            android:textStyle="bold"
+            android:lineSpacingMultiplier="1.05"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <!-- Lifts the four destinations off the mark and onto the vertical middle of
+         what is left, so the rail does not read as a list that happens to start
+         underneath a logo. Weighted rather than centred, because the block wants
+         to sit slightly above centre - optically level with the first row of
+         content, not with the middle of the panel. -->
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
 
     <include
         android:id="@+id/nav_videos"
@@ -31,4 +78,9 @@
     <include
         android:id="@+id/nav_settings"
         layout="@layout/sidebar_item" />
+
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1.35" />
 </LinearLayout>

@@ -13,11 +13,18 @@
     android:focusable="true"
     android:focusableInTouchMode="true">
 
+    <!-- duplicateParentState, or the glyph and its own label disagree.
+
+         setSelected on a ViewGroup is dispatched down to its children; focus is
+         not. So without this the glyph saw selected but never focused, and on
+         the row for the screen you are already on it stayed gold while the label
+         beside it inverted to navy - two halves of one button in two states. -->
     <ImageView
         android:id="@+id/si_glyph"
         android:layout_width="@dimen/sidebar_glyph_column"
         android:layout_height="@dimen/sidebar_glyph_size"
         android:scaleType="fitCenter"
+        android:duplicateParentState="true"
         android:tint="@color/sidebar_glyph"
         android:importantForAccessibility="no" />
 
