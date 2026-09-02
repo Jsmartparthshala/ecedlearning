@@ -753,9 +753,15 @@ async function assign(deviceId, teacherId) {
 }
 
 async function revoke(deviceId) {
-  if (!confirm('Revoke this television?
-
-It returns to the pairing screen the next time it checks in — within about ten minutes, or straight away if someone restarts it.')) return
+  // The newlines have to be escaped. A real line break inside a quoted string is
+  // a syntax error, and because this is one module, that error took the whole
+  // page down with it - every handler on the page, including Unlock, silently
+  // never bound and the console looked dead rather than broken.
+  if (!confirm(
+    'Revoke this television?\n\n' +
+    'It returns to the pairing screen the next time it checks in — within ' +
+    'about ten minutes, or straight away if someone restarts it.'
+  )) return
   try {
     await api('revoke', { deviceId })
     setStatus('revoked', 'ok')
