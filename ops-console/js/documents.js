@@ -17,6 +17,25 @@ let docs = []
 let current = null
 let loaded = false
 
+/** Every field that carries text, in one place, so nothing gets forgotten. */
+const FIELDS = ['#d-title-en', '#d-title-np', '#d-body-en', '#d-body-np',
+                '#d-version', '#d-effective']
+
+/**
+ * What was in the boxes when they last matched the database.
+ *
+ * A policy is the longest thing anybody types into this console - paragraphs,
+ * not a school name - and the two ways to lose it are both one click: picking
+ * another document in the list, or closing the tab. Neither used to say
+ * anything. Comparing against this catches both, and catches nothing else.
+ */
+let clean = null
+
+const snapshot = () =>
+  FIELDS.map(sel => $(sel).value).join('\u0000') + '\u0000' + $('#d-published').checked
+
+const dirty = () => clean !== null && snapshot() !== clean
+
 export function wireDocuments() {
   $('#d-save').onclick = save
   // Clear an error as soon as the operator starts fixing what caused it.
@@ -24,6 +43,14 @@ export function wireDocuments() {
     $(sel).oninput = () => showFieldError(sel, '')
     $(sel).onblur = () => validate(false)
   }
+
+  // The browser writes the wording for this one, which is not ours to choose.
+  // It only appears when there is genuinely something to lose.
+  window.addEventListener('beforeunload', e => {
+    if (!dirty()) return
+    e.preventDefault()
+    e.returnValue = ''
+  })
 }
 
 /** Called when the Documents tab is opened; loads once, then only on demand. */
@@ -69,6 +96,14 @@ function renderList() {
 function select(slug) {
   const d = docs.find(x => x.slug === slug)
   if (!d) return
+
+  // Moving to another document throws away whatever is in the boxes. Ask, and
+  // only when there is something unsaved - a confirm on every click of the list
+  // is a confirm nobody reads.
+  if (current && slug !== current && dirty() && !confirm(
+    `Discard the unsaved changes to ${docs.find(x => x.slug === current)?.title_en || current}?`
+  )) return
+
   current = slug
   renderList()
 
@@ -86,6 +121,7 @@ function select(slug) {
   $('#d-state').title = exact(d.updated_at)
   showFieldError('#d-title-en', '')
   showFieldError('#d-body-en', '')
+  clean = snapshot()
 }
 
 function showFieldError(sel, message) {
@@ -122,13 +158,23 @@ async function save() {
   if (!validate(true)) return
 
   const before = docs.find(d => d.slug === current)
-  const publishing = $('#d-published').checked && !before?.published
+  const wanted = $('#d-published').checked
+  const publishing = wanted && !before?.published
+  // Taking a published policy down is the same size of act as putting one up:
+  // both change what a parent reads in every classroom. Only a draft saved over
+  // a draft asks nothing.
+  const withdrawing = !wanted && !!before?.published
 
   // Asked once, and only when the answer changes something a parent will read.
   // Saving a draft asks nothing.
   if (publishing && !confirm(
     'Publish this to the televisions?\n\n' +
     'Every classroom shows this text the next time somebody opens Privacy & terms.'
+  )) return
+
+  if (withdrawing && !confirm(
+    'Take this off the televisions?\n\n' +
+    'Privacy & terms falls back to whatever the app was built with, in every classroom.'
   )) return
 
   $('#d-save').disabled = true
@@ -144,7 +190,7 @@ async function save() {
       effectiveOn: $('#d-effective').value || null,
       published: $('#d-published').checked,
     })
-    setStatus($('#d-published').checked ? 'Saved and live on the televisions.' : 'Saved as a draft.', 'ok')
+    setStatus(wanted ? 'Saved and live on the televisions.' : 'Saved as a draft.', 'ok')
     await load()
   } catch (e) {
     setStatus(e.message, 'err')

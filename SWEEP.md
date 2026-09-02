@@ -198,6 +198,31 @@ Elevation and motion, both as tokens rather than one-offs:
   as the durations. A hover that jumps a pixel with no transition is worse than
   one that does not move at all.
 
+
+### 11. A half-written policy could be lost with one click
+
+The Documents tab is where the longest thing anybody types into this console
+gets typed — paragraphs of a privacy policy, not a school name. Two clicks threw
+it away without a word: picking the other document in the list, and closing the
+tab.
+
+Both now check first, and only when there is genuinely something unsaved.
+Clicking between documents with nothing changed still asks nothing, because a
+confirmation on every click of that list is a confirmation nobody reads. The
+browser writes the wording for the closing-the-tab one; that is not ours to
+choose.
+
+### 12. Taking a policy down asked nothing; putting one up asked twice over
+
+Publishing was already guarded — tick the box, save, and it asks before every
+classroom starts showing the text. Un-ticking it and saving did the opposite act
+in silence: the policy comes off every television and Privacy & terms falls back
+to whatever was compiled into the APK, with no more ceremony than saving a
+typo.
+
+The two are the same size of act, so they now ask the same way. Saving a draft
+over a draft still asks nothing.
+
 ---
 
 ## Flagged — these need your decision, not mine
@@ -293,3 +318,15 @@ Recorded so the same ground does not get walked twice.
   belonging to a school it no longer belonged to is fixed and stayed fixed.
 - **Everything parses.** All nine page modules, the generated `data/nepal.js`, and
   the function itself pass `node --check`.
+- **The lesson renamer.** Both title fields are sent on every save, so the pair
+  can never drift apart; Escape restores the value the field was loaded with;
+  and because only one field can be focused at a time, a save can never commit a
+  half-typed sibling. Nothing to fix.
+- **The activity panel never mistakes a failed read for an idle fleet.** A
+  network error leaves the previous playing set alone rather than reporting that
+  every television stopped, which would also make the map's dots flicker every
+  time the office wifi hiccups.
+- **Expiry dates survive the round trip.** A date typed as "the 30th" is stored
+  as the end of the 30th and reads back as the 30th. In Nepal time that runs to
+  05:44 on the 1st, which errs in the direction of a television that keeps
+  working — the right direction for a school in the middle of a term.
