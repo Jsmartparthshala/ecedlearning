@@ -136,6 +136,13 @@ class SettingsFragment : Fragment() {
             checkForUpdate()
         }
 
+        // The background check may already have fetched an APK while nobody was
+        // looking. Say so on arrival rather than making the operator press Check
+        // and watch it discover something it has known since last night.
+        UpdateDelivery.staged(requireContext())?.let {
+            statusText(getString(R.string.upd_staged, it.versionName))
+        }
+
         lifecycleScope.launch {
             val release = EcedApp.instance.catalog.latestRelease()
             view.bind(
@@ -205,6 +212,27 @@ class SettingsFragment : Fragment() {
 
     private fun downloadAndInstall(release: AppRelease) {
         val context = requireContext().applicationContext
+
+        // Already on disk, put there by the nightly check. Skip straight to the
+        // handoff: re-downloading fourteen megabytes a school has already paid
+        // for, in front of someone waiting, would be the whole point of staging
+        // thrown away.
+        UpdateDelivery.staged(context)
+            ?.takeIf { it.versionCode == release.versionCode }
+            ?.let { staged ->
+                status(R.string.upd_handoff)
+                runCatching { Updater.install(context, staged.apk) }
+                    .onFailure {
+                        // The staged file is unusable - cleared from the cache
+                        // between the check and the tap, or truncated. Drop the
+                        // record and fall through to a fresh download rather
+                        // than leaving the operator stuck on a dead button.
+                        UpdateDelivery.clear(context)
+                        status(R.string.upd_download_failed)
+                    }
+                return
+            }
+
         statusText(getString(R.string.upd_downloading_indeterminate))
 
         viewLifecycleOwner.lifecycleScope.launch {

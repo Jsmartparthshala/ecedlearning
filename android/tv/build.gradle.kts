@@ -50,6 +50,7 @@ dependencies {
     implementation(libs.androidx.recyclerview)
     implementation(libs.androidx.lifecycle.rt)
     implementation(libs.androidx.lifecycle.vm)
+    implementation(libs.androidx.work)
     implementation(libs.kotlinx.coroutines)
 
     implementation(libs.media3.exoplayer)

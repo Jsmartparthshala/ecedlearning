@@ -59,20 +59,33 @@ class CardPresenter(
                 "",
             )
 
+            /**
+             * Context-free fallback, for the paths that resolve a style before
+             * they have one. These were `#3A4453` and `#1E2530` - two dark
+             * slates, which was right when the page behind them was darker
+             * still. On cream they are the two heaviest things on the screen,
+             * and the navy type they carry drops to 1.4:1. Same neutrals as
+             * `subject_neutral` and `subject_neutral_dark`, kept in step by
+             * hand because a companion object has no Context to resolve them.
+             */
             val DEFAULT = SubjectStyle(
-                Color.parseColor("#3A4453"),
-                Color.parseColor("#1E2530"),
+                Color.parseColor("#E8E2D2"),
+                Color.parseColor("#F3EFE3"),
                 "",
             )
 
+            /**
+             * Both colours go through [Palette.soften], so a card and a subject
+             * tile render the same subject as the same colour. They did not
+             * before: the tile re-graded and the card did not, which put a pale
+             * "ECED English" tile in the top row and a fully saturated one in
+             * Continue watching directly underneath it.
+             */
             fun of(color1: String?, color2: String?, label: String?) = SubjectStyle(
-                colorStart = parseColor(color1, DEFAULT.colorStart),
-                colorEnd   = parseColor(color2, DEFAULT.colorEnd),
+                colorStart = Palette.soften(color1, DEFAULT.colorStart),
+                colorEnd   = Palette.soften(color2, DEFAULT.colorEnd),
                 label      = label.orEmpty(),
             )
-
-            private fun parseColor(hex: String?, fallback: Int) =
-                runCatching { Color.parseColor(hex ?: "") }.getOrDefault(fallback)
         }
     }
 
@@ -143,6 +156,52 @@ class CardPresenter(
                 showProgress(h, 0f)
             }
         }
+
+        // Focus repaints what a state list cannot reach: the scrubber, and the
+        // badges sitting on the artwork. Set both here and immediately, because
+        // a recycled holder arrives carrying the last card's state.
+        h.view.setOnFocusChangeListener { _, hasFocus -> h.paint(hasFocus) }
+        h.paint(h.view.hasFocus())
+    }
+
+    /**
+     * The card inverts on focus - white plate to navy - which `card_bg` and the
+     * `text_on_surface` state lists handle for the title and the strip. Three
+     * things they cannot handle: the scrubber, which is a plain View with a
+     * colour rather than a state list; and the two badges over the artwork,
+     * whose legibility depends on whether a real poster loaded underneath them,
+     * which is a data question and not a view state.
+     *
+     * A ColorStateList on `android:background` would cover the first, but only
+     * from API 29. This ships to minSdk 23.
+     */
+    private fun Holder.paint(focused: Boolean) {
+        val c = view.context
+        val onPoster = scrim.visibility == View.VISIBLE
+
+        // On the white strip the scrubber has to be navy - gold is 1.66:1 there
+        // and reads as an empty track. Once the card is navy, gold is the only
+        // one of the two that shows.
+        fill.setBackgroundColor(
+            ContextCompat.getColor(c, if (focused) R.color.focus_gold else R.color.brand_navy)
+        )
+        track.setBackgroundColor(
+            ContextCompat.getColor(
+                c, if (focused) R.color.badge_scrim_inverse else R.color.hairline_strong
+            )
+        )
+
+        // Over a scrimmed video frame nothing dark survives; over the flat
+        // subject tint navy is 8:1 and white would be 1.3:1.
+        val ink = if (onPoster) Color.WHITE else ContextCompat.getColor(c, R.color.on_subject)
+        val badge = ContextCompat.getColor(
+            c, if (onPoster) R.color.badge_scrim_inverse else R.color.badge_scrim
+        )
+        glyph.setTextColor(ink)
+        kicker.setTextColor(ink)
+        count.setTextColor(ink)
+        kicker.setBackgroundColor(badge)
+        count.setBackgroundColor(badge)
     }
 
     /**

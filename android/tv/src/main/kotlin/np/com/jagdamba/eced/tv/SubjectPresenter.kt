@@ -41,6 +41,9 @@ class SubjectPresenter : Presenter() {
         val name: TextView   = view.findViewById(R.id.cs_name)
         val nameNp: TextView = view.findViewById(R.id.cs_name_np)
         val count: TextView  = view.findViewById(R.id.cs_count)
+
+        /** The tile's colour at rest, so leaving focus can restore it. */
+        var restFill: Int = 0
     }
 
     override fun onCreateViewHolder(parent: ViewGroup): Presenter.ViewHolder =
@@ -55,10 +58,9 @@ class SubjectPresenter : Presenter() {
 
         when (item) {
             is SubjectTile -> {
-                h.art.setBackgroundColor(
-                    runCatching { android.graphics.Color.parseColor(item.subject.color1) }
-                        .getOrDefault(ContextCompat.getColor(context, R.color.subject_neutral))
-                )
+                h.restFill = tint(item.subject.color1)
+                    .takeIf { it != 0 }
+                    ?: ContextCompat.getColor(context, R.color.subject_neutral)
                 h.name.text = item.subject.nameEn
                 h.setSecondary(item.subject.nameNp)
                 // A zero here means the count is unknown, not that the subject is
@@ -86,11 +88,9 @@ class SubjectPresenter : Presenter() {
                     "secondary" -> R.color.stage_secondary
                     else        -> R.color.stage_higher
                 }
-                h.art.setBackgroundColor(
-                    ContextCompat.getColor(
-                        context,
-                        if (item.level.hasContent) stageColor else R.color.subject_neutral_dark
-                    )
+                h.restFill = ContextCompat.getColor(
+                    context,
+                    if (item.level.hasContent) stageColor else R.color.subject_neutral_dark
                 )
                 h.name.text = item.level.nameEn
                 h.setSecondary(item.level.nameNp)
@@ -103,10 +103,8 @@ class SubjectPresenter : Presenter() {
             }
 
             is UtilityTile -> {
-                // Neutral, so the coloured subjects stay the thing the eye lands on.
-                h.art.setBackgroundColor(
-                    ContextCompat.getColor(context, R.color.subject_neutral)
-                )
+                // Neutral, so the tinted subjects stay the thing the eye lands on.
+                h.restFill = ContextCompat.getColor(context, R.color.subject_neutral)
                 h.name.text = item.label
                 h.setSecondary(null)
                 h.count.text = ""
@@ -114,12 +112,18 @@ class SubjectPresenter : Presenter() {
             }
 
             else -> {
+                h.restFill = ContextCompat.getColor(context, R.color.subject_neutral)
                 h.name.text = item?.toString().orEmpty()
                 h.setSecondary(null)
                 h.count.text = ""
                 h.count.visibility = View.GONE
             }
         }
+
+        // Bound tiles can already hold focus - Leanback recycles these - so the
+        // state is applied now and not only when it next changes.
+        h.view.setOnFocusChangeListener { _, hasFocus -> h.applyFocus(hasFocus) }
+        h.applyFocus(h.view.hasFocus())
     }
 
     override fun onUnbindViewHolder(viewHolder: Presenter.ViewHolder) {
@@ -127,6 +131,58 @@ class SubjectPresenter : Presenter() {
         h.name.text = null
         h.nameNp.text = null
         h.count.text = null
+    }
+
+    /**
+     * A catalogue colour, re-graded to something that belongs on cream.
+     *
+     * `subjects.color_1` holds fully saturated hex - #2AA9D8, #E1701A - chosen
+     * when the app was dark and a tile was a block of colour. On a cream ground
+     * those read as five competing signs rather than as one screen, which is the
+     * whole complaint this rework exists to answer.
+     *
+     * Doing it here rather than in a migration is deliberate. The colours stay
+     * the catalogue's own, an operator adding a subject cannot land a tile that
+     * breaks the palette, and the two halves of the product - an APK and a
+     * database updated by different people on different days - do not have to
+     * agree on a release for the screen to look right.
+     *
+     * Lightness is forced rather than scaled so every hue arrives at the same
+     * weight; saturation is capped rather than forced so blue still reads as
+     * blue. Navy text measures 8.9-10:1 across the resulting set.
+     */
+    /** Re-graded for the cream ground. See [Palette]. */
+    private fun tint(hex: String?): Int = Palette.soften(hex, 0)
+
+    /**
+     * Focus, as an inversion rather than a ring.
+     *
+     * The gold ring did this on the dark palette. Gold on cream is 1.51:1, so on
+     * this palette the ring is not subtle, it is absent - see colors.xml. A
+     * focused tile therefore fills brand navy and turns its text cream, which
+     * measures 7.61:1 against the ground and reads from the back of a classroom
+     * without a glow, a shadow or a scale animation that a Mali-450 would have to
+     * pay for.
+     *
+     * Applied on bind as well as on change, because Leanback recycles these view
+     * holders and a tile can be bound while it already holds focus.
+     */
+    private fun Holder.applyFocus(focused: Boolean) {
+        val context = view.context
+        art.setBackgroundColor(
+            if (focused) ContextCompat.getColor(context, R.color.brand_navy) else restFill
+        )
+        val ink = ContextCompat.getColor(
+            context, if (focused) R.color.on_focus else R.color.on_subject
+        )
+        name.setTextColor(ink)
+        nameNp.setTextColor(ink)
+        count.setTextColor(ink)
+        count.setBackgroundColor(
+            ContextCompat.getColor(
+                context, if (focused) R.color.badge_scrim_inverse else R.color.badge_scrim
+            )
+        )
     }
 
     /**

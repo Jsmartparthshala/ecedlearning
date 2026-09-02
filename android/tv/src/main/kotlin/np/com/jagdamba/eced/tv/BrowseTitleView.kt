@@ -36,6 +36,7 @@ class BrowseTitleView @JvmOverloads constructor(
     private val school: TextView by lazy { findViewById(R.id.chip_school) }
     private val net: TextView    by lazy { findViewById(R.id.chip_net) }
     private val clock: TextView  by lazy { findViewById(R.id.chip_clock) }
+    private val update: TextView by lazy { findViewById(R.id.chip_update) }
 
     private val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
 
@@ -77,6 +78,14 @@ class BrowseTitleView @JvmOverloads constructor(
         val name = EcedApp.instance.devices.cachedSchoolName()
         school.text = name ?: context.getString(R.string.chip_unclaimed)
         school.visibility = if (name == null) GONE else VISIBLE
+
+        // A chip, not a dialog. The nightly check can finish at any moment,
+        // including in the middle of a lesson, and a teacher cannot do anything
+        // about it from here anyway - the install lives in Settings. This is for
+        // the operator who walks into the room and wants to know from the door.
+        // Reads a preferences file, so it stays as cheap as the other three.
+        update.visibility =
+            if (UpdateDelivery.staged(context) != null) VISIBLE else GONE
     }
 
 }

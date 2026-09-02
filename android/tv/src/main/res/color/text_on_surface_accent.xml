@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The accent line: kickers, card headings, the values worth singling out.
+
+     Navy on the cream page at 8.61:1, and gold once the surface under it has
+     inverted to navy, where gold is 8.90:1. The accent therefore survives the
+     inversion by changing which brand colour it is, which is the only way it can
+     - gold on cream is 1.51:1 and navy on navy is nothing at all. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true" android:color="@color/brand_gold" />
+    <item android:color="@color/brand_navy" />
+</selector>

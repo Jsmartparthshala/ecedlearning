@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Primary text on anything that can take focus.
+
+     Focus is a fill now, not a ring: an unfocused card is white paper and a
+     focused one is brand navy. One fixed ink colour cannot serve both - the ink
+     that measures 14.6:1 on paper measures 1.9:1 on the navy, which is a card
+     that blanks its own title the moment a teacher moves onto it.
+
+     Requires android:duplicateParentState="true" on the TextView, because the
+     focusable view is the card, not the label inside it. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true" android:color="@color/on_focus" />
+    <item android:state_selected="true" android:color="@color/tv_ink" />
+    <item android:color="@color/tv_ink" />
+</selector>

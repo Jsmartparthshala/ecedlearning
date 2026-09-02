@@ -236,11 +236,27 @@ class BrowseFragment : BrowseSupportFragment() {
                 // fourth press between a teacher and a video on every launch, for
                 // a choice a classroom television makes once.
                 //
-                // Hidden entirely when there is only one grade, which is the
-                // state every television in the field is in today.
-                if (levels.size > 1) {
+                // Only grades that actually hold something.
+                //
+                // This row was written when the catalogue had one grade, and it
+                // hid itself when there was only one. Then 0007 added the entire
+                // CDC ladder - ECED, Basic 1-8, Secondary, 11-12 - and the row
+                // stopped hiding: thirteen tiles, twelve of them "Coming soon",
+                // sitting directly beneath the four subjects that exist. The home
+                // screen spent more of itself advertising absence than showing
+                // the catalogue, which is most of why it read as cluttered.
+                //
+                // Filtering rather than styling them down, because a tile a
+                // teacher cannot open is not secondary content, it is not content.
+                // selectLevel() already refuses a grade with no content, so these
+                // were never anything but a wall to press against.
+                //
+                // The row returns on its own the day a second grade gets subjects,
+                // with two real tiles in it and nothing to change here.
+                val ladder = levels.filter { it.hasContent }
+                if (ladder.size > 1) {
                     val levelAdapter = ArrayObjectAdapter(SubjectPresenter())
-                    levels.forEach {
+                    ladder.forEach {
                         levelAdapter.add(
                             SubjectPresenter.LevelTile(it, selected = it.slug == current?.slug)
                         )

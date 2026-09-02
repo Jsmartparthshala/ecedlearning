@@ -85,7 +85,7 @@
                 android:id="@+id/pl_fill"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:background="@color/focus_gold" />
+                android:background="@color/brand_navy" />
         </FrameLayout>
     </FrameLayout>
 
@@ -103,7 +103,8 @@
             android:layout_height="wrap_content"
             android:maxLines="1"
             android:ellipsize="end"
-            android:textColor="@color/tv_ink"
+            android:duplicateParentState="true"
+            android:textColor="@color/text_on_surface"
             android:textSize="@dimen/text_body"
             android:textStyle="bold" />
 
@@ -114,7 +115,8 @@
             android:layout_marginTop="1dp"
             android:maxLines="1"
             android:ellipsize="end"
-            android:textColor="@color/tv_muted"
+            android:duplicateParentState="true"
+            android:textColor="@color/text_on_surface_muted"
             android:textSize="@dimen/text_label" />
     </LinearLayout>
 </LinearLayout>

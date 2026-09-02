@@ -1,6 +1,7 @@
 package np.com.jagdamba.eced.tv
 
 import android.content.Intent
+import android.graphics.Color
 import android.graphics.Rect
 import android.os.Bundle
 import android.os.StatFs
@@ -11,6 +12,7 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
@@ -222,11 +224,12 @@ class UnitActivity : FragmentActivity() {
 
         override fun onBindViewHolder(holder: VH, position: Int) {
             val u = items[position]
-            holder.art.setBackgroundColor(style.colorStart)
             holder.no.text = u.sortOrder.toString()
+            paint(holder, holder.itemView.hasFocus())
 
             holder.itemView.setOnFocusChangeListener { view, hasFocus ->
                 lift(view, hasFocus)
+                paint(holder, hasFocus)
                 if (!hasFocus) return@setOnFocusChangeListener
                 selectedTile?.takeIf { it !== view }?.isSelected = false
                 view.isSelected = true
@@ -239,6 +242,30 @@ class UnitActivity : FragmentActivity() {
             holder.itemView.setOnClickListener {
                 lessonGrid.findViewHolderForAdapterPosition(0)?.itemView?.requestFocus()
             }
+        }
+
+        /**
+         * The tile fills with the subject tint at rest and inverts to navy under
+         * focus, matching every other focusable surface in the app.
+         *
+         * It has to be done here rather than in `tile_bg`, because the tile's
+         * artwork is a child View drawn on top of that background - the state
+         * list only ever gets to paint the 4dp of frame around it. Which is also
+         * why a tile with focus used to show a gold ring around an unchanged
+         * pastile square, on a cream page where the gold itself is 1.51:1: from
+         * the back of a classroom, nothing on the rail looked selected at all.
+         */
+        private fun paint(holder: VH, focused: Boolean) {
+            val c = holder.itemView.context
+            holder.art.setBackgroundColor(
+                if (focused) ContextCompat.getColor(c, R.color.surface_focus)
+                else style.colorStart
+            )
+            holder.no.setTextColor(
+                ContextCompat.getColor(
+                    c, if (focused) R.color.on_focus else R.color.on_subject
+                )
+            )
         }
     }
 
@@ -270,13 +297,35 @@ class UnitActivity : FragmentActivity() {
             // The colour panel stays as the backdrop, so a poster that is still
             // loading or never arrives looks deliberate rather than broken.
             holder.art.setBackgroundColor(style.colorStart)
-            if (l.posterUrl.isNullOrBlank()) {
+            val onPoster = !l.posterUrl.isNullOrBlank()
+            if (!onPoster) {
                 PosterLoader.cancel(holder.poster)
                 holder.scrim.visibility = View.GONE
             } else {
                 holder.scrim.visibility = View.VISIBLE
                 PosterLoader.load(holder.poster, l.posterUrl)
             }
+            // The number and the running time sit on the artwork, and what the
+            // artwork is differs card by card in the same grid: a scrimmed video
+            // frame under one, a flat subject tint under the next. One ink colour
+            // cannot serve both - navy is 8:1 on the tint and 1.4:1 on the scrim.
+            val c = holder.itemView.context
+            val ink = if (onPoster) Color.WHITE else ContextCompat.getColor(c, R.color.on_subject)
+            holder.no.setTextColor(ink)
+            holder.dur.setTextColor(ink)
+            holder.dur.setBackgroundColor(
+                ContextCompat.getColor(
+                    c, if (onPoster) R.color.badge_scrim_inverse else R.color.badge_scrim
+                )
+            )
+            holder.fill.setBackgroundColor(
+                if (onPoster) Color.WHITE else ContextCompat.getColor(c, R.color.brand_navy)
+            )
+            holder.track.setBackgroundColor(
+                ContextCompat.getColor(
+                    c, if (onPoster) R.color.badge_scrim_inverse else R.color.badge_scrim
+                )
+            )
             holder.no.text = l.sortOrder.toString()
             holder.dur.text = "${(l.durationSec ?: 0) / 60} min"
             holder.title.text = l.titleEn.clean()

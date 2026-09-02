@@ -6,8 +6,8 @@
     <style name="Theme.Eced.Tv" parent="Theme.Leanback">
         <item name="android:windowBackground">@color/tv_bg</item>
         <item name="android:colorBackground">@color/tv_bg</item>
-        <item name="android:colorPrimary">@color/focus_gold</item>
-        <item name="android:colorAccent">@color/focus_gold</item>
+        <item name="android:colorPrimary">@color/brand_navy</item>
+        <item name="android:colorAccent">@color/brand_navy</item>
     </style>
 
     <style name="Theme.Eced.Player" parent="Theme.Leanback">
@@ -23,8 +23,8 @@
          activity in this app is Leanback. Building one threw the moment a teacher
          pressed OK, which on a television looks exactly like a dead button. -->
     <style name="Theme.Eced.GuidedStep" parent="Theme.Leanback.GuidedStep">
-        <item name="android:colorPrimary">@color/focus_gold</item>
-        <item name="android:colorAccent">@color/focus_gold</item>
+        <item name="android:colorPrimary">@color/brand_navy</item>
+        <item name="android:colorAccent">@color/brand_navy</item>
     </style>
 
     <!-- Status chip: flat pill, no elevation, no gradient. -->
@@ -34,7 +34,7 @@
         <item name="android:paddingVertical">6dp</item>
         <item name="android:background">@drawable/chip_bg</item>
         <item name="android:textColor">@color/tv_muted</item>
-        <item name="android:textSize">14sp</item>
+        <item name="android:textSize">@dimen/text_label</item>
         <item name="android:maxLines">1</item>
     </style>
 
@@ -55,49 +55,53 @@
     </style>
 
     <style name="SettingsCardTitle">
+        <item name="android:duplicateParentState">true</item>
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginBottom">16dp</item>
-        <item name="android:textColor">@color/focus_gold</item>
-        <item name="android:textSize">15sp</item>
+        <item name="android:textColor">@color/text_on_surface_accent</item>
+        <item name="android:textSize">@dimen/text_label</item>
         <item name="android:textStyle">bold</item>
         <item name="android:letterSpacing">0.09</item>
     </style>
 
     <style name="SettingsLabel">
+        <item name="android:duplicateParentState">true</item>
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginTop">12dp</item>
-        <item name="android:textColor">@color/tv_muted</item>
-        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/text_on_surface_muted</item>
+        <item name="android:textSize">@dimen/text_label</item>
         <item name="android:letterSpacing">0.05</item>
     </style>
 
     <style name="SettingsValue">
+        <item name="android:duplicateParentState">true</item>
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginTop">2dp</item>
-        <item name="android:textColor">@color/tv_ink</item>
-        <item name="android:textSize">18sp</item>
+        <item name="android:textColor">@color/text_on_surface</item>
+        <item name="android:textSize">@dimen/text_body</item>
     </style>
 
     <style name="SettingsValueMono" parent="SettingsValue">
         <item name="android:fontFamily">monospace</item>
-        <item name="android:textSize">16sp</item>
+        <item name="android:textSize">@dimen/text_label</item>
     </style>
 
     <style name="SettingsValueStrong" parent="SettingsValue">
-        <item name="android:textColor">@color/focus_gold</item>
+        <item name="android:textColor">@color/text_on_surface_accent</item>
         <item name="android:textStyle">bold</item>
-        <item name="android:textSize">20sp</item>
+        <item name="android:textSize">@dimen/text_body</item>
     </style>
 
     <style name="SettingsNote">
+        <item name="android:duplicateParentState">true</item>
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginTop">18dp</item>
-        <item name="android:textColor">@color/tv_muted</item>
-        <item name="android:textSize">13sp</item>
+        <item name="android:textColor">@color/text_on_surface_muted</item>
+        <item name="android:textSize">@dimen/text_label</item>
         <item name="android:lineSpacingMultiplier">1.25</item>
     </style>
 
@@ -109,8 +113,8 @@
         <item name="android:paddingHorizontal">22dp</item>
         <item name="android:paddingVertical">13dp</item>
         <item name="android:background">@drawable/row_bg</item>
-        <item name="android:textColor">@color/tv_ink</item>
-        <item name="android:textSize">18sp</item>
+        <item name="android:textColor">@color/text_on_surface</item>
+        <item name="android:textSize">@dimen/text_body</item>
         <item name="android:focusable">true</item>
         <item name="android:focusableInTouchMode">true</item>
     </style>
@@ -120,7 +124,7 @@
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginBottom">10dp</item>
         <item name="android:textColor">@color/tv_muted</item>
-        <item name="android:textSize">13sp</item>
+        <item name="android:textSize">@dimen/text_label</item>
         <item name="android:textStyle">bold</item>
         <item name="android:letterSpacing">0.12</item>
     </style>

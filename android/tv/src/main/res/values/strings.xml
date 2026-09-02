@@ -2,7 +2,6 @@
 <resources>
     <string name="app_name">Jagdamba Smart Pathshala</string>
 
-    <string name="brand_mark">✦</string>
     <string name="chip_online">Wi-Fi</string>
     <string name="chip_offline">Offline</string>
     <string name="chip_unclaimed">Not activated</string>
@@ -103,6 +102,12 @@
     <string name="upd_available_body">Version %1$s is ready to install. This television is on %2$s.</string>
     <string name="upd_available_body_forced">Version %1$s is required. This television is on %2$s and must update to keep working.</string>
     <string name="upd_install">Download and install</string>
+    <!-- Shown when the background check has already fetched the APK. Different
+         wording from upd_install because the wait is genuinely different: there
+         is nothing left to download. -->
+    <string name="upd_install_staged">Install now</string>
+    <string name="upd_staged">Version %1$s is downloaded and ready to install</string>
+    <string name="chip_update">Update ready</string>
     <string name="upd_later">Not now</string>
     <string name="upd_downloading">Downloading… %1$d%%</string>
     <string name="upd_downloading_indeterminate">Downloading…</string>

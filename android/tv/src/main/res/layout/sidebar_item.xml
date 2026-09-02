@@ -27,7 +27,8 @@
         android:layout_height="wrap_content"
         android:maxLines="1"
         android:ellipsize="end"
-        android:textColor="@color/tv_ink"
+        android:duplicateParentState="true"
+        android:textColor="@color/sidebar_glyph"
         android:textSize="@dimen/text_body"
         android:visibility="gone" />
 </LinearLayout>

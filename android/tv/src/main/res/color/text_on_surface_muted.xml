@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Secondary text on a focusable surface. Tinted from the surface it sits on
+     rather than grayed: on paper it is the navy-cast muted ink at 5.03:1, and on
+     the focused navy it is cream held back with alpha, which keeps it secondary
+     without dropping it under 4.5:1. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true" android:color="#CCFAF6EC" />
+    <item android:color="@color/tv_muted" />
+</selector>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Square launcher icon. The manifest used to point android:icon at the 320x180
+     banner, which every launcher then squashed to a square. Same emblem, drawn
+     on its own grid. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="@color/brand_navy_deep"
+        android:pathData="M20,4 L88,4 A16,16 0 0,1 104,20 L104,88 A16,16 0 0,1 88,104 L20,104 A16,16 0 0,1 4,88 L4,20 A16,16 0 0,1 20,4 Z" />
+    <group
+        android:scaleX="1.55"
+        android:scaleY="1.55"
+        android:translateX="16"
+        android:translateY="16">
+        <path
+            android:strokeColor="@color/tv_bg" android:strokeWidth="3.2"
+            android:strokeLineCap="round"
+            android:pathData="M18.68,20.02 A6.5,6.5 0 0,1 29.32,20.02" />
+        <path
+            android:strokeColor="@color/tv_bg" android:strokeWidth="3.2"
+            android:strokeLineCap="round"
+            android:pathData="M14.17,16.86 A12,12 0 0,1 33.83,16.86" />
+        <path
+            android:strokeColor="@color/brand_gold" android:strokeWidth="3.2"
+            android:strokeLineCap="round"
+            android:pathData="M9.67,13.71 A17.5,17.5 0 0,1 38.33,13.71" />
+        <path
+            android:fillColor="@color/tv_bg"
+            android:pathData="M23,25.25 C19,22.75 14,22.05 9.5,22.45 L9.5,33.25 C14,32.85 19,33.55 23,35.75 Z" />
+        <path
+            android:fillColor="@color/tv_bg"
+            android:pathData="M25,25.25 C29,22.75 34,22.05 38.5,22.45 L38.5,33.25 C34,32.85 29,33.55 25,35.75 Z" />
+    </group>
+</vector>

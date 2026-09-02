@@ -34,7 +34,7 @@
         android:name=".EcedApp"
         android:allowBackup="false"
         android:banner="@drawable/app_banner"
-        android:icon="@drawable/app_banner"
+        android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="false"
         android:theme="@style/Theme.Eced.Tv">

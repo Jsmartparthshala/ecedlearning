@@ -1,5 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Pairing. The first screen a school ever sees, and for ten minutes the only
+     one, so it is worth more than a stack of centred labels.
+
+     One job: read eight characters off the screen and say them down a phone to
+     whoever is at the ops console. Everything is arranged around that. The code
+     sits on a white card against the cream page - a raised plate rather than
+     floating text - because a phone camera pointed at a TV across a room picks
+     up a bordered block far more reliably than glyphs on a flat field.
+
+     The code was set in gold. On the old dark ground that was the brightest
+     thing on screen; on cream it is 1.51:1, which at 88sp means a teacher stares
+     at a blank card. Navy, at 8.61:1.
+
+     Nothing animates and nothing decodes. This screen polls every few seconds on
+     a box with 1GB of RAM and it may sit here overnight. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -8,31 +24,51 @@
     android:paddingHorizontal="@dimen/overscan_horizontal"
     android:paddingVertical="@dimen/overscan_vertical">
 
+    <ImageView
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:src="@drawable/ic_brand_mark"
+        android:importantForAccessibility="no" />
+
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="@string/app_name"
+        android:textColor="@color/tv_ink"
+        android:textSize="@dimen/text_heading"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="28dp"
         android:text="@string/pairing_title"
         android:textColor="@color/tv_muted"
-        android:textSize="@dimen/text_body" />
+        android:letterSpacing="0.06"
+        android:textSize="@dimen/text_label" />
 
     <!-- Big enough to read from the back of a room and dictate over a phone. -->
     <TextView
         android:id="@+id/pairing_code"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="14dp"
+        android:paddingHorizontal="40dp"
+        android:paddingVertical="18dp"
+        android:background="@drawable/panel_bg"
         android:letterSpacing="0.18"
-        android:textColor="@color/focus_gold"
+        android:textColor="@color/brand_navy"
         android:textSize="88sp"
         android:textStyle="bold"
         android:fontFamily="monospace"
-        tools:text="A3F92B10"
-        xmlns:tools="http://schemas.android.com/tools" />
+        tools:text="A3F92B10" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="24dp"
+        android:gravity="center"
         android:text="@string/pairing_body"
         android:textColor="@color/tv_ink"
         android:textSize="@dimen/text_body" />
@@ -41,7 +77,7 @@
         android:id="@+id/pairing_status"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="40dp"
+        android:layout_marginTop="32dp"
         android:gravity="center"
         android:textColor="@color/tv_muted"
         android:textSize="@dimen/text_label" />

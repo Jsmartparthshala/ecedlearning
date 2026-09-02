@@ -1,71 +1,103 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The palette. There is only one, and it is dark on purpose.
+<!-- The palette. One palette, no values-night, and now light rather than dark.
 
-     This used to live in values-night with a light palette beside it in values,
-     on the reasoning that a television reports night mode anyway so the light
-     one would never be seen. It was seen: the demo set runs in light mode and
-     the app came up cream and grey, which is not the product. A television is
-     watched from across a lit room and a full-screen bright panel is genuinely
-     uncomfortable, which is why television interfaces are near-universally dark
-     - so the light palette was not a fallback worth keeping, it was a second
-     design nobody had looked at.
+     It was dark, and the reasoning is worth keeping because it was not wrong: a
+     television is watched from across a lit room and a full-screen bright panel
+     is genuinely tiring. What changed is the brief. The product is being placed
+     next to Nepali competitors whose screens are light, and the identity is a
+     navy-and-gold mark on white - a near-black navy ground made the mark a guest
+     on its own screen rather than the thing the screen was built from.
 
-     Forcing dark from code is not an option here: AppCompatDelegate only steers
-     AppCompat activities and every activity in this app is Leanback. One palette
-     in the default folder is what actually holds, on any set, in any ui mode.
+     So: cream ground, navy structure, gold accent. Cream and not white, because
+     a full-white panel at classroom scale is the tiring thing, and 4% of warmth
+     takes the glare off without reading as a colour.
 
-     Taken from the HTML prototype rather than invented here. The prototype's
-     world is deep navy, not neutral charcoal: #080f22 ground, #101a33 panels,
-     #22315a rules. That blue cast is most of why it reads as a product rather
-     than a dark-mode default, and it costs nothing to match.
+     Colours are graded off the logo. Navy #14508C is the book; gold #F5C518 is
+     the wordmark.
 
-     The gold is the single most important colour in the app - it is how a teacher
-     knows where they are - so it is the prototype's #ffc233 and not a muted
-     substitute. -->
+     THE ONE TRAP, and it is the reason focus looks different now:
+
+       gold on cream measures 1.51:1.
+
+     Gold was the focus ring on the dark palette, where it sat at 5+:1 and was how
+     a teacher knew where they were. On cream it is very nearly invisible - not
+     subtle, absent. A focus indicator that fails is not a styling problem, it is
+     a television nobody can drive.
+
+     Focus therefore inverts instead of ringing: the focused item fills navy and
+     its text goes cream, at 7.61:1. That reads further across a classroom than a
+     ring ever did, and it costs one flat fill on a Mali-450. Gold keeps the jobs
+     it can still do - the brand mark, and the "you are here" marker on surfaces
+     that are already navy, where it measures 5.04:1. -->
 <resources>
-    <color name="focus_gold">#FFC233</color>
-    <color name="focus_gold_dim">#A8801F</color>
 
-    <color name="tv_bg">#080F22</color>
-    <color name="tv_panel">#101A33</color>
-    <color name="tv_ink">#EEF4FF</color>
-    <color name="tv_muted">#8EA2C6</color>
+    <!-- ============================================================ brand -->
+    <color name="brand_navy">#14508C</color>
+    <color name="brand_navy_deep">#0C3462</color>
+    <color name="brand_gold">#F5C518</color>
 
-    <!-- Card fills. Deep enough that the white title on them clears 3:1, which
-         is the floor for large text and the difference between a card a teacher
-         reads from the back of the room and one they walk towards. The three
-         light ones measured 2.66, 2.70 and 2.79 before this; the hue and the
-         saturation are unchanged, only the lightness moved. -->
-    <color name="subject_english">#249AC6</color>
-    <color name="subject_nepali">#E1701A</color>
-    <color name="subject_maths">#49A24E</color>
-    <color name="subject_serofero">#A94BC9</color>
-    <color name="subject_arts">#D94F7A</color>
+    <!-- ======================================================== surfaces -->
+    <!-- Ground. Warm enough to kill the glare, not warm enough to be beige. -->
+    <color name="tv_bg">#FAF6EC</color>
+    <!-- Cards and panels sit above the ground as plain paper. -->
+    <color name="tv_panel">#FFFFFF</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="surface_alt">#F3EFE3</color>
 
-    <color name="hairline">#22315A</color>
-    <color name="hairline_strong">#35497C</color>
-    <color name="surface_focus">#17274D</color>
-    <color name="surface">#101A33</color>
-    <color name="surface_alt">#16223F</color>
-    <color name="surface_selected">#0D1730</color>
-    <color name="badge_scrim">#73000000</color>
-    <!-- Over a poster frame: enough to carry white text, not enough to hide the picture. -->
+    <!-- ============================================================ text -->
+    <!-- 14.64:1 on cream. Near-black, but navy-cast so it belongs to the mark. -->
+    <color name="tv_ink">#12233B</color>
+    <!-- 5.03:1 on cream. Secondary text is tinted from the ink's hue, never gray. -->
+    <color name="tv_muted">#5A6B84</color>
+    <!-- Text and glyphs on top of a pale subject tint: 8.9-10:1 across the set. -->
+    <color name="on_subject">#0C3462</color>
+
+    <!-- =========================================================== focus -->
+    <!-- Focus is a fill, not a ring. See the note above. -->
+    <color name="surface_focus">#14508C</color>
+    <color name="on_focus">#FAF6EC</color>
+    <!-- Selected but not focused - focus has moved into the grid this tile owns.
+         Gold did this job on the dark palette and cannot here, so it is a pale
+         navy wash with a navy edge: quieter than focus, still unmistakably "this
+         is the one you opened". -->
+    <color name="surface_selected">#E3EBF4</color>
+    <!-- Kept under their old names because every drawable and the nav rail refer
+         to them. Gold still means "current", but only where it lands on navy. -->
+    <color name="focus_gold">#F5C518</color>
+    <color name="focus_gold_dim">#14508C</color>
+
+    <!-- ========================================================== hairlines -->
+    <color name="hairline">#E4DECE</color>
+    <color name="hairline_strong">#C6BCA4</color>
+
+    <!-- =========================================================== scrims -->
+    <!-- A badge now sits on pale paper, so it is a light wash carrying navy text
+         rather than a black scrim carrying white. -->
+    <color name="badge_scrim">#1F0C3462</color>
+    <!-- The same badge once its tile has inverted to navy under focus. -->
+    <color name="badge_scrim_inverse">#33FAF6EC</color>
+    <!-- Over a real poster frame the picture is still whatever it is, so this one
+         stays dark: it is the only place in the app where white text is correct. -->
     <color name="poster_scrim">#66000000</color>
-    <color name="on_subject">#FFFFFF</color>
-    <!-- Used by "Continue watching" and "Playable now", which mix subjects and so
-         cannot honestly carry any one subject's colour. Lifted well clear of the
-         panel fill anyway: at the old value the artwork panel was barely brighter
-         than the card behind it, and a row of them read as broken tiles rather
-         than as deliberately neutral ones. -->
-    <color name="subject_neutral">#3D5488</color>
-    <color name="subject_neutral_dark">#1B2A4E</color>
 
-    <!-- Grade-ladder tiles, coloured by stage rather than by grade: thirteen
-         distinct hues would be noise, four stages is the grouping teachers use. -->
-    <color name="stage_eced">#E0648A</color>
-    <!-- Same 3:1 floor as the subject fills. Basic and Secondary were the two
-         lightest tiles on the ladder at 2.38 and 2.30. -->
-    <color name="stage_basic">#289AC9</color>
-    <color name="stage_secondary">#41A349</color>
-    <color name="stage_higher">#B071D6</color>
+    <!-- ================================================ subject / stage tints
+         These are the fallbacks. Real subject colours arrive from the database
+         (subjects.color_1) and are re-graded to a pale tint in the client, so a
+         catalogue full of saturated hex from the seed still lands on this palette
+         without a migration. See SubjectPresenter.tint().
+
+         Used directly by rows that mix subjects and cannot honestly claim one. -->
+    <color name="subject_neutral">#E8E2D2</color>
+    <color name="subject_neutral_dark">#F3EFE3</color>
+
+    <color name="subject_english">#D4E6ED</color>
+    <color name="subject_nepali">#F0DFCC</color>
+    <color name="subject_maths">#D5ECD6</color>
+    <color name="subject_serofero">#E7D4ED</color>
+    <color name="subject_arts">#F0D2DC</color>
+
+    <color name="stage_eced">#F0D2DC</color>
+    <color name="stage_basic">#D4E6ED</color>
+    <color name="stage_secondary">#D4EDD6</color>
+    <color name="stage_higher">#E4D4ED</color>
 </resources>

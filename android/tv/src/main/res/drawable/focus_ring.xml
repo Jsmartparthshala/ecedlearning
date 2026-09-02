@@ -5,7 +5,7 @@
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:state_focused="true">
         <shape android:shape="rectangle">
-            <solid android:color="@color/tv_panel" />
+            <solid android:color="@color/surface_focus" />
             <stroke
                 android:width="@dimen/focus_ring_width"
                 android:color="@color/focus_gold" />

@@ -26,7 +26,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="6dp"
-        android:textColor="@color/focus_gold"
+        android:textColor="@color/text_on_surface_accent"
         android:textSize="@dimen/text_label"
         android:textStyle="bold"
         android:letterSpacing="0.12" />

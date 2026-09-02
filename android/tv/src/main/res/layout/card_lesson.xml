@@ -106,7 +106,7 @@
             android:id="@+id/card_progress_fill"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:background="@color/focus_gold" />
+            android:background="@color/brand_navy" />
     </FrameLayout>
 
     <LinearLayout
@@ -124,7 +124,8 @@
             android:layout_height="wrap_content"
             android:maxLines="2"
             android:ellipsize="end"
-            android:textColor="@color/tv_ink"
+            android:duplicateParentState="true"
+            android:textColor="@color/text_on_surface"
             android:textSize="@dimen/text_body" />
 
         <TextView
@@ -134,7 +135,8 @@
             android:layout_marginTop="3dp"
             android:maxLines="1"
             android:ellipsize="end"
-            android:textColor="@color/tv_muted"
+            android:duplicateParentState="true"
+            android:textColor="@color/text_on_surface_muted"
             android:textSize="@dimen/text_label" />
     </LinearLayout>
 </LinearLayout>

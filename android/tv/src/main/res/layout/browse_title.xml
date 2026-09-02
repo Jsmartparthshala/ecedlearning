@@ -15,13 +15,20 @@
     android:paddingTop="20dp"
     android:paddingBottom="12dp">
 
-    <TextView
+    <!-- The real mark, not a Unicode stand-in.
+
+         This was ✦ - U+2726, set as text in gold. Two problems, and the second
+         is the serious one. It is 1.51:1 on cream, so it had stopped being
+         visible at all; and U+2726 is one of the characters routinely missing
+         from the system font on cheap Amlogic and Allwinner boxes, which is
+         exactly the hardware this ships on. On those, the brand mark rendered
+         as a tofu box. A vector cannot be missing from a font. -->
+    <ImageView
         android:id="@+id/title_mark"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/brand_mark"
-        android:textColor="@color/focus_gold"
-        android:textSize="@dimen/text_body" />
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:src="@drawable/ic_brand_mark"
+        android:importantForAccessibility="no" />
 
     <TextView
         android:id="@+id/title_brand"
@@ -51,6 +58,16 @@
         style="@style/StatusChip"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
+
+    <TextView
+        android:id="@+id/chip_update"
+        style="@style/StatusChip"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/chip_update"
+        android:textColor="@color/brand_navy"
+        android:textStyle="bold"
+        android:visibility="gone" />
 
     <TextView
         android:id="@+id/chip_clock"

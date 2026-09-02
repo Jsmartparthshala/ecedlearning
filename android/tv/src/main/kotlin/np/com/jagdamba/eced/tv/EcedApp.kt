@@ -18,6 +18,10 @@ class EcedApp : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+        // Registers the daily update check once. It is a KEEP-policy unique
+        // schedule, so calling it on every process start costs one database
+        // lookup and changes nothing that is already running.
+        UpdateDelivery.schedule(this)
     }
 
     companion object {
