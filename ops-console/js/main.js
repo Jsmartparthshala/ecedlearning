@@ -7,7 +7,7 @@
  * the news is worth.
  */
 import { $, $$ } from './util.js'
-import { api, hasPasscode, setPasscode, setStatus } from './api.js'
+import { api, hasPasscode, setPasscode, setStatus, setAmbient } from './api.js'
 import { refreshFleet, wireFleet } from './fleet.js'
 import { refreshActivity } from './activity.js'
 import { wireLessons, openLessons } from './lessons.js'
@@ -145,7 +145,7 @@ async function refresh() {
       const parts = [`${fleet.total} television${fleet.total === 1 ? '' : 's'}`]
       if (fleet.waiting) parts.push(`${fleet.waiting} waiting to be activated`)
       if (live) parts.push(`${live} playing now`)
-      setStatus(parts.join(', ') + '.')
+      setAmbient(parts.join(', ') + '.')
     }
   } catch (e) {
     setStatus(e.message, 'err')

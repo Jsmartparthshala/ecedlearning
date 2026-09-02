@@ -121,7 +121,37 @@ finished:
   district it never had would be a small confident lie about the one thing that
   panel exists to be honest about.
 
-### 7. Visual polish (not a defect, but it is in the same commit)
+### 7. The map told operators to press a button that did not exist
+
+The "Not on the map" panel says to correct the municipality on the Fleet tab.
+There was no way to do that. The only school control on the page was the one
+that created them, so a school entered as "Ward 4 Tole" was stuck being
+unplaceable for good.
+
+Added an `update-school` action and an **Edit…** button beside **Add school…**,
+prompting for name, municipality and province, prefilled with what is there now.
+The pin is deliberately not touched by an edit: a coordinate is a stronger
+statement than an address and outlives a correction to one, so fixing a wrong
+address must not throw away a right pin. Removing a pin stays its own action, on
+the map, where the consequence is visible.
+
+### 8. The console never confirmed anything it did
+
+Every action on the Fleet tab writes to the status line — "Added Butwal Model
+ECED Centre", "Revoked", "Expiry set to 30/11/2026" — and then asks for a
+reload, which ends by writing the fleet summary to the same line. The reload
+wins, because it is last. So in practice every confirmation on that panel
+appeared and vanished inside a second, which reads as the click not having
+registered.
+
+Eleven call sites, one cause, so it is fixed once rather than eleven times: the
+line now has two kinds of writer. `setStatus` is the operator's own action and
+holds the line — six seconds for a confirmation, twelve for an error — and
+`setAmbient` is the poll describing the fleet, which gives way to it and takes
+the line back when the message has had its time. A stale "Revoked." sitting over
+a fleet that has changed twice since would be worse than no message at all.
+
+### 9. Visual polish (not a defect, but it is in the same commit)
 
 Elevation and motion, both as tokens rather than one-offs:
 

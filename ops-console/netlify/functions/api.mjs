@@ -228,6 +228,8 @@ export default async (req) => {
         return await revoke(sb, body, audit)
       case 'create-school':
         return await createSchool(sb, body)
+      case 'update-school':
+        return await updateSchool(sb, body, audit)
       case 'set-location':
         return await setLocation(sb, body, audit)
       case 'create-teacher':
@@ -654,6 +656,54 @@ async function createSchool(sb, { name, municipality, province }) {
     .single()
   if (error) return json({ error: reason(error) }, 500)
 
+  return json({ ok: true, school: data })
+}
+
+/**
+ * Correct a school that was typed in wrong, or has since been renamed.
+ *
+ * The municipality is the point of this. It is what the map places a school by,
+ * so a school entered as "Ward 4" sits under the map in the not-placed list
+ * until somebody can change it - and until now nobody could, because the only
+ * school control on the page was the one that created them. The map's own hint
+ * told operators to correct the municipality on the Fleet tab, which was an
+ * instruction to do something the page could not do.
+ *
+ * The pin is deliberately not touched here. A coordinate is a stronger
+ * statement than an address and outlives a correction to one - if the address
+ * was wrong and the pin was right, fixing the address must not throw the pin
+ * away. Removing a pin is its own action, on the map, where the consequence is
+ * visible.
+ */
+async function updateSchool(sb, { schoolId, name, municipality, province }, audit) {
+  if (!schoolId) return json({ error: 'Which school?' }, 400)
+
+  const clean = String(name || '').trim()
+  if (!clean) return json({ error: 'A school needs a name.' }, 400)
+
+  const { data: before, error: e0 } = await sb
+    .from('schools')
+    .select('id, name, municipality, province')
+    .eq('id', schoolId)
+    .maybeSingle()
+  if (e0) return json({ error: reason(e0) }, 500)
+  if (!before) return json({ error: 'That school no longer exists. Reload the page.' }, 404)
+
+  const patch = {
+    name: clean.normalize('NFC'),
+    municipality: String(municipality || '').trim().normalize('NFC') || null,
+    province: String(province || '').trim().normalize('NFC') || null,
+  }
+
+  const { data, error } = await sb
+    .from('schools')
+    .update(patch)
+    .eq('id', schoolId)
+    .select('id, name, municipality, province')
+    .single()
+  if (error) return json({ error: reason(error) }, 500)
+
+  audit('update-school', before.name, before, patch)
   return json({ ok: true, school: data })
 }
 

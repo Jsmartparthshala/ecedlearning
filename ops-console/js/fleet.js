@@ -85,6 +85,7 @@ export function wireFleet(onChanged) {
 
   $('#go').onclick = () => activate(refresh)
   $('#add-school').onclick = () => addSchool(refresh)
+  $('#edit-school').onclick = () => editSchool(refresh)
 
   // ---- teachers
 
@@ -110,6 +111,7 @@ let lookupTimer = null
 function syncGo() {
   $('#go').disabled = codeEl().value.length !== 8 || !$('#school').value
   $('#t-add').disabled = !$('#school').value || !$('#t-name').value.trim()
+  $('#edit-school').disabled = !$('#school').value
 }
 
 /** Put an error beside the field that caused it, not only in the header. */
@@ -204,6 +206,45 @@ async function addSchool(refresh) {
   try {
     const { school } = await api('create-school', { name, municipality, province })
     setStatus(`Added ${school.name}.`, 'ok')
+    await refresh()
+    $('#school').value = school.id
+    syncGo()
+  } catch (e) {
+    setStatus(e.message, 'err')
+  }
+}
+
+/**
+ * Correct a school already on the list.
+ *
+ * The address is the reason this exists. The map places a school by the
+ * municipality written on it, and a school entered as a ward or a tole is not
+ * drawn at all - it sits in the list under the map with a note saying to correct
+ * the municipality on this tab, which until now was an instruction to press a
+ * button that was not there.
+ *
+ * Prompts, like adding one, and prefilled. This is a rare correction rather than
+ * daily work, and a modal that already knows what the field says costs one line
+ * where an inline editor costs a panel, a save button and a way to cancel it.
+ */
+async function editSchool(refresh) {
+  const school = state.schools.find(s => s.id === $('#school').value)
+  if (!school) return
+
+  const name = prompt('School name', school.name || '')
+  if (name === null) return
+  if (!name.trim()) { setStatus('A school needs a name.', 'err'); return }
+
+  const municipality = prompt(
+    'Municipality — the map places the school by this', school.municipality || '')
+  if (municipality === null) return
+
+  const province = prompt('Province', school.province || '')
+  if (province === null) return
+
+  try {
+    await api('update-school', { schoolId: school.id, name, municipality, province })
+    setStatus(`${name.trim()} updated.`, 'ok')
     await refresh()
     $('#school').value = school.id
     syncGo()
