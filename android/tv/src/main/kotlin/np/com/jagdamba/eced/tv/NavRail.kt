@@ -177,11 +177,11 @@ class NavRail(
     /**
      * Left from the leftmost thing on screen opens the rail.
      *
-     * The rail overlays the content rather than sitting beside it, so ordinary
-     * focus search does not connect the two: from a card at the left edge,
-     * `focusSearch(FOCUS_LEFT)` returns null rather than finding the rail. That
-     * null is the signal - the teacher has run out of content to the left, which
-     * is exactly when they mean the rail.
+     * The signal is that focus search finds no more content to the left. From a
+     * card at the left edge of a row it returns null outright; from a plain
+     * focusable container it returns a rail row, which is the same answer said
+     * differently. Either way the teacher has run out of content, which is
+     * exactly when they mean the rail.
      *
      * @return true when the rail took the key.
      */
@@ -195,14 +195,35 @@ class NavRail(
         // A null focus is not a reason to swallow the key. It means the content
         // has not produced anything focusable yet, or this page is static text -
         // and left still means "show me the menu" in both cases.
+        //
+        // Finding the rail itself does not count as content either. Profile and
+        // Downloads are prose, so their container is focusable in order to hold
+        // focus at all, and from a plain container the focus search happily walks
+        // left into the rail - the rail overlays the content but is still its
+        // sibling. That answer is not null, so this used to hand the key back to
+        // ordinary focus search, which picks a row by geometry: pressing left on
+        // Downloads opened the menu pointing at Profile. Then one reflexive OK
+        // went somewhere nobody asked for, or landed on the row already showing
+        // and merely shut the menu again, which reads as the menu ignoring you.
         val focused = activity.currentFocus
-        if (focused != null && focused.focusSearch(View.FOCUS_LEFT) != null) return false
+        val next = focused?.focusSearch(View.FOCUS_LEFT)
+        if (next != null && !inRail(next)) return false
 
         // Opens on the entry already showing. A rail that opens pointing at some
         // other destination invites a reflexive OK and lands the teacher
         // somewhere they never asked for.
         focusCurrent()
         return true
+    }
+
+    /** Whether a view is one of the rail's own, rather than page content. */
+    private fun inRail(view: View): Boolean {
+        var v: View? = view
+        while (v != null) {
+            if (v === root) return true
+            v = v.parent as? View
+        }
+        return false
     }
 
     /** Hidden on the pairing screen, which is one instruction and nothing else. */
