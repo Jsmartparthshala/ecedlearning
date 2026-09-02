@@ -16,7 +16,7 @@
         android:textSize="@dimen/text_title" />
 
     <TextView
-        android:layout_width="match_parent"
+        android:layout_width="@dimen/page_measure"
         android:layout_height="wrap_content"
         android:layout_marginTop="14dp"
         android:text="@string/downloads_empty_body"

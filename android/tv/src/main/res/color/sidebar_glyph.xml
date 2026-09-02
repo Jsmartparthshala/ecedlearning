@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The glyph for a rail entry.
+
+     Gold on the entry whose page is showing. The rail already marks it with a
+     panel, but that panel is a two-percent lift off the ground colour and this
+     is read from the back of a classroom - the glyph is the part that carries
+     across the room. Gold is the app's one positional colour everywhere else,
+     so it is the honest choice here rather than a second convention.
+
+     The focus ring is also gold, and the two coincide on the current entry with
+     the rail open. That is correct: it is one row that is both where you are and
+     what you would open. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_selected="true" android:color="@color/focus_gold" />
+    <item android:color="@color/tv_ink" />
+</selector>

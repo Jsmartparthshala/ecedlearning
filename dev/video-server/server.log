@@ -1,0 +1,38 @@
+Probing 72 files for duration...
+
+  Serving 72 videos (32.8 GB) from D:\WORK\YOHO VIDS
+
+  Television / phone on this network:  http://192.168.18.13:8000/
+  Android emulator on this machine:    http://10.0.2.2:8000/
+
+  Interfaces seen:
+    skip  169.254.83.107   Tailscale
+    skip  192.168.240.1   vEthernet (WSL)
+    skip  192.168.56.1   Ethernet 2
+    skip  192.168.56.2   Ethernet 3
+    USE   192.168.18.13   Ethernet
+
+  5 file(s) above 5 Mbps, sorted to the back of their subject:
+    8.2 Mbps  day 1/UKG ENGLISH ONLINE CLASS 1ST DAY.mp4
+    8.4 Mbps  day 2/CLASS 1 MERO SEROFERO.mp4
+    7.7 Mbps  day 2/ENGLISH LKG ONLINE CLASS DAY 2.mp4
+    8.1 Mbps  day 2/NURSERY NEPALI ONLINE CLASS DAY 2.mp4
+    8.4 Mbps  day 2/UKG MATH DAY 2.mp4
+
+  Public address for the catalogue:     https://interstate-republic-hiking-flooring.trycloudflare.com
+
+  Wrote C:\Users\user2\Desktop\ss rework demo\dev\video-server\local_videos.sql
+  Paste it into the Supabase SQL editor.
+
+  Wrote C:\Users\user2\Desktop\ss rework demo\dev\video-server\rehost.sql
+  If the catalogue already points at an older run of this
+  server, paste that one instead - it just moves the host.
+
+  Ctrl+C to stop.
+
+  206  day 4/NURSERY ENGLISH DAY 4.mp4  bytes=0-1023  8ms
+  200  thumbs/day 4/NURSERY ENGLISH DAY 4.jpg  full  1ms
+  200  thumbs/day 3/MERO SEROFERO LKG DAY 3.jpg  full  1ms
+  200  thumbs/day 3/MERO SEROFERO LKG DAY 3.jpg  full  1ms
+  200  thumbs/day 3/MERO SEROFERO LKG DAY 3.jpg  full  1ms
+  200  thumbs/day 3/MERO SEROFERO LKG DAY 3.jpg  full  1ms

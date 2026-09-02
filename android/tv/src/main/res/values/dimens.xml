@@ -47,6 +47,12 @@
     <!-- Insets for the Downloads and Settings screens. Plain overscan now that
          they are activities rather than fragments inside Leanback's scale_frame. -->
     <dimen name="page_content_start">@dimen/overscan_horizontal</dimen>
+    <!-- Measure for body copy on the prose pages. Profile capped its paragraph
+         and Downloads did not, so the same sentence set at the same size read as
+         two different pages: one a column, the other a single line stretched
+         across seventeen hundred pixels, which the eye cannot track back to the
+         start of. -->
+    <dimen name="page_measure">620dp</dimen>
     <dimen name="page_content_top">0dp</dimen>
 
     <!-- Subject tiles. The first choice a teacher makes on the screen, so this is
