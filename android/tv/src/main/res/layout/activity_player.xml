@@ -5,11 +5,19 @@
     android:layout_height="match_parent"
     android:background="@android:color/black">
 
+    <!-- keepScreenOn, because Media3 does not do it for you.
+
+         A lesson runs 26 to 38 minutes and a cheap box daydreams after five, so
+         without this the screensaver takes the class off the wall part way
+         through and a teacher has to find the remote to get it back. The flag is
+         scoped to this view, so it lifts the moment playback leaves the screen
+         rather than holding the panel awake all afternoon. -->
     <androidx.media3.ui.PlayerView
         android:id="@+id/player_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:focusable="true"
+        android:keepScreenOn="true"
         app:use_controller="true"
         app:show_buffering="when_playing" />
 

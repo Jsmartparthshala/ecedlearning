@@ -90,6 +90,20 @@ object Updater {
                 readTimeout = 30_000
             }
 
+            // Anything but 200 is not an APK. Without this the body of a 404
+            // page, a captive-portal login, or a tunnel that has expired
+            // overnight was written to disk under an .apk name and handed to the
+            // package installer, which answers with a parse error that reads to
+            // a teacher as the app being broken. Worse, Worker.doWork() treats a
+            // staged file at the right version code as done, so one bad apk_url
+            // leaves the update prompt stuck on every television in the fleet
+            // with no way back other than clearing app data.
+            //
+            // Thrown rather than returned so it lands in the same getOrElse that
+            // clears the part-written file - one cleanup path, not two.
+            val code = connection.responseCode
+            if (code != HttpURLConnection.HTTP_OK) error("update download returned HTTP " + code)
+
             connection.inputStream.use { input ->
                 val total = connection.contentLength.toLong()
                 var read = 0L
@@ -105,6 +119,17 @@ object Updater {
                 }
             }
             connection.disconnect()
+
+            // Second gate, because 200 only says a server answered. A proxy or a
+            // portal will happily return 200 and an HTML page. Every APK is a ZIP
+            // and every ZIP starts PK, so four bytes settle it before
+            // the installer is ever involved.
+            val magic = ByteArray(4)
+            val header = target.inputStream().use { it.read(magic) }
+            if (header != 4 || magic[0] != 0x50.toByte() || magic[1] != 0x4B.toByte() ||
+                magic[2] != 0x03.toByte() || magic[3] != 0x04.toByte()
+            ) error("update download was not an APK")
+
             target
         }.getOrElse {
             // A partial APK is worse than none: the installer would reject it with

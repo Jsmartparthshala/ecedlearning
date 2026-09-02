@@ -284,6 +284,48 @@ class UnitActivity : FragmentActivity() {
             val meta: TextView     = v.findViewById(R.id.pl_meta)
             val track: FrameLayout = v.findViewById(R.id.pl_track)
             val fill: View         = v.findViewById(R.id.pl_fill)
+
+            /** Whether a picture is on this card *now*, not whether one was asked for. */
+            var hasPoster = false
+        }
+
+        /**
+         * Repaints everything on the artwork whose correct value depends on what
+         * is underneath it.
+         *
+         * The grid mixes both kinds of card: a scrimmed video frame under one, a
+         * flat subject tint under the next, and the same card switches from the
+         * second to the first mid-scroll, when its poster arrives. One ink
+         * colour cannot serve both - navy is 8:1 on the tint and 1.4:1 on the
+         * scrim.
+         *
+         * The numeral goes with them. It is fallback artwork, not a label: it
+         * exists so a card with no picture is not an empty rectangle. Once there
+         * is a picture it would sit in the middle of it - in this catalogue,
+         * squarely on the presenter's face - repeating what the title directly
+         * underneath already says.
+         */
+        private fun VH.artwork(onPoster: Boolean) {
+            hasPoster = onPoster
+            val c = itemView.context
+            val badge = ContextCompat.getColor(
+                c, if (onPoster) R.color.badge_scrim_inverse else R.color.badge_scrim
+            )
+            val ink = if (onPoster) Color.WHITE else ContextCompat.getColor(c, R.color.on_subject)
+
+            scrim.visibility = if (onPoster) View.VISIBLE else View.GONE
+            no.visibility = when {
+                onPoster -> View.GONE
+                play.visibility == View.VISIBLE -> View.INVISIBLE
+                else -> View.VISIBLE
+            }
+            no.setTextColor(ink)
+            dur.setTextColor(ink)
+            dur.setBackgroundColor(badge)
+            track.setBackgroundColor(badge)
+            fill.setBackgroundColor(
+                if (onPoster) Color.WHITE else ContextCompat.getColor(c, R.color.brand_navy)
+            )
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = VH(
@@ -297,35 +339,6 @@ class UnitActivity : FragmentActivity() {
             // The colour panel stays as the backdrop, so a poster that is still
             // loading or never arrives looks deliberate rather than broken.
             holder.art.setBackgroundColor(style.colorStart)
-            val onPoster = !l.posterUrl.isNullOrBlank()
-            if (!onPoster) {
-                PosterLoader.cancel(holder.poster)
-                holder.scrim.visibility = View.GONE
-            } else {
-                holder.scrim.visibility = View.VISIBLE
-                PosterLoader.load(holder.poster, l.posterUrl)
-            }
-            // The number and the running time sit on the artwork, and what the
-            // artwork is differs card by card in the same grid: a scrimmed video
-            // frame under one, a flat subject tint under the next. One ink colour
-            // cannot serve both - navy is 8:1 on the tint and 1.4:1 on the scrim.
-            val c = holder.itemView.context
-            val ink = if (onPoster) Color.WHITE else ContextCompat.getColor(c, R.color.on_subject)
-            holder.no.setTextColor(ink)
-            holder.dur.setTextColor(ink)
-            holder.dur.setBackgroundColor(
-                ContextCompat.getColor(
-                    c, if (onPoster) R.color.badge_scrim_inverse else R.color.badge_scrim
-                )
-            )
-            holder.fill.setBackgroundColor(
-                if (onPoster) Color.WHITE else ContextCompat.getColor(c, R.color.brand_navy)
-            )
-            holder.track.setBackgroundColor(
-                ContextCompat.getColor(
-                    c, if (onPoster) R.color.badge_scrim_inverse else R.color.badge_scrim
-                )
-            )
             holder.no.text = l.sortOrder.toString()
             holder.dur.text = "${(l.durationSec ?: 0) / 60} min"
             holder.title.text = l.titleEn.clean()
@@ -342,8 +355,14 @@ class UnitActivity : FragmentActivity() {
             showProgress(holder, progress[l.id] ?: 0f)
 
             holder.play.visibility = View.GONE
-            holder.no.visibility = View.VISIBLE
             holder.itemView.alpha = if (l.isPlayable) 1f else DIMMED_ALPHA
+
+            // Fallback dress first, every time. A recycled holder arrives wearing
+            // the last lesson's state, and this one's picture - if it has one at
+            // all - is a network read away.
+            holder.artwork(false)
+            if (l.posterUrl.isNullOrBlank()) PosterLoader.cancel(holder.poster)
+            else PosterLoader.load(holder.poster, l.posterUrl) { holder.artwork(true) }
 
             holder.itemView.setOnFocusChangeListener { view, hasFocus ->
                 lift(view, hasFocus)
@@ -351,7 +370,11 @@ class UnitActivity : FragmentActivity() {
                 // noise; on the focused one it says what OK will do.
                 val showPlay = hasFocus && l.isPlayable
                 holder.play.visibility = if (showPlay) View.VISIBLE else View.GONE
-                holder.no.visibility = if (showPlay) View.INVISIBLE else View.VISIBLE
+                holder.no.visibility = when {
+                    holder.hasPoster -> View.GONE
+                    showPlay -> View.INVISIBLE
+                    else -> View.VISIBLE
+                }
             }
             holder.itemView.setOnClickListener { play(l) }
         }

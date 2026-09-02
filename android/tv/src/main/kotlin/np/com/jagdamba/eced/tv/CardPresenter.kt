@@ -100,6 +100,12 @@ class CardPresenter(
         val meta: TextView     = view.findViewById(R.id.card_meta)
         val track: FrameLayout = view.findViewById(R.id.card_progress_track)
         val fill: View         = view.findViewById(R.id.card_progress_fill)
+
+        /** The kicker without the number, kept so a poster arriving can add it. */
+        var kickerBase: CharSequence = ""
+
+        /** The number, kept for the same reason once the glyph has been hidden. */
+        var number: CharSequence = ""
     }
 
     override fun onCreateViewHolder(parent: ViewGroup): Presenter.ViewHolder =
@@ -116,7 +122,6 @@ class CardPresenter(
         // still loading — or whose poster never arrives — looks deliberate
         // rather than broken.
         h.art.setBackgroundColor(subject.colorStart)
-        showPoster(h, (item as? Lesson)?.posterUrl)
 
         when (item) {
             is CatalogUnit -> {
@@ -156,6 +161,10 @@ class CardPresenter(
                 showProgress(h, 0f)
             }
         }
+
+        h.kickerBase = h.kicker.text
+        h.number = h.glyph.text
+        showPoster(h, (item as? Lesson)?.posterUrl)
 
         // Focus repaints what a state list cannot reach: the scrubber, and the
         // badges sitting on the artwork. Set both here and immediately, because
@@ -209,15 +218,36 @@ class CardPresenter(
      * show a frame of, so both keep the flat colour panel. Only a lesson with a
      * real video gets a picture, which makes the picture itself a signal that
      * the card will play.
+     *
+     * Everything here waits for the picture rather than for the URL. The card
+     * starts in its fallback dress - flat subject colour, big numeral, no scrim
+     * - and changes only when a bitmap is actually painted. Scrimming on the URL
+     * alone put a 40% black wash over a colour panel for the length of the
+     * fetch, which on a school connection is a grey rectangle for a second or
+     * two per card, and forever for any poster that never arrives at all.
+     *
+     * When the picture does land, the numeral goes and its digit joins the
+     * kicker. A 44sp number in the middle of a photograph is not a label, it is
+     * something drawn over the presenter's face, and the corner badge that says
+     * LESSON is right there to carry it instead.
      */
     private fun showPoster(h: Holder, url: String?) {
+        h.scrim.visibility = View.GONE
+        h.glyph.visibility = View.VISIBLE
+        h.kicker.text = h.kickerBase
+
         if (url.isNullOrBlank()) {
             PosterLoader.cancel(h.poster)
-            h.scrim.visibility = View.GONE
             return
         }
-        h.scrim.visibility = View.VISIBLE
-        PosterLoader.load(h.poster, url)
+        PosterLoader.load(h.poster, url) {
+            h.scrim.visibility = View.VISIBLE
+            h.glyph.visibility = View.GONE
+            h.kicker.text = "${h.kickerBase} ${h.number}".trim()
+            // The badge ink depends on what is under it, and what is under it
+            // has just changed.
+            h.paint(h.view.hasFocus())
+        }
     }
 
     private fun showProgress(h: Holder, fraction: Float) {

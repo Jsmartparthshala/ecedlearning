@@ -60,8 +60,17 @@ object PosterLoader {
      *
      * Safe to call on every bind. A cache hit is applied synchronously so a
      * scroll back through an already-seen row does not flicker.
+     *
+     * @param onShown run once, on the main thread, at the moment a picture is
+     *        actually on screen - and never if there is not going to be one. A
+     *        card's badges, scrim and fallback numeral all have to know what is
+     *        underneath them, and until this fires the answer is "the flat
+     *        subject colour", not "a photograph that is on its way". Callers
+     *        used to treat a URL as good as a picture, which left a card wearing
+     *        a scrim over nothing for as long as the fetch took - a featureless
+     *        grey rectangle, on exactly the slow connections these schools have.
      */
-    fun load(view: ImageView, url: String?) {
+    fun load(view: ImageView, url: String?, onShown: (() -> Unit)? = null) {
         view.setImageBitmap(null)
         if (url.isNullOrBlank() || url in failed) {
             view.tag = null
@@ -71,6 +80,7 @@ object PosterLoader {
         cache.get(url)?.let {
             view.tag = url
             view.setImageBitmap(it)
+            onShown?.invoke()
             return
         }
 
@@ -85,7 +95,10 @@ object PosterLoader {
             main.post {
                 // The card may have been recycled onto a different lesson while
                 // this was in flight. Only paint if it still wants this picture.
-                if (view.tag == url) view.setImageBitmap(bmp)
+                if (view.tag == url) {
+                    view.setImageBitmap(bmp)
+                    onShown?.invoke()
+                }
             }
         }
     }
