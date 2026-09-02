@@ -9,6 +9,15 @@ works.
 
 ---
 
+## Start here
+
+- **`SETUP.md`** — getting a new machine to the point where you can build this.
+- **`PROGRESS.md`** — what is built, what is deliberately not, and what is
+  waiting on somebody.
+- **`DEMO.md`** — the runbook for showing the product at a venue.
+
+---
+
 ## Why it is built this way
 
 **Schools never type anything.** Rural classrooms have a remote control and a
