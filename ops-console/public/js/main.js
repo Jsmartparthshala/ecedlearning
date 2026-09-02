@@ -14,6 +14,7 @@ import { wireLessons, openLessons } from './lessons.js'
 import { wireDocuments, openDocuments } from './documents.js'
 import { openMap, refreshMap } from './map.js'
 import { refreshSchoolStats } from './schools.js'
+import { wireExport } from './export.js'
 
 /**
  * Twenty-five seconds, not five.
@@ -62,6 +63,7 @@ function openApp() {
   wireFleet(refresh)
   wireLessons()
   wireDocuments()
+  wireExport()
   wireTabs()
 
   refresh()

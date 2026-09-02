@@ -553,6 +553,17 @@ html { scrollbar-color: var(--line-firm) transparent; scrollbar-width: thin }
    cannot support - a school with no usable address - are printed underneath in
    words rather than placed somewhere plausible. */
 
+/* A heading with a control on the far right of it. The heading keeps its own
+   bottom margin so a section without one lines up with a section with one. */
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.section-head h2 { margin-bottom: 12px }
+
 .map-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap }
 .map-head h2 { margin-bottom: 0 }
 .map-summary {
