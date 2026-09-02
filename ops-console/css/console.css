@@ -48,6 +48,36 @@
   --radius:     14px;
   --radius-sm:  9px;
 
+  /* Elevation, tinted rather than black.
+
+     A black shadow on a cream ground goes grey, and grey on warm cream reads as
+     grime rather than as depth - the page ends up looking slightly dirty and
+     nobody can say why. These are the deep navy at low opacity, which is the
+     same hue the page is already made of, so a lifted card reads as the same
+     material sitting a little higher rather than as a different one.
+
+     Three steps and no more. Anything with more levels than that stops being a
+     hierarchy and becomes a set of arbitrary values that drift apart.
+
+       1  at rest, on the page: cards, counters, buttons
+       2  raised by the pointer, or floating beside the thing it describes
+       3  over the page entirely: the gate
+
+     Each is two shadows - a tight one for the edge and a wide one for the cast -
+     because a single blur at this opacity either has no edge or has no spread. */
+  --lift-1: 0 1px 2px rgba(12, 52, 98, .05), 0 1px 3px rgba(12, 52, 98, .04);
+  --lift-2: 0 2px 4px rgba(12, 52, 98, .06), 0 8px 18px -8px rgba(12, 52, 98, .14);
+  --lift-3: 0 4px 10px rgba(12, 52, 98, .08), 0 24px 48px -16px rgba(12, 52, 98, .22);
+
+  /* One duration and one curve for everything that is not the map.
+
+     A page where each control picked its own timing feels assembled rather than
+     designed, and the difference is legible even to somebody who could not name
+     it. 140ms is under the threshold where a state change starts to feel like
+     an animation and stays above the one where it reads as a flicker. */
+  --ease: cubic-bezier(.2, .7, .3, 1);
+  --quick: 140ms;
+
   color-scheme: light;
 }
 
@@ -132,8 +162,11 @@ nav.tabs button {
    button with navy on hover, which is right for "Add & activate" and wrong for
    a tab - without this, pointing at a tab paints it like a pressed button and
    the strip stops reading as a strip. */
-nav.tabs button:hover { color: var(--ink); background: var(--panel-alt) }
-nav.tabs button:active { transform: none }
+/* Flat, and staying flat. A tab strip is a set of labels, not a row of raised
+   controls, and giving each one a shadow turns the header into a toolbar. */
+nav.tabs button { box-shadow: none }
+nav.tabs button:hover { color: var(--ink); background: var(--panel-alt); box-shadow: none; transform: none }
+nav.tabs button:active { transform: none; box-shadow: none }
 nav.tabs button[aria-selected="true"] {
   color: var(--navy);
   background: transparent;
@@ -168,6 +201,7 @@ h2 {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 14px 16px;
+  box-shadow: var(--lift-1);
 }
 .counter .n { font-size: 26px; font-weight: 700; letter-spacing: -.5px; font-variant-numeric: tabular-nums }
 .counter .k { font-size: 12px; color: var(--muted); font-weight: 550; margin-top: 2px }
@@ -183,6 +217,10 @@ h2 {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 22px 24px;
+  /* The border still does the work of separating panel from page; the shadow
+     only says which of the two is nearer. Both, because on a cream ground a
+     shadow this light is not on its own enough of an edge. */
+  box-shadow: var(--lift-1);
 }
 .panel.tight { padding: 18px 22px 8px }
 
@@ -219,10 +257,25 @@ button {
   border-color: var(--navy);
   color: var(--cream);
   font-weight: 600;
+  box-shadow: var(--lift-1);
+  /* Colour, edge, depth and position all move together and on the same clock,
+     which is what makes a press feel like one event rather than four. */
+  transition: background var(--quick) var(--ease),
+              border-color var(--quick) var(--ease),
+              box-shadow var(--quick) var(--ease),
+              transform var(--quick) var(--ease);
 }
-button:hover:not(:disabled) { background: #17599B; border-color: #17599B }
-button:active:not(:disabled) { transform: translateY(1px) }
-button:disabled { opacity: .45; cursor: not-allowed }
+/* Rising a single pixel under the pointer, and sinking on the press. The travel
+   is deliberately less than the shadow's growth: a button that visibly jumps is
+   a button that looks loose. */
+button:hover:not(:disabled) {
+  background: #17599B;
+  border-color: #17599B;
+  box-shadow: var(--lift-2);
+  transform: translateY(-1px);
+}
+button:active:not(:disabled) { transform: translateY(1px); box-shadow: none }
+button:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; transform: none }
 
 /* A button at rest, as distinct from a panel at rest: outlined in navy so it
    reads as something you can press before anybody hovers it. The television app
@@ -436,7 +489,18 @@ td input.title.saved { border-color: var(--ok); background: var(--ok-wash) }
   z-index: 20;
   padding: 20px;
 }
-#gate .box { width: 360px; max-width: 100%; text-align: center }
+/* The one thing on the page that is genuinely over it rather than on it, so
+   the one place the deepest step in the scale is earned. */
+#gate .box {
+  width: 360px;
+  max-width: 100%;
+  text-align: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 30px 28px;
+  box-shadow: var(--lift-3);
+}
 #gate .mark { width: 72px; height: 72px; margin: 0 auto 18px; display: block }
 #gate h2 {
   font-size: 19px;
@@ -471,7 +535,10 @@ td input.title.saved { border-color: var(--ok); background: var(--ok-wash) }
 
 /* The parts of the page nobody draws but that still ship with the design. */
 ::selection { background: var(--navy-wash); color: var(--ink) }
-input, select, textarea { caret-color: var(--navy) }
+input, select, textarea {
+  caret-color: var(--navy);
+  transition: border-color var(--quick) var(--ease), background var(--quick) var(--ease);
+}
 html { scrollbar-color: var(--line-firm) transparent; scrollbar-width: thin }
 ::-webkit-scrollbar { width: 10px; height: 10px }
 ::-webkit-scrollbar-track { background: transparent }
@@ -601,7 +668,11 @@ svg.nepal { display: block; width: 100%; height: auto }
   padding: 16px 18px;
   outline: none;
 }
-.map-detail:focus-visible { box-shadow: 0 0 0 3px var(--navy-wash) }
+/* Beside the map rather than on it, and lifted to say so. The focus ring keeps
+   its own shadow and adds the lift back, because a single box-shadow property
+   cannot be half-overridden. */
+.map-detail { box-shadow: var(--lift-2) }
+.map-detail:focus-visible { box-shadow: 0 0 0 3px var(--navy-wash), var(--lift-2) }
 .map-detail-head { display: flex; align-items: center; gap: 12px; margin-bottom: 4px }
 .map-detail-head h3 { margin: 0; font-size: 16px; letter-spacing: -.2px }
 .map-detail-head button { margin-left: auto; padding: 4px 10px; font-size: 12px }
@@ -767,4 +838,117 @@ input[aria-invalid="true"], textarea[aria-invalid="true"] { border-color: var(--
   clip: rect(0 0 0 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* --------------------------------------------------------------- odds and ends
+
+   These two rules exist so that the page can carry no style attribute at all,
+   which is what lets the Content-Security-Policy say style-src 'self' with no
+   'unsafe-inline'. One inline style is worth nothing on its own; the whole
+   value here is in there being none.
+   -------------------------------------------------------------------------- */
+
+/* The symbol sheet at the top of the document. It draws nothing itself and is
+   taken out of flow so it cannot leave a gap above the header. */
+.sprite { position: absolute }
+
+/* Pushed to the far end of the document editor's control row, away from the
+   published checkbox it must not be mistaken for. */
+#d-save { margin-left: auto }
+
+/* ------------------------------------------------------------------ pinning
+
+   The override that puts a school exactly where it is, rather than in the
+   middle of its district. Closed it is one line of prose; open it is a single
+   field. It appears in two places - beside a school in the detail panel, and
+   beside a school the placement rules could not resolve at all - and is the
+   same control in both, because it is the same decision.
+   -------------------------------------------------------------------------- */
+
+.pin { margin-top: 10px; font-size: 13px }
+
+.pin > summary {
+  cursor: pointer;
+  color: var(--muted);
+  padding: 4px 0;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: color var(--quick) var(--ease);
+}
+.pin > summary::-webkit-details-marker { display: none }
+
+/* A triangle drawn in text, rotating rather than swapping, so the control reads
+   as one thing opening instead of two states alternating. */
+.pin > summary::before {
+  content: "›";
+  display: inline-block;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--line-firm);
+  transition: transform var(--quick) var(--ease), color var(--quick) var(--ease);
+}
+.pin[open] > summary::before { transform: rotate(90deg) }
+.pin > summary:hover { color: var(--ink) }
+.pin > summary:hover::before { color: var(--navy) }
+.pin > summary:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; border-radius: var(--radius-sm) }
+
+/* A pinned school says so at rest, in gold on navy where gold is legible. */
+.pin.on > summary { color: var(--navy) }
+.pin.on > summary code {
+  background: var(--navy);
+  color: var(--gold);
+  border-radius: 5px;
+  padding: 1px 6px;
+  font-size: 12px;
+}
+
+.pin-body {
+  margin-top: 8px;
+  padding: 12px 14px;
+  background: var(--panel-alt);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+.pin-body label { display: block; font-size: 12px; color: var(--muted); font-weight: 550; margin-bottom: 6px }
+.pin-input { width: 100%; font-variant-numeric: tabular-nums }
+.pin-body .hint { margin-top: 8px; font-size: 12px }
+
+/* Reserves its line whether or not there is anything in it, so that an error
+   appearing does not push the buttons out from under the pointer. */
+.pin-error {
+  min-height: 18px;
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--bad);
+}
+
+.pin-actions { display: flex; gap: 8px; margin-top: 8px }
+.pin-actions button { padding: 7px 12px; font-size: 13px }
+
+/* In the unplaced list the name and the control stack, because the name is the
+   thing being scanned and the control is the thing being acted on, and putting
+   them side by side makes both harder. */
+.unplaced-name { display: block }
+.map-unplaced .plain li { padding: 10px 0; border-bottom: 1px solid var(--line) }
+.map-unplaced .plain li:last-child { border-bottom: 0 }
+
+/* ------------------------------------------------------- motion, or not
+
+   Everything above moves for a reason: a press, a hover, a panel opening. None
+   of it carries information that the still frame does not, so when the operating
+   system says no animation, all of it goes and nothing is lost. Transforms go
+   too, not only durations - a hover that jumps a pixel with no transition is
+   worse than one that does not move at all.
+   -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+  button:hover:not(:disabled), button:active:not(:disabled) { transform: none }
 }

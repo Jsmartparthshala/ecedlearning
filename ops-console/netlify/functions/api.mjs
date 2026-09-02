@@ -19,7 +19,7 @@
  *   OPS_PASSCODE                 whatever the operator types once
  */
 import { createClient } from '@supabase/supabase-js'
-import { timingSafeEqual } from 'node:crypto'
+import { createHash, timingSafeEqual } from 'node:crypto'
 
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -93,13 +93,67 @@ const json = (body, status = 200) =>
 /**
  * Constant time compare. A plain === leaks the passcode a character at a time to
  * anyone willing to measure, which is cheap to avoid and awkward to explain later.
+ *
+ * Both sides are hashed first, and that is not belt and braces. timingSafeEqual
+ * throws on buffers of different lengths, so the obvious guard is an early
+ * `a.length !== b.length` return - and that guard is itself a timing signal
+ * saying "wrong length", which hands an attacker the passcode's length before
+ * they have guessed a single character of it. Hashing makes every comparison
+ * thirty-two bytes against thirty-two bytes, so the length of what was typed
+ * is no longer observable at all.
  */
 function passcodeOk(supplied) {
   if (!PASSCODE || !supplied) return false
-  const a = Buffer.from(String(supplied))
-  const b = Buffer.from(PASSCODE)
-  if (a.length !== b.length) return false
-  return timingSafeEqual(a, b)
+  const digest = v => createHash('sha256').update(String(v), 'utf8').digest()
+  return timingSafeEqual(digest(supplied), digest(PASSCODE))
+}
+
+/**
+ * Slow down guessing, without ever standing between an operator and the console.
+ *
+ * The console is gated by one shared passcode over a public URL, which is an
+ * online guessing target: nothing in Netlify stops a script posting to /api a
+ * few times a second forever. This counts *failures* per source address, and
+ * once there have been too many in a row it refuses to look at anything from
+ * that address for a minute.
+ *
+ * The correct passcode is never refused. The check below runs the comparison
+ * first and clears the counter on success, so a colleague on the same office
+ * connection as somebody fat-fingering the code is never locked out - the only
+ * thing that can be throttled is a wrong answer.
+ *
+ * The memory is per function instance and evaporates when Netlify recycles it,
+ * so this is a speed bump rather than a wall. That is the right size for the
+ * threat: it turns thousands of guesses a minute into a handful, which is the
+ * difference between a passcode being brute-forceable and not. The real fix is
+ * Netlify Identity, and this does not pretend otherwise.
+ */
+const FAIL_LIMIT = 8
+const FAIL_WINDOW_MS = 60_000
+const failures = new Map()
+
+function sourceOf(req) {
+  return req.headers.get('x-nf-client-connection-ip') ||
+         (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() ||
+         'unknown'
+}
+
+function throttled(who) {
+  const seen = failures.get(who)
+  if (!seen) return false
+  if (Date.now() - seen.at > FAIL_WINDOW_MS) { failures.delete(who); return false }
+  return seen.n >= FAIL_LIMIT
+}
+
+function noteFailure(who) {
+  const seen = failures.get(who)
+  const fresh = !seen || Date.now() - seen.at > FAIL_WINDOW_MS
+  failures.set(who, { n: fresh ? 1 : seen.n + 1, at: Date.now() })
+  // The map only ever holds addresses that have got the passcode wrong in the
+  // last minute, but nothing prunes it on a quiet instance, so cap it.
+  if (failures.size > 500) {
+    for (const [k, v] of failures) if (Date.now() - v.at > FAIL_WINDOW_MS) failures.delete(k)
+  }
 }
 
 /**
@@ -125,7 +179,16 @@ export default async (req) => {
     // the moment someone forgot to set the variable.
     return json({ error: 'Server is missing OPS_PASSCODE' }, 500)
   }
-  if (!passcodeOk(req.headers.get('x-ops-passcode'))) {
+  const who = sourceOf(req)
+  if (passcodeOk(req.headers.get('x-ops-passcode'))) {
+    failures.delete(who)
+  } else if (throttled(who)) {
+    // Deliberately the same wording as a plain rejection plus the wait, so that
+    // an operator who has mistyped twice reads an instruction rather than an
+    // accusation.
+    return json({ error: 'Too many wrong passcodes. Wait a minute and try again.' }, 429)
+  } else {
+    noteFailure(who)
     return json({ error: 'Wrong passcode' }, 401)
   }
 
@@ -632,6 +695,16 @@ async function setLocation(sb, { schoolId, lat, lon }, audit) {
     next = { lat: y, lon: x }
   }
 
+  // Read the pin that is there now before overwriting it. The whole value of
+  // an audit row for this action is the coordinate it replaced: a pin typed in
+  // wrong is invisible - the dot simply sits somewhere plausible - and the only
+  // way back is a record of what it used to be.
+  const { data: before } = await sb
+    .from('schools')
+    .select('lat, lon')
+    .eq('id', schoolId)
+    .maybeSingle()
+
   const { data, error } = await sb
     .from('schools')
     .update(next)
@@ -648,9 +721,9 @@ async function setLocation(sb, { schoolId, lat, lon }, audit) {
     return json({ error: reason(error) }, 500)
   }
 
-  await audit(clearing ? 'clear-location' : 'set-location', {
-    schoolId, name: data?.name, lat: next.lat, lon: next.lon,
-  })
+  audit(clearing ? 'clear-location' : 'set-location', data?.name || schoolId,
+    before ? { lat: before.lat, lon: before.lon } : null,
+    { lat: next.lat, lon: next.lon })
   return json({ ok: true, school: data })
 }
 

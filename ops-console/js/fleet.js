@@ -194,9 +194,15 @@ async function activate(refresh) {
 async function addSchool(refresh) {
   const name = prompt('School name')
   if (!name || !name.trim()) return
-  const municipality = prompt('Municipality (optional)') || ''
+  // Municipality is what the map places a school by, so it is worth asking for
+  // even though nothing requires it. Province is the fallback when the
+  // municipality is a ward or a tole the district table has never heard of: with
+  // it the school lands somewhere roughly right, and without it the school is
+  // not drawn at all and sits in the list under the map instead.
+  const municipality = prompt('Municipality — the map places the school by this (optional)') || ''
+  const province = prompt('Province (optional)') || ''
   try {
-    const { school } = await api('create-school', { name, municipality })
+    const { school } = await api('create-school', { name, municipality, province })
     setStatus(`Added ${school.name}.`, 'ok')
     await refresh()
     $('#school').value = school.id

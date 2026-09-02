@@ -21,6 +21,20 @@
 
 # The console is an admin surface. Keep it out of search results and out of
 # frames, and stop the browser from leaking the URL to anything it links to.
+#
+# The policy below is as tight as it is because the page genuinely needs nothing
+# from anywhere else: no CDN, no web font, no analytics, no inline script and -
+# since the two stray style attributes moved into console.css - no inline style
+# either. So every source is 'self' and there is no 'unsafe-inline' anywhere,
+# which means an injected <script> or a pasted onclick simply does not run. If a
+# future panel ever wants a chart library, add the source here deliberately
+# rather than loosening the policy to make the error go away.
+#
+#   connect-src   the page posts to /api and nowhere else
+#   img-src       data: is for anything the page ever draws into an <img>
+#   frame-ancestors  the modern X-Frame-Options; both are sent for old browsers
+#   form-action   nothing on this page submits a form by navigating
+#   base-uri      stops an injected <base> repointing every relative URL
 [[headers]]
   for = "/*"
   [headers.values]
@@ -28,3 +42,5 @@
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "no-referrer"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()"
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"

@@ -18,6 +18,7 @@
  *   into a single dot that says how many, and opens to list them.
  */
 import { $, esc, ago, exact, codeOf } from './util.js'
+import { api, setStatus } from './api.js'
 import { state } from './fleet.js'
 import { playingNow } from './activity.js'
 import { NEPAL } from '../data/nepal.js'
@@ -258,6 +259,7 @@ function open(id, { quiet = false } = {}) {
       ${tvs.length
         ? `<ul class="map-tvs">${tvs.map(row).join('')}</ul>`
         : '<p class="empty">No televisions here yet.</p>'}
+      ${pinBox(s)}
     </div>`
   }).join('')
 
@@ -307,10 +309,15 @@ function renderUnplaced(list) {
   box.innerHTML = `<h3>Not on the map (${list.length})</h3>
     <p class="muted">The address on these schools did not match a district or a
       province, so they are not drawn rather than guessed at. Correcting the
-      municipality on the Fleet tab is usually enough.</p>
+      municipality on the Fleet tab is usually enough; where it is not, pin the
+      school to a coordinate and it appears exactly there.</p>
     <ul class="plain">${list.map(s => {
       const address = [s.municipality, s.province].filter(Boolean).join(', ')
-      return `<li>${esc(s.name)} <span class="muted">${esc(address) || 'no address recorded'}</span></li>`
+      return `<li>
+        <span class="unplaced-name">${esc(s.name)}
+          <span class="muted">${esc(address) || 'no address recorded'}</span></span>
+        ${pinBox(s)}
+      </li>`
     }).join('')}</ul>`
 }
 
@@ -349,3 +356,145 @@ function renderLegend(dots, unplaced) {
 
 /** Called the first time the tab is opened. */
 export const openMap = () => refreshMap()
+
+/* -------------------------------------------------------------- pinning */
+
+/**
+ * The override, wherever a school is named.
+ *
+ * Most schools are placed by their municipality, which lands the dot in the
+ * middle of a district and no nearer. That is usually enough. Where it is not -
+ * two schools in one district the office needs to tell apart, or a district
+ * whose middle is nowhere near anybody - somebody at the school gate reads a
+ * coordinate off their phone and it goes in here.
+ *
+ * One box, not two. The coordinate arrives as a single pasted string, because
+ * that is what "copy coordinates" gives you on every phone map there is, and
+ * splitting it across two fields means the operator does the splitting by hand
+ * and gets to make a new mistake doing it. Latitude first, which is the order
+ * every one of those apps writes it in.
+ *
+ * A <details> rather than a button and a panel: closed it is one quiet line
+ * saying whether the school is pinned, open it is the field, and the keyboard
+ * and the screen reader both already know what to do with it.
+ */
+function pinBox(school) {
+  const pinned = Number.isFinite(Number(school.lat)) && Number.isFinite(Number(school.lon)) &&
+                 school.lat !== null && school.lon !== null
+  const value = pinned ? `${school.lat}, ${school.lon}` : ''
+  const id = esc(school.id)
+
+  return `<details class="pin${pinned ? ' on' : ''}">
+    <summary>${pinned
+      ? `Pinned at <code>${esc(value)}</code>`
+      : 'Pin this school exactly'}</summary>
+    <div class="pin-body" data-school="${id}">
+      <label for="pin-${id}">Latitude, longitude</label>
+      <input id="pin-${id}" class="pin-input" type="text" inputmode="decimal"
+             autocomplete="off" spellcheck="false"
+             placeholder="27.7172, 85.3240" value="${esc(value)}">
+      <p class="hint">Paste it straight from a phone map. Latitude first.</p>
+      <p class="pin-error" role="alert"></p>
+      <div class="pin-actions">
+        <button type="button" class="pin-save">Save pin</button>
+        ${pinned ? '<button type="button" class="ghost pin-clear">Remove pin</button>' : ''}
+      </div>
+    </div>
+  </details>`
+}
+
+/**
+ * Read "26.9095, 87.9276" - or with a space, or a slash - into two numbers.
+ *
+ * The bounds are the same ones the database constraint and the server both
+ * apply, checked here as well so that the answer comes back before a round
+ * trip rather than after one. They exist to catch a swapped pair or a dropped
+ * minus, which are the two mistakes a person actually makes copying a
+ * coordinate, and not to have an opinion about a border.
+ */
+function parsePin(raw) {
+  const parts = String(raw || '').trim().split(/[,;/\s]+/).filter(Boolean)
+  if (parts.length !== 2) {
+    return { error: 'Two numbers, separated by a comma. Latitude first.' }
+  }
+  const lat = Number(parts[0])
+  const lon = Number(parts[1])
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+    return { error: 'That does not read as two numbers.' }
+  }
+  if (lat < 26 || lat > 31 || lon < 79.5 || lon > 89) {
+    return {
+      error: lat >= 79.5 && lat <= 89 && lon >= 26 && lon <= 31
+        ? 'Those two are the wrong way round — latitude comes first.'
+        : 'That point is not in Nepal. Latitude 26 to 31, longitude 80 to 89.',
+    }
+  }
+  return { lat, lon }
+}
+
+async function savePin(body, clearing) {
+  const schoolId = body.dataset.school
+  const input = body.querySelector('.pin-input')
+  const err = body.querySelector('.pin-error')
+  const buttons = [...body.querySelectorAll('button')]
+
+  let payload = { schoolId, lat: null, lon: null }
+  if (!clearing) {
+    const parsed = parsePin(input.value)
+    if (parsed.error) {
+      err.textContent = parsed.error
+      input.setAttribute('aria-invalid', 'true')
+      input.focus()
+      return
+    }
+    payload = { schoolId, lat: parsed.lat, lon: parsed.lon }
+  }
+
+  err.textContent = ''
+  input.removeAttribute('aria-invalid')
+  buttons.forEach(b => { b.disabled = true })
+
+  try {
+    const { school } = await api('set-location', payload)
+    // Update the copy the map draws from rather than waiting for the next poll,
+    // so the dot moves while the operator is still looking at the field they
+    // typed it into. The poll will fetch the same values again in due course.
+    const local = state.schools.find(s => s.id === schoolId)
+    if (local) { local.lat = school?.lat ?? payload.lat; local.lon = school?.lon ?? payload.lon }
+
+    // Not "back to its district": removing a pin from a school whose address
+    // nothing recognises puts it back under the map in the not-placed list, and
+    // telling the operator it went to a district it never had would be a small
+    // confident lie about the one thing this panel exists to be honest about.
+    setStatus(clearing
+      ? `${school?.name || 'That school'} is no longer pinned.`
+      : `${school?.name || 'That school'} is pinned.`, 'ok')
+
+    // A pin changes which dot the school belongs to, so the map is redrawn and
+    // the detail panel closed - the point it was describing may no longer exist.
+    closeDetail()
+    refreshMap()
+  } catch (e) {
+    err.textContent = e.message
+    buttons.forEach(b => { b.disabled = false })
+  }
+}
+
+const mapTab = $('#tab-map')
+if (mapTab) {
+  mapTab.addEventListener('click', e => {
+    const save = e.target.closest('.pin-save')
+    if (save) return savePin(save.closest('.pin-body'), false)
+    const clear = e.target.closest('.pin-clear')
+    if (clear) return savePin(clear.closest('.pin-body'), true)
+  })
+
+  // Enter in the field is the same as pressing Save. The field is one line and
+  // the button is right beside it, and an operator who has just pasted a
+  // coordinate reaches for Enter before they reach for the mouse.
+  mapTab.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' || !e.target.classList.contains('pin-input')) return
+    e.preventDefault()
+    savePin(e.target.closest('.pin-body'), false)
+  })
+}
