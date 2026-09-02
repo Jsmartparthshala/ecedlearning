@@ -2,8 +2,9 @@
 
 Written overnight on 3 September 2026, for reading together in the morning.
 
-Everything below is a finding against the ops console: the static page in
-`ops-console/` and the one Netlify function behind it,
+Everything below is a finding against the ops console: the static page - which
+as of finding 13 lives in `ops-console/public/` rather than `ops-console/` - and
+the one Netlify function behind it,
 `ops-console/netlify/functions/api.mjs`. The Android app is not in scope here.
 
 Two lists. **Fixed** is work already done and committed, described so you can
@@ -223,13 +224,78 @@ typo.
 The two are the same size of act, so they now ask the same way. Saving a draft
 over a draft still asks nothing.
 
+
+### 13. The live console was serving its own server code
+
+This is the one to read first.
+
+`netlify.toml` had `publish = "."`, so Netlify uploaded the whole `ops-console`
+directory as static files. I checked it against the live site rather than
+assuming:
+
+    https://jspopsconsole.netlify.app/netlify/functions/api.mjs   200
+    https://jspopsconsole.netlify.app/package.json                200
+    https://jspopsconsole.netlify.app/README.md                   200
+
+No secret is in any of them. The `service_role` key is an environment variable
+the function reads at runtime and has never been in the repository. But between
+them those three files hand anybody who finds the URL the complete server logic,
+every action name, the table names, the throttle limits I added last night, and
+a written explanation of how the passcode works and where the browser keeps it.
+That is the whole reconnaissance step, published, on a page whose only defence
+is one shared string.
+
+The static files now live in `ops-console/public/` and `publish` points there.
+Everything the page loads moved together and every path inside it is relative,
+so nothing in the page changed. The function directory sits outside `public/`
+and cannot be reached.
+
+I fixed it by moving the directory rather than by adding a redirect rule,
+because the defect is the default. With `publish` set to the folder the source
+lives in, every file added beside it in future is public unless somebody
+remembers it will be. Now nothing is public unless it is put in `public/`.
+
+**Watch the first deploy.** This is the one change tonight that could take the
+console down rather than merely look wrong, and I cannot verify Netlify's own
+behaviour without pushing. Locally, served from the new directory, every panel
+loads and those four paths return 404. If the live site 404s after the push,
+the Netlify UI's own build settings are overriding `netlify.toml` and the
+publish directory needs the same change made there.
+
+### 14. Statistics, part two - the fleet as a spreadsheet
+
+Not a defect. The office gets asked for a list, and the answer today is somebody
+copying twenty-two rows out of a table by hand. **Download as a spreadsheet**
+sits beside the Televisions heading and writes one row per television: code,
+school, where it is, teacher, class, status, whether it is playing, when it was
+activated, when it was last seen, when it expires, app version. Sorted by school.
+
+Like the map and the by-school table it asks the server for nothing, so it costs
+no invocations.
+
+Three things in it that look removable and are not:
+
+- The file opens with a byte order mark. Without one Excel renders
+  `श्री जनकल्याण विद्यालय` as mojibake, which for this office is most of the
+  point of having the file.
+- Every field is quoted, not only the ones that need it, so a school name with a
+  comma in it and one without are written the same way.
+- A value opening with `=`, `+`, `-` or `@` gets a leading apostrophe. A
+  spreadsheet runs those as formulas, and every name in that file was typed by an
+  operator.
+
+The filename is stamped with the local date rather than `toISOString()`. Nepal
+is five and three quarter hours ahead of UTC, so a file pulled before six in the
+morning would otherwise be named for yesterday, and an office filing these by
+name would never know.
+
 ---
 
 ## Flagged — these need your decision, not mine
 
 ### A. The passcode is kept in `localStorage`
 
-`ops-console/js/api.js` stores it under `jsp_ops_pass`, which survives the browser
+`ops-console/public/js/api.js` stores it under `jsp_ops_pass`, which survives the browser
 closing. On the office machine that is the feature: nobody re-types it every
 morning. On a shared or borrowed machine it means the next person to open the
 browser is already inside the console.
