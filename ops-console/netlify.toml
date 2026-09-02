@@ -3,9 +3,19 @@
 # The site is a single static page plus one function. The service_role key is set
 # as an environment variable in the Netlify UI and is read only by the function,
 # so it is never part of the published bundle.
+#
+# publish is "public", not ".", and that is a security setting rather than a
+# tidiness one. Publishing this directory served every file in it: the whole of
+# netlify/functions/api.mjs, package.json and the README were all readable on the
+# live URL. None of them carry a secret, but between them they hand anybody who
+# finds the site the complete server logic, the table names, the throttle limits
+# and a written explanation of how the passcode works.
+#
+# Only what belongs on the web goes in public/. Anything added beside this file
+# is private by default, which is the way round it should have been.
 
 [build]
-  publish = "."
+  publish = "public"
   functions = "netlify/functions"
 
 # The page posts every action to /api. One redirect keeps the frontend free of
