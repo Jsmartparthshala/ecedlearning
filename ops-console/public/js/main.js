@@ -14,6 +14,7 @@ import { wireLessons, openLessons } from './lessons.js'
 import { wireDocuments, openDocuments } from './documents.js'
 import { openMap, refreshMap } from './map.js'
 import { wireAudit, openAudit } from './audit.js'
+import { wireRelease, openRelease } from './release.js'
 import { refreshSchoolStats } from './schools.js'
 import { wireExport } from './export.js'
 
@@ -66,6 +67,7 @@ function openApp() {
   wireDocuments()
   wireExport()
   wireAudit()
+  wireRelease()
   wireTabs()
 
   refresh()
@@ -118,6 +120,7 @@ function show(name) {
   // ever provisions televisions should not pay for either.
   if (name === 'catalogue') openLessons()
   if (name === 'documents') openDocuments()
+  if (name === 'release') openRelease()
   if (name === 'history') openAudit()
   if (name === 'map') openMap()
 

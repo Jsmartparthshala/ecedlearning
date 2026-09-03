@@ -48,6 +48,7 @@ const ACTIONS = {
   'clear-class':    ['Cleared a class',             ''],
   'rename-lesson':  ['Renamed a lesson',            ''],
   'save-document':  ['Saved privacy or terms',      ''],
+  'publish-release': ['Published an app update',   'made'],
 }
 
 const label = a => ACTIONS[a]?.[0] || a

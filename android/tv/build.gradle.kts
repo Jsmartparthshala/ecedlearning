@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -23,10 +25,51 @@ android {
     // PairingFragment reads BuildConfig.VERSION_NAME
     buildFeatures { buildConfig = true }
 
+    /**
+     * The release key, read from secrets.properties the same way the Supabase
+     * values are - the file is gitignored and the password never enters the
+     * repository.
+     *
+     * This matters more here than the usual "you need it for the Play Store".
+     * An in-place update, whether over the air or by hand, only installs when
+     * the new APK carries the same signature as the one already on the box. So
+     * the key a television is first given is the key it is married to: change it
+     * later and every set in every school has to be uninstalled, reinstalled and
+     * paired again by somebody standing in front of it. The debug key that
+     * `assembleDebug` uses is generated per machine and cannot go to Play, which
+     * makes shipping debug builds to schools a decision to do that walk later.
+     *
+     * With no keystore configured this block does nothing and a release build
+     * comes out unsigned, exactly as it did before - so a checkout without
+     * secrets.properties still builds.
+     */
+    val signing  = secrets()
+    val storePath = signing.getProperty("RELEASE_STORE_FILE", "").trim()
+    val keystore  = if (storePath.isEmpty()) null else rootProject.file(storePath)
+    val hasKeystore = keystore != null && keystore.exists()
+
+    signingConfigs {
+        if (hasKeystore) {
+            create("release") {
+                storeFile     = keystore
+                storePassword = signing.getProperty("RELEASE_STORE_PASSWORD", "")
+                keyAlias      = signing.getProperty("RELEASE_KEY_ALIAS", "")
+                keyPassword   = signing.getProperty("RELEASE_KEY_PASSWORD", "")
+
+                // v1 as well as v2/v3: some of these boxes are Android 7, which
+                // predates APK Signature Scheme v2 and will not install without
+                // the old JAR signature present too.
+                enableV1Signing = true
+                enableV2Signing = true
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false   // turn on once the app stops changing daily
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            if (hasKeystore) signingConfig = signingConfigs.getByName("release")
         }
     }
 
@@ -36,6 +79,13 @@ android {
     }
 
     sourceSets["main"].java.srcDirs("src/main/kotlin")
+}
+
+fun secrets(): Properties {
+    val p = Properties()
+    val f = rootProject.file("secrets.properties")
+    if (f.exists()) f.inputStream().use { p.load(it) }
+    return p
 }
 
 kotlin {

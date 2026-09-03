@@ -182,6 +182,24 @@ nav.tabs button[aria-selected="true"] {
 }
 nav.tabs button[aria-selected="true"]:hover { background: var(--panel-alt) }
 
+/* Six tabs no longer fit a phone. Scrolling the strip keeps every tab reachable
+   and keeps them in one row, which is what makes them read as a set; wrapping
+   to two lines pushes the whole page down and hiding any of them behind a menu
+   would bury the one an operator is looking for. The scroll is horizontal and
+   contained, so it never becomes the page scrolling sideways. */
+nav.tabs {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+nav.tabs::-webkit-scrollbar { display: none }
+nav.tabs button { flex: none; white-space: nowrap }
+
+@media (max-width: 720px) {
+  nav.tabs { padding: 0 16px }
+  nav.tabs button { padding: 13px 13px }
+}
+
 main { padding: 24px 28px 64px; max-width: 1180px }
 section { margin-bottom: 32px }
 section[hidden] { display: none !important }
@@ -238,6 +256,52 @@ h2 {
 .opt { font-weight: 400; text-transform: none; letter-spacing: 0; opacity: .75 }
 
 .hint { font-size: 13px; color: var(--muted); margin-top: 12px; max-width: 68ch }
+
+/* --------------------------------------------------------------- app update */
+
+.sub { font-size: 14px; font-weight: 650; color: var(--ink); margin: 22px 0 0 }
+
+/* A tally, not a table: half a dozen version strings with counts, which reads
+   faster as chips than as two columns of one number each. */
+.ver-tally { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px }
+
+.ver {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 5px 11px;
+  font-size: 13px;
+  color: var(--muted);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+}
+.ver b { color: var(--ink); font-weight: 600 }
+.ver.ok { color: var(--ok); border-color: #B4D6C1; background: var(--ok-wash) }
+.ver.ok b { color: var(--ok) }
+.ver-total { font-size: 12.5px; color: var(--muted) }
+
+/* The checkbox rows in this panel are a statement, not a label above a box,
+   so the text sits beside it and the whole line is the target. */
+.check {
+  /* Grid rather than flex: the second column is minmax(0, 1fr), so a long
+     sentence wraps inside the panel instead of setting the panel's width and
+     pushing the page sideways on a phone. */
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  margin-top: 16px;
+  font-size: 13.5px;
+  color: var(--ink);
+  cursor: pointer;
+  /* 68ch is a reading measure, not a width: below about 500px it is wider than
+     the viewport and pushes the whole page sideways. */
+  max-width: min(68ch, 100%);
+}
+.check input { margin-top: 2px }
+.check span { min-width: 0; overflow-wrap: anywhere }
 
 /* ------------------------------------------------------------------ history */
 

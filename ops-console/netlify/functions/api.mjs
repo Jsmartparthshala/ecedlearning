@@ -226,6 +226,10 @@ export default async (req) => {
         return await listDocuments(sb)
       case 'list-audit':
         return await listAudit(sb, body)
+      case 'get-release':
+        return await getRelease(sb)
+      case 'save-release':
+        return await saveRelease(sb, body, audit)
       case 'save-document':
         return await saveDocument(sb, body, audit)
       case 'lookup':
@@ -1236,6 +1240,123 @@ async function listAudit(sb, { limit, action } = {}) {
     return json({ error: reason(error, 'list-audit') }, 500)
   }
   return json({ available: true, entries: data || [] })
+}
+
+/**
+ * The one release row, plus what the fleet says it is actually running.
+ *
+ * The televisions have had an update mechanism since the first build - a daily
+ * check against `app_release`, a download, and the system installer - and
+ * nothing anywhere could write that row. Publishing a build meant opening the
+ * Supabase table editor and typing into a production table by hand, which is
+ * the kind of step that gets done at midnight and gets done wrong.
+ *
+ * The fleet tally comes back with it because a release is not finished when it
+ * is published, it is finished when the sets are running it, and the only
+ * honest source for that is what each television last reported about itself.
+ */
+async function getRelease(sb) {
+  const { data, error } = await sb
+    .from('app_release')
+    .select('version_name, version_code, apk_url, mandatory, notes, updated_at')
+    .eq('id', 1)
+    .maybeSingle()
+
+  if (error) {
+    if (isMissingSchema(error)) return json({ available: false, release: null, fleet: [] })
+    return json({ error: reason(error, 'get-release') }, 500)
+  }
+
+  // Only claimed televisions. An unactivated box has never reported a version
+  // and would show up as a phantom "unknown" in the tally.
+  const { data: rows } = await sb
+    .from('devices')
+    .select('app_version')
+    .not('claimed_at', 'is', null)
+    .limit(ACTIVITY_ROW_CAP)
+
+  const tally = new Map()
+  for (const r of rows || []) {
+    const v = String(r.app_version || '').trim() || null
+    tally.set(v, (tally.get(v) || 0) + 1)
+  }
+  const fleet = [...tally.entries()]
+    .map(([version, count]) => ({ version, count }))
+    .sort((a, b) => b.count - a.count)
+
+  return json({ available: true, release: data || null, fleet })
+}
+
+/**
+ * Publish a build to the fleet.
+ *
+ * Three of these fields can strand every television in the country if they are
+ * wrong, so each is checked rather than trusted:
+ *
+ *  - A version code at or below the published one is refused. The televisions
+ *    compare codes and only ever move up, so a number that goes backwards is
+ *    not a rollback, it is a fleet that will never see another update until
+ *    somebody notices.
+ *  - The APK link must be https. Plain http would mean every school downloading
+ *    an executable over a network nobody controls.
+ *  - Mandatory is a separate, deliberate tick, because it takes the decision
+ *    away from the teacher standing in front of the class.
+ *
+ * What it cannot check is the signature. An APK signed with a different key
+ * than the one already installed will download fine and fail at the installer,
+ * on every set, with an error the teacher reads as the app being broken.
+ */
+async function saveRelease(sb, { versionName, versionCode, apkUrl, mandatory, notes }, audit) {
+  const name = String(versionName ?? '').trim()
+  const code = Number(versionCode)
+  const url  = String(apkUrl ?? '').trim()
+
+  if (!name) {
+    return json({ error: 'A release needs a version name - the same one the build carries.' }, 400)
+  }
+  if (!Number.isInteger(code) || code < 1) {
+    return json({ error: 'The version code must be a whole number, at least 1.' }, 400)
+  }
+  if (url && !url.toLowerCase().startsWith('https://')) {
+    return json({ error: 'The link must start with https:// - a television will not fetch an update over plain http.' }, 400)
+  }
+
+  const { data: before, error: e0 } = await sb
+    .from('app_release')
+    .select('version_name, version_code, apk_url, mandatory, notes')
+    .eq('id', 1)
+    .maybeSingle()
+  if (e0) {
+    if (isMissingSchema(e0)) {
+      return json({ error: 'The app_release table does not exist yet. Run 0001_schema.sql against the database first.' }, 409)
+    }
+    return json({ error: reason(e0, 'save-release read') }, 500)
+  }
+
+  if (before && code <= before.version_code) {
+    return json({ error:
+      `Version code ${code} is not above the ${before.version_code} already published. ` +
+      'A television only accepts a higher code, so this would publish an update nothing can install.' }, 400)
+  }
+
+  const row = {
+    id: 1,
+    version_name: name.normalize('NFC'),
+    version_code: code,
+    apk_url: url || null,
+    mandatory: !!mandatory,
+    notes: String(notes ?? '').trim().normalize('NFC') || null,
+    updated_at: new Date().toISOString(),
+  }
+
+  const { error } = await sb.from('app_release').upsert(row, { onConflict: 'id' })
+  if (error) return json({ error: reason(error, 'save-release') }, 500)
+
+  audit('publish-release', name, before, {
+    version_name: row.version_name, version_code: row.version_code,
+    apk_url: row.apk_url, mandatory: row.mandatory,
+  })
+  return json({ ok: true })
 }
 
 async function listDocuments(sb) {

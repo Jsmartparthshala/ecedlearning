@@ -87,6 +87,7 @@
   <button role="tab" id="tab-btn-catalogue" data-tab="catalogue" aria-controls="tab-catalogue" aria-selected="false" tabindex="-1">Catalogue</button>
   <button role="tab" id="tab-btn-map" data-tab="map" aria-controls="tab-map" aria-selected="false" tabindex="-1">Live</button>
   <button role="tab" id="tab-btn-documents" data-tab="documents" aria-controls="tab-documents" aria-selected="false" tabindex="-1">Documents</button>
+  <button role="tab" id="tab-btn-release" data-tab="release" aria-controls="tab-release" aria-selected="false" tabindex="-1">App update</button>
   <button role="tab" id="tab-btn-history" data-tab="history" aria-controls="tab-history" aria-selected="false" tabindex="-1">History</button>
 </nav>
 
@@ -422,6 +423,83 @@
         Saving publishes within a refresh: the next television to open Privacy
         &amp; terms shows exactly what is in these boxes. Every save is recorded
         with its previous text, so a bad edit can be read back and undone.
+      </p>
+    </div>
+  </section>
+
+</div>
+
+<!-- ====================================================== app update ====== -->
+<div id="tab-release" role="tabpanel" aria-labelledby="tab-btn-release" tabindex="-1" hidden>
+
+  <section>
+    <h2>App update</h2>
+
+    <div id="r-missing" class="warn-strip" hidden>
+      The release table does not exist yet. Run <code>0001_schema.sql</code>
+      against the database, then reload this page.
+    </div>
+
+    <div id="r-editor" hidden>
+      <p class="hint" id="r-current"></p>
+
+      <div class="panel">
+        <div class="row">
+          <div class="field">
+            <label for="r-name">Version name</label>
+            <input id="r-name" placeholder="0.2.0" autocomplete="off"
+                   spellcheck="false" aria-describedby="r-name-error">
+            <p class="field-error" id="r-name-error"></p>
+          </div>
+          <div class="field">
+            <label for="r-code">Version code</label>
+            <input id="r-code" type="number" min="1" step="1" inputmode="numeric"
+                   placeholder="2" aria-describedby="r-code-error">
+            <p class="field-error" id="r-code-error"></p>
+          </div>
+        </div>
+
+        <div class="field full">
+          <label for="r-url">Link to the APK</label>
+          <input id="r-url" type="url" placeholder="https://…/eced-0.2.0.apk"
+                 autocomplete="off" spellcheck="false" aria-describedby="r-url-error">
+          <p class="field-error" id="r-url-error"></p>
+        </div>
+
+        <div class="field full">
+          <label for="r-notes">What changed <span class="opt">optional</span></label>
+          <textarea id="r-notes" rows="3"
+                    placeholder="Shown to whoever is standing at the television."></textarea>
+        </div>
+
+        <label class="check">
+          <input type="checkbox" id="r-mandatory">
+          <span>Required update — the television keeps asking until it is installed</span>
+        </label>
+
+        <div class="row">
+          <button id="r-save">Publish to the fleet</button>
+        </div>
+      </div>
+
+      <h3 class="sub">What the televisions are running</h3>
+      <div class="ver-tally" id="r-fleet"></div>
+
+      <p class="hint">
+        Both numbers come off the build: the version name is what the pairing
+        screen prints, the version code is the number a television compares
+        against its own. The code must go up every release or nothing installs.
+      </p>
+      <p class="hint">
+        The set checks once a day on unmetered Wi‑Fi, downloads in the
+        background, and then asks. Android asks again itself, and there is no
+        way around that on a sideloaded app — so somebody has to be standing
+        in front of the television for an update to finish.
+      </p>
+      <p class="hint">
+        An APK signed with a different key than the one already installed will
+        download and then fail, on every set, with an error a teacher reads as
+        the app being broken. Nothing here can check that for you.
       </p>
     </div>
   </section>
