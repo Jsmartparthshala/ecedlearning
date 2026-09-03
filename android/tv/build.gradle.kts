@@ -11,8 +11,13 @@ android {
         applicationId = "np.com.jagdamba.eced"
         minSdk        = libs.versions.minSdk.get().toInt()
         targetSdk     = libs.versions.targetSdk.get().toInt()
-        versionCode   = 1
-        versionName   = "0.1.0"
+        // Bumped off 1 for the first time since the first build. Two builds
+        // sharing a versionCode are the same build as far as Android is
+        // concerned: nothing can offer one as an update to the other, and a
+        // television cannot tell an operator which of them it is running. The
+        // pairing screen prints versionName, so it wants to move too.
+        versionCode   = 2
+        versionName   = "0.2.0"
     }
 
     // PairingFragment reads BuildConfig.VERSION_NAME

@@ -71,6 +71,12 @@ function expiryFrom(raw) {
  * It records no identity, because there is none to record: one shared passcode
  * cannot tell two operators apart. What it records is the before and the after,
  * which is what actually gets a mistake undone.
+ *
+ * Every action that writes now calls this. It used to be six of thirteen, and
+ * an audit table with holes in it is one nobody trusts enough to read - the
+ * absence of a row proved nothing, because half the actions never wrote one.
+ * The two deletes read their row before removing it, since afterwards there is
+ * nothing left to describe.
  */
 function auditor(sb, req) {
   const hint = [
@@ -218,6 +224,8 @@ export default async (req) => {
         return await renameLesson(sb, body, audit)
       case 'list-documents':
         return await listDocuments(sb)
+      case 'list-audit':
+        return await listAudit(sb, body)
       case 'save-document':
         return await saveDocument(sb, body, audit)
       case 'lookup':
@@ -227,23 +235,23 @@ export default async (req) => {
       case 'revoke':
         return await revoke(sb, body, audit)
       case 'create-school':
-        return await createSchool(sb, body)
+        return await createSchool(sb, body, audit)
       case 'update-school':
         return await updateSchool(sb, body, audit)
       case 'set-location':
         return await setLocation(sb, body, audit)
       case 'create-teacher':
-        return await createTeacher(sb, body)
+        return await createTeacher(sb, body, audit)
       case 'delete-teacher':
-        return await deleteTeacher(sb, body)
+        return await deleteTeacher(sb, body, audit)
       case 'assign-teacher':
-        return await assignTeacher(sb, body)
+        return await assignTeacher(sb, body, audit)
       case 'create-class':
-        return await createClass(sb, body)
+        return await createClass(sb, body, audit)
       case 'delete-class':
-        return await deleteClass(sb, body)
+        return await deleteClass(sb, body, audit)
       case 'assign-class':
-        return await assignClass(sb, body)
+        return await assignClass(sb, body, audit)
       default:
         return json({ error: `Unknown action: ${body.action}` }, 400)
     }
@@ -635,7 +643,7 @@ async function teacherOutsideSchool(sb, teacherId, schoolId) {
  * two different machines would be two different rows to Postgres while being one
  * name to everybody reading the screen.
  */
-async function createTeacher(sb, { schoolId, name, role }) {
+async function createTeacher(sb, { schoolId, name, role }, audit) {
   if (!schoolId) return json({ error: 'Choose a school first.' }, 400)
   const clean = String(name || '').trim()
   if (!clean) return json({ error: 'A teacher needs a name.' }, 400)
@@ -651,6 +659,7 @@ async function createTeacher(sb, { schoolId, name, role }) {
     .single()
   if (error) return json({ error: reason(error) }, 500)
 
+  audit('create-teacher', data.name, null, data)
   return json({ ok: true, teacher: data })
 }
 
@@ -660,22 +669,36 @@ async function createTeacher(sb, { schoolId, name, role }) {
  * back to showing the school name - which is what a television should do when
  * the teacher it was assigned to leaves mid-term.
  */
-async function deleteTeacher(sb, { teacherId }) {
+async function deleteTeacher(sb, { teacherId }, audit) {
   if (!teacherId) return json({ error: 'teacherId is required' }, 400)
+
+  // Read first. This is the whole point of the audit table on a delete: after
+  // the row is gone there is nothing left to describe it, and "a teacher was
+  // deleted" without a name is a line nobody can act on. The televisions that
+  // were pointed at them are counted too, because that is the consequence
+  // somebody will be asking about a week later.
+  const { data: before } = await sb
+    .from('teachers').select('id, school_id, name, role').eq('id', teacherId).maybeSingle()
+  const { count: detached } = await sb
+    .from('devices').select('id', { count: 'exact', head: true }).eq('teacher_id', teacherId)
 
   const { error } = await sb.from('teachers').delete().eq('id', teacherId)
   if (error) return json({ error: reason(error) }, 500)
 
+  audit('delete-teacher', before?.name || teacherId,
+        { ...(before || { id: teacherId }), televisions_detached: detached ?? null }, null)
   return json({ ok: true })
 }
 
 /** Point an already-activated television at a teacher, or clear it with null. */
-async function assignTeacher(sb, { deviceId, teacherId }) {
+async function assignTeacher(sb, { deviceId, teacherId }, audit) {
   if (!deviceId) return json({ error: 'deviceId is required' }, 400)
 
+  // hardware_uuid so the audit row names the television the way the console
+  // does, and teacher_id so it can say what the assignment replaced.
   const { data: device, error: e0 } = await sb
     .from('devices')
-    .select('id, school_id')
+    .select('id, school_id, hardware_uuid, teacher_id')
     .eq('id', deviceId)
     .maybeSingle()
   if (e0) return json({ error: reason(e0) }, 500)
@@ -695,6 +718,9 @@ async function assignTeacher(sb, { deviceId, teacherId }) {
     .eq('id', deviceId)
   if (error) return json({ error: reason(error) }, 500)
 
+  audit(teacherId ? 'assign-teacher' : 'clear-teacher',
+        device.hardware_uuid || deviceId,
+        { teacher_id: device.teacher_id }, { teacher_id: teacherId || null })
   return json({ ok: true })
 }
 
@@ -702,7 +728,7 @@ async function assignTeacher(sb, { deviceId, teacherId }) {
  * Nothing seeds the schools table, so without this the very first activation has
  * nowhere to point and the console is a dead end on day one.
  */
-async function createSchool(sb, { name, municipality, province }) {
+async function createSchool(sb, { name, municipality, province }, audit) {
   const clean = String(name || '').trim()
   if (!clean) return json({ error: 'A school needs a name.' }, 400)
 
@@ -717,6 +743,7 @@ async function createSchool(sb, { name, municipality, province }) {
     .single()
   if (error) return json({ error: reason(error) }, 500)
 
+  audit('create-school', data.name, null, data)
   return json({ ok: true, school: data })
 }
 
@@ -848,7 +875,7 @@ async function setLocation(sb, { schoolId, lat, lon }, audit) {
  * that a television can point at, and pointing at it is what gives the device
  * its grade.
  */
-async function createClass(sb, { schoolId, levelId, label }) {
+async function createClass(sb, { schoolId, levelId, label }, audit) {
   if (!schoolId) return json({ error: 'Choose a school first.' }, 400)
   if (!levelId) return json({ error: 'Choose a grade for this class.' }, 400)
 
@@ -869,6 +896,7 @@ async function createClass(sb, { schoolId, levelId, label }) {
     return json({ error: reason(error) }, 500)
   }
 
+  audit('create-class', data.label, null, data)
   return json({ ok: true, class: data })
 }
 
@@ -878,22 +906,31 @@ async function createClass(sb, { schoolId, levelId, label }) {
  * activated and fall back to browsing the whole ladder. Losing a class label
  * mid-term must never take a working television off the wall.
  */
-async function deleteClass(sb, { classId }) {
+async function deleteClass(sb, { classId }, audit) {
   if (!classId) return json({ error: 'classId is required' }, 400)
+
+  // Same reasoning as deleteTeacher: read the row and count what it detaches
+  // while both still exist.
+  const { data: before } = await sb
+    .from('classes').select('id, school_id, level_id, label').eq('id', classId).maybeSingle()
+  const { count: detached } = await sb
+    .from('devices').select('id', { count: 'exact', head: true }).eq('class_id', classId)
 
   const { error } = await sb.from('classes').delete().eq('id', classId)
   if (error) return json({ error: reason(error) }, 500)
 
+  audit('delete-class', before?.label || classId,
+        { ...(before || { id: classId }), televisions_detached: detached ?? null }, null)
   return json({ ok: true })
 }
 
 /** Point an already-activated television at a class, or clear it with null. */
-async function assignClass(sb, { deviceId, classId }) {
+async function assignClass(sb, { deviceId, classId }, audit) {
   if (!deviceId) return json({ error: 'deviceId is required' }, 400)
 
   const { data: device, error: e0 } = await sb
     .from('devices')
-    .select('id, school_id')
+    .select('id, school_id, hardware_uuid, class_id')
     .eq('id', deviceId)
     .maybeSingle()
   if (e0) return json({ error: reason(e0) }, 500)
@@ -924,6 +961,9 @@ async function assignClass(sb, { deviceId, classId }) {
     .eq('id', deviceId)
   if (error) return json({ error: reason(error) }, 500)
 
+  audit(classId ? 'assign-class' : 'clear-class',
+        device.hardware_uuid || deviceId,
+        { class_id: device.class_id }, { class_id: classId || null })
   return json({ ok: true })
 }
 /* ==========================================================================
@@ -1173,6 +1213,31 @@ async function renameLesson(sb, { lessonId, titleEn, titleNp }, audit) {
  * this page is always live before its table is, and a panel whose every control
  * errors is worse than a panel that says what is missing.
  */
+/**
+ * Read the audit trail back.
+ *
+ * An audit table nobody can read is a table nobody maintains, so this exists
+ * the moment the writes do. Read-only, capped, newest first, and it degrades
+ * to "not available" rather than an error when 0011_ops_audit.sql has not been
+ * run - which is the normal state of affairs between a push and a migration.
+ */
+async function listAudit(sb, { limit, action } = {}) {
+  let q = sb
+    .from('ops_audit')
+    .select('id, action, target, before, after, actor_hint, at')
+    .order('at', { ascending: false })
+    .limit(Math.min(Number(limit) || 200, 500))
+
+  if (action) q = q.eq('action', String(action))
+
+  const { data, error } = await q
+  if (error) {
+    if (isMissingSchema(error)) return json({ available: false, entries: [] })
+    return json({ error: reason(error, 'list-audit') }, 500)
+  }
+  return json({ available: true, entries: data || [] })
+}
+
 async function listDocuments(sb) {
   const { data, error } = await sb
     .from('app_documents')

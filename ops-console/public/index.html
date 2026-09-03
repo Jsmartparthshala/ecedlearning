@@ -87,6 +87,7 @@
   <button role="tab" id="tab-btn-catalogue" data-tab="catalogue" aria-controls="tab-catalogue" aria-selected="false" tabindex="-1">Catalogue</button>
   <button role="tab" id="tab-btn-map" data-tab="map" aria-controls="tab-map" aria-selected="false" tabindex="-1">Live</button>
   <button role="tab" id="tab-btn-documents" data-tab="documents" aria-controls="tab-documents" aria-selected="false" tabindex="-1">Documents</button>
+  <button role="tab" id="tab-btn-history" data-tab="history" aria-controls="tab-history" aria-selected="false" tabindex="-1">History</button>
 </nav>
 
 <main hidden id="app">
@@ -423,6 +424,37 @@
         with its previous text, so a bad edit can be read back and undone.
       </p>
     </div>
+  </section>
+
+</div>
+
+<!-- ====================================================== history ========= -->
+<div id="tab-history" role="tabpanel" aria-labelledby="tab-btn-history" tabindex="-1" hidden>
+
+  <section>
+    <div class="section-head">
+      <h2>History <span class="muted" id="audit-scope"></span></h2>
+      <select id="audit-filter" aria-label="Show only one kind of change">
+        <option value="">Everything</option>
+      </select>
+    </div>
+
+    <div class="audit" id="audit">
+      <div class="empty">Loading…</div>
+    </div>
+
+    <p class="hint">
+      Every change the console makes to the database, newest first, with what
+      the row held before and what it holds now — which is what actually gets
+      a mistake undone. Nothing a television does is here; this is the office's
+      own record of itself.
+    </p>
+    <p class="hint">
+      It records no name, because there is none to record: one shared passcode
+      cannot tell two operators apart. The last column is the browser and the
+      address the change came from, which is enough to tell an office laptop
+      from a phone in another district, and is not identity.
+    </p>
   </section>
 
 </div>

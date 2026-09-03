@@ -239,6 +239,52 @@ h2 {
 
 .hint { font-size: 13px; color: var(--muted); margin-top: 12px; max-width: 68ch }
 
+/* ------------------------------------------------------------------ history */
+
+.audit { display: grid; gap: 8px; margin-top: 12px }
+
+.audit-row {
+  display: grid;
+  grid-template-columns: 148px minmax(0, 1fr);
+  gap: 4px 14px;
+  padding: 11px 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+}
+
+/* A create, a delete and an edit are read differently and should look
+   different at a glance. The stripe carries it, because a coloured word would
+   have to survive being read next to a school name in Devanagari. */
+.audit-row { border-left: 4px solid var(--line-firm) }
+.audit-row.made { border-left-color: var(--ok) }
+.audit-row.gone { border-left-color: var(--bad) }
+
+.audit-when {
+  color: var(--muted);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.audit-what { min-width: 0 }
+.audit-action { font-weight: 650; color: var(--navy) }
+.audit-row.gone .audit-action { color: var(--bad) }
+.audit-target { color: var(--ink) }
+
+.audit-change {
+  grid-column: 2;
+  font-size: 12.5px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.audit-change b { color: var(--ink); font-weight: 600 }
+.audit-who { grid-column: 2; font-size: 12px; color: var(--muted); opacity: .8 }
+
+@media (max-width: 720px) {
+  .audit-row { grid-template-columns: minmax(0, 1fr) }
+  .audit-change, .audit-who { grid-column: 1 }
+}
+
 /* The optional half of a panel. Shut, it is one quiet line; open, it is an
    ordinary row. Same triangle as the map's pin control, so that a disclosure
    looks like a disclosure wherever one turns up. */
