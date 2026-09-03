@@ -173,7 +173,11 @@ async function counters() {
   put('#c-schools', s.schools)
   put('#c-devices', s.devices)
   put('#c-activated', s.activated)
-  put('#c-active', s.activeToday)
+  // A floor, not a count, when the read hit its cap - so the number never
+  // silently shrinks below the truth without saying so.
+  put('#c-active', s.activeToday == null || !s.activeTodayPartial
+    ? s.activeToday
+    : `${s.activeToday}+`)
   put('#c-video', s.withVideo)
 }
 

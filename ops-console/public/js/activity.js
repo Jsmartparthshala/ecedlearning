@@ -58,9 +58,12 @@ export async function refreshActivity() {
 
   box.innerHTML = rows.map(row).join('')
   const live = rows.filter(r => r.playing).length
+  // "and older ones not shown" rather than nothing, because a list that has
+  // quietly stopped being complete is the one thing this panel must not be.
+  const more = data.truncated ? ', older ones not shown' : ''
   $('#activity-scope').textContent = live
-    ? `· ${live} playing now`
-    : `· ${rows.length} seen today`
+    ? `· ${live} playing now${more}`
+    : `· ${rows.length} seen today${more}`
   return live
 }
 

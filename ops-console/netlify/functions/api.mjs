@@ -248,7 +248,10 @@ export default async (req) => {
         return json({ error: `Unknown action: ${body.action}` }, 400)
     }
   } catch (e) {
-    return json({ error: reason(e, String(e)) }, 500)
+    // An unexpected exception is by definition something we did not plan the
+    // wording for, so it gets the same treatment: a reference on screen and
+    // the detail in the log.
+    return json({ error: reason(e, `action=${body?.action}`) }, 500)
   }
 }
 
@@ -269,11 +272,55 @@ const DEVICE_COLUMNS_WITH_CLASS =
  * Note that this is also why isMissingSchema cannot see such an error: there is
  * no code and no message on it to match.
  */
-const reason = (err, fallback = 'The database rejected that without saying why.') =>
-  err?.message ||
-  err?.details ||
-  err?.hint ||
-  (err?.code ? `Database error ${err.code}.` : fallback)
+/**
+ * The Postgres error codes whose meaning is about the operator's data rather
+ * than about our schema. These are safe to put on the screen in our own words:
+ * they tell somebody standing at the console what they did, and they name
+ * nothing about how the database is built.
+ */
+const SAFE_CODES = {
+  '23505': 'Something with that name or code already exists.',
+  '23503': 'That row points at something which no longer exists.',
+  '23502': 'A required field was left empty.',
+  '23514': 'The database would not accept that value.',
+  '22P02': 'That value was not in a form the database could read.',
+  '22007': 'That date was not in a form the database could read.',
+  '22008': 'That date is outside the range the database can store.',
+}
+
+/** Short, sayable over a phone, and unambiguous: no O/0 or I/1 confusion. */
+const REF_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+const newRef = () => Array.from(
+  { length: 6 },
+  () => REF_ALPHABET[Math.floor(Math.random() * REF_ALPHABET.length)],
+).join('')
+
+/**
+ * Turn whatever the database threw into something an operator can act on.
+ *
+ * It used to return the raw message, which meant internal wording - table
+ * names, column names, constraint names, occasionally a fragment of SQL -
+ * could end up on a screen in a school office. Nobody there can act on
+ * "null value in column teacher_id of relation devices violates not-null
+ * constraint", and the words are ours, not theirs.
+ *
+ * So: a known code becomes a sentence about their data. Anything else becomes
+ * a reference, and the real error goes to the function log, where the person
+ * who can actually read it will look. The operator still has something to
+ * relay - which was the whole reason the raw text was there in the first place
+ * - they just relay six characters instead of a sentence about our schema.
+ */
+function reason(err, context = '') {
+  const safe = SAFE_CODES[err?.code]
+  if (safe) return safe
+
+  const ref = newRef()
+  // Netlify keeps these; the browser never sees them.
+  console.error(`[ops ${ref}]${context ? ' ' + context : ''}`, {
+    code: err?.code, message: err?.message, details: err?.details, hint: err?.hint,
+  })
+  return `Something went wrong in the database. Quote reference ${ref} when you report it.`
+}
 
 /**
  * Does this error mean the schema simply does not have the class columns yet,
@@ -915,6 +962,18 @@ const minutesAgo = m => new Date(Date.now() - m * 60_000).toISOString()
  * The honest fix for presence is a heartbeat from the TV on resume, which is an
  * Android change. Until that ships this is the whole truth available.
  */
+/**
+ * How many progress rows either of the two activity reads will look at.
+ *
+ * There has to be a ceiling - an unbounded read of a table every television
+ * writes to is a page that gets slower every month. Progress is one row per
+ * television per lesson, not one per heartbeat, so five thousand covers a fleet
+ * in the high hundreds comfortably. Both readers now report when they hit it
+ * instead of silently returning less than the truth, which is the failure that
+ * matters: a wrong number nobody can tell is wrong.
+ */
+const ACTIVITY_ROW_CAP = 5000
+
 async function nowPlaying(sb) {
   const { data, error } = await sb
     .from('progress')
@@ -923,10 +982,17 @@ async function nowPlaying(sb) {
     .not('device_id', 'is', null)
     .gte('updated_at', minutesAgo(ACTIVITY_WINDOW_H * 60))
     .order('updated_at', { ascending: false })
-    .limit(600)
+    .limit(ACTIVITY_ROW_CAP)
 
   // A database that has not been touched by a television yet is not an error.
-  if (error) return json({ error: reason(error) }, 500)
+  if (error) return json({ error: reason(error, 'now-playing') }, 500)
+
+  // Hitting the cap exactly almost certainly means there were more rows. The
+  // read is newest-first, so every television that is playing right now is in
+  // what came back - what gets cut is the oldest end of the tail, the "last
+  // played six hours ago" entries. Under-reporting that quietly is the thing
+  // worth avoiding, so the response says so and the page prints it.
+  const truncated = (data || []).length >= ACTIVITY_ROW_CAP
 
   // One entry per device: the first row wins because the query is already
   // ordered newest first.
@@ -949,7 +1015,7 @@ async function nowPlaying(sb) {
     playing: r.updated_at >= playingSince,
   }))
 
-  return json({ activity, windowMinutes: PLAYING_WINDOW_MIN })
+  return json({ activity, windowMinutes: PLAYING_WINDOW_MIN, truncated })
 }
 
 /**
@@ -987,11 +1053,14 @@ async function summary(sb) {
     .select('device_id')
     .not('device_id', 'is', null)
     .gte('updated_at', minutesAgo(ACTIVITY_WINDOW_H * 60))
-    .limit(2000)
+    .limit(ACTIVITY_ROW_CAP)
 
+  // Same cap, same caveat: a count that has quietly stopped being a count is
+  // worse than one that admits it is a floor. The page renders this as "43+".
   return json({
     schools, devices, activated, lessons, withVideo,
     activeToday: active ? new Set(active.map(r => r.device_id)).size : null,
+    activeTodayPartial: (active || []).length >= ACTIVITY_ROW_CAP,
   })
 }
 
