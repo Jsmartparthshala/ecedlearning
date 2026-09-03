@@ -1,5 +1,6 @@
 package np.com.jagdamba.eced.tv
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.Rect
@@ -102,6 +103,18 @@ class UnitActivity : FragmentActivity() {
      */
     private var returningToGrid = false
 
+    // setHasFixedSize on the two RecyclerViews below trips InvalidSetHasFixedSize,
+    // and lint is wrong about both. The check asks whether the view is
+    // wrap_content without asking which way it scrolls. The rail scrolls sideways
+    // and is match_parent sideways; the grid scrolls downwards and is 0dp with
+    // layout_weight, so its height comes from the parent and never from its
+    // contents. Both are exactly the condition setHasFixedSize describes.
+    //
+    // The alternative to suppressing is to hardcode a dp height on the rail - a
+    // real change to a television layout, made to quiet a warning about something
+    // else. lintVitalRelease treats this as an error, so it is this or no release
+    // build at all.
+    @SuppressLint("InvalidSetHasFixedSize")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_unit)
