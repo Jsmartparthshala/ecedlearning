@@ -122,6 +122,10 @@ function showFieldError(sel, message) {
   if (input) {
     if (message) input.setAttribute('aria-invalid', 'true')
     else input.removeAttribute('aria-invalid')
+    // The expiry now lives behind a disclosure. An error written into a shut
+    // one is an error nobody reads, and the operator would only see the
+    // activation refuse to run with no reason given anywhere on the screen.
+    if (message) input.closest('details')?.setAttribute('open', '')
   }
 }
 

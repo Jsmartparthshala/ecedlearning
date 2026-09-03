@@ -117,6 +117,13 @@ function show(name) {
   if (name === 'catalogue') openLessons()
   if (name === 'documents') openDocuments()
   if (name === 'map') openMap()
+
+  // The poll stops while a tab that is not live is showing, so both live tabs
+  // are as old as the last time one of them was open. They draw from cache
+  // first - nothing flashes empty - and this brings them up to date behind it.
+  // Now that On now sits on the map tab, arriving there without this would show
+  // whatever was playing when the operator wandered off to the catalogue.
+  if ((name === 'fleet' || name === 'map') && !document.hidden) refresh()
 }
 
 /**

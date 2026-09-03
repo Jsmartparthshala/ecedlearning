@@ -85,7 +85,7 @@
 <nav class="tabs" role="tablist" hidden id="tabs" aria-label="Sections">
   <button role="tab" id="tab-btn-fleet" data-tab="fleet" aria-controls="tab-fleet" aria-selected="true" tabindex="0">Fleet</button>
   <button role="tab" id="tab-btn-catalogue" data-tab="catalogue" aria-controls="tab-catalogue" aria-selected="false" tabindex="-1">Catalogue</button>
-  <button role="tab" id="tab-btn-map" data-tab="map" aria-controls="tab-map" aria-selected="false" tabindex="-1">Map</button>
+  <button role="tab" id="tab-btn-map" data-tab="map" aria-controls="tab-map" aria-selected="false" tabindex="-1">Live</button>
   <button role="tab" id="tab-btn-documents" data-tab="documents" aria-controls="tab-documents" aria-selected="false" tabindex="-1">Documents</button>
 </nav>
 
@@ -103,21 +103,6 @@
   </div>
 
   <section>
-    <h2>On now <span class="muted" id="activity-scope"></span></h2>
-    <div class="activity" id="activity">
-      <div class="empty">Loading…</div>
-    </div>
-    <!-- Stated on the page, not just in the code, because an operator will
-         otherwise read silence as "switched off" and drive to a school. -->
-    <p class="hint">
-      A television appears here when it plays a lesson — the player saves its
-      position every ten seconds, and that is what this list reads. A television
-      sitting on the browse screen writes nothing, so it shows its last lesson
-      instead. Nothing here can tell you a television is switched off.
-    </p>
-  </section>
-
-  <section>
     <h2>Add a device</h2>
     <div class="panel">
       <div class="row">
@@ -131,15 +116,6 @@
           <label for="code">2 &middot; Code shown on the device</label>
           <input id="code" maxlength="11" placeholder="A1B2C3D4" autocomplete="off" spellcheck="false">
         </div>
-        <div class="field">
-          <label for="teacher">3 &middot; Teacher <span class="opt">optional</span></label>
-          <select id="teacher" disabled><option value="">Whole school</option></select>
-        </div>
-        <div class="field">
-          <label for="expiry">4 &middot; Expires <span class="opt">optional</span></label>
-          <input id="expiry" type="date" aria-describedby="expiry-error">
-          <p class="field-error" id="expiry-error"></p>
-        </div>
         <button id="go" disabled>Add &amp; activate</button>
       </div>
       <div class="found" id="found"></div>
@@ -150,16 +126,36 @@
         anything, and no code is ever issued from here — it always comes off the
         device.
       </p>
-      <p class="hint">
-        Leave the expiry blank for a permanent installation. Set it for a loaner or
-        a term's trial and the television returns to its pairing screen on its own
-        that evening, without anybody having to remember to come back here.
-      </p>
-      <p class="hint">
-        Assigning a teacher is optional and can be changed later from the table
-        below. A television with no teacher belongs to the school and shows the
-        school name, which is right for a hall or a shared room.
-      </p>
+
+      <!-- Both of these are optional and both already default to the right
+           thing, so they sit behind a disclosure instead of standing in the
+           line an operator walks through forty times in a morning. Nothing is
+           removed: the fields are still in the page, still wired, and the
+           disclosure opens itself if the expiry it is holding is unusable. -->
+      <details class="more" id="add-optional">
+        <summary>Teacher and expiry <span class="opt">optional</span></summary>
+        <div class="row">
+          <div class="field">
+            <label for="teacher">Teacher</label>
+            <select id="teacher" disabled><option value="">Whole school</option></select>
+          </div>
+          <div class="field">
+            <label for="expiry">Expires</label>
+            <input id="expiry" type="date" aria-describedby="expiry-error">
+            <p class="field-error" id="expiry-error"></p>
+          </div>
+        </div>
+        <p class="hint">
+          Leave the expiry blank for a permanent installation. Set it for a loaner or
+          a term's trial and the television returns to its pairing screen on its own
+          that evening, without anybody having to remember to come back here.
+        </p>
+        <p class="hint">
+          A television with no teacher belongs to the school and shows the school
+          name, which is right for a hall or a shared room. It can be changed later
+          from the table below.
+        </p>
+      </details>
     </div>
   </section>
 
@@ -227,30 +223,6 @@
   </section>
 
   <section>
-    <h2>By school <span class="muted" id="school-stats-scope"></span></h2>
-    <div class="scroller">
-      <table>
-        <thead>
-          <tr>
-            <th>School</th><th>Where</th>
-            <th class="num">Televisions</th><th class="num">Activated</th>
-            <th>Last played</th>
-          </tr>
-        </thead>
-        <tbody id="school-stats">
-          <tr><td colspan="5" class="muted">Loading…</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <p class="hint">
-      A school with nothing in the last column has not played a lesson recently.
-      That is all it means — a television sitting on the browse screen writes
-      nothing, so this cannot tell you a box is switched off, only that nobody
-      has watched anything on it.
-    </p>
-  </section>
-
-  <section>
     <div class="section-head">
       <h2>Televisions <span class="muted" id="live"></span></h2>
       <button class="quiet" id="export-fleet" type="button">Download as a spreadsheet</button>
@@ -315,6 +287,23 @@
 <div id="tab-map" role="tabpanel" aria-labelledby="tab-btn-map" tabindex="-1" hidden>
 
   <section>
+    <h2>On now <span class="muted" id="activity-scope"></span></h2>
+    <div class="activity" id="activity">
+      <div class="empty">Loading…</div>
+    </div>
+    <!-- Stated on the page, not just in the code, because an operator will
+         otherwise read silence as "switched off" and drive to a school. -->
+    <p class="hint">
+      A television appears here when it plays a lesson — the player saves its
+      position every ten seconds, and that is what this list reads. A television
+      sitting on the browse screen writes nothing, so it shows its last lesson
+      instead. Nothing here can tell you a television is switched off.
+    </p>
+  </section>
+
+  <div class="live-grid">
+
+  <section>
     <div class="map-head">
       <h2>Where the televisions are</h2>
       <p class="map-summary" id="map-summary"></p>
@@ -353,6 +342,32 @@
       (gbOpen). Provinces © geoBoundaries, CC BY 3.0 IGO; districts public domain.
     </p>
   </section>
+
+  <section>
+    <h2>By school <span class="muted" id="school-stats-scope"></span></h2>
+    <div class="scroller">
+      <table>
+        <thead>
+          <tr>
+            <th>School</th><th>Where</th>
+            <th class="num">Televisions</th><th class="num">Activated</th>
+            <th>Last played</th>
+          </tr>
+        </thead>
+        <tbody id="school-stats">
+          <tr><td colspan="5" class="muted">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="hint">
+      A school with nothing in the last column has not played a lesson recently.
+      That is all it means — a television sitting on the browse screen writes
+      nothing, so this cannot tell you a box is switched off, only that nobody
+      has watched anything on it.
+    </p>
+  </section>
+
+  </div>
 
 </div>
 
