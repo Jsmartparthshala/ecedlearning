@@ -141,8 +141,17 @@ class CardPresenter(
                 h.title.text  = item.titleEn.clean()
                 // 963 of 968 lessons have no video yet. Saying so on the card is
                 // worth the space: landing on a dead card mid-demo looks like a crash.
+                // The Nepali title outranks the subject label, and does not
+                // outrank the warning. The console has always been able to set
+                // title_np and nothing on the television ever showed it, so a
+                // title typed there went nowhere; meanwhile the subject label is
+                // the row the card is already sitting in, which is the least
+                // informative thing this line could say. A lesson with no
+                // Nepali title is unchanged, which today is all of them.
+                val np = item.titleNp?.clean().orEmpty()
                 h.meta.text = when {
                     !item.isPlayable -> h.meta.context.getString(R.string.no_video_short)
+                    np.isNotBlank() -> np
                     // Rows that span subjects carry no label, which left the line
                     // blank and the card looking like it had failed to load half
                     // its content. Say how it plays instead.

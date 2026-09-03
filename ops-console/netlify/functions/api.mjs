@@ -578,6 +578,16 @@ async function teacherOutsideSchool(sb, teacherId, schoolId) {
   return null
 }
 
+/**
+ * Everything written here is normalised to NFC first.
+ *
+ * Devanagari can be typed two ways that look identical and compare unequal - a
+ * composed character, or a base plus a combining mark - and which one arrives
+ * depends on the keyboard the operator happens to use. The rename and edit paths
+ * already normalised; these three did not, so the same school name entered on
+ * two different machines would be two different rows to Postgres while being one
+ * name to everybody reading the screen.
+ */
 async function createTeacher(sb, { schoolId, name, role }) {
   if (!schoolId) return json({ error: 'Choose a school first.' }, 400)
   const clean = String(name || '').trim()
@@ -585,7 +595,11 @@ async function createTeacher(sb, { schoolId, name, role }) {
 
   const { data, error } = await sb
     .from('teachers')
-    .insert({ school_id: schoolId, name: clean, role: String(role || '').trim() || null })
+    .insert({
+      school_id: schoolId,
+      name: clean.normalize('NFC'),
+      role: String(role || '').trim().normalize('NFC') || null,
+    })
     .select('id, school_id, name, role')
     .single()
   if (error) return json({ error: reason(error) }, 500)
@@ -648,9 +662,9 @@ async function createSchool(sb, { name, municipality, province }) {
   const { data, error } = await sb
     .from('schools')
     .insert({
-      name: clean,
-      municipality: String(municipality || '').trim() || null,
-      province: String(province || '').trim() || null,
+      name: clean.normalize('NFC'),
+      municipality: String(municipality || '').trim().normalize('NFC') || null,
+      province: String(province || '').trim().normalize('NFC') || null,
     })
     .select('id, name, municipality, province')
     .single()
@@ -796,7 +810,7 @@ async function createClass(sb, { schoolId, levelId, label }) {
 
   const { data, error } = await sb
     .from('classes')
-    .insert({ school_id: schoolId, level_id: levelId, label: clean })
+    .insert({ school_id: schoolId, level_id: levelId, label: clean.normalize('NFC') })
     .select('id, school_id, level_id, label')
     .single()
 
